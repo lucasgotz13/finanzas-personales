@@ -1,6 +1,8 @@
 import type { DatabaseSync, SQLInputValue } from 'node:sqlite';
 import { arDateString } from '@finanzas/domain';
 import type {
+  Budget,
+  BudgetRepository,
   Category,
   CategoryRepository,
   Transaction,
@@ -146,5 +148,24 @@ export class SqliteCategoryRepository implements CategoryRepository {
       .prepare('SELECT EXISTS(SELECT 1 FROM categories WHERE parent_id = ? AND deleted_at IS NULL) AS found')
       .get(id) as { found: number };
     return row.found === 1;
+  }
+}
+
+/** SQLite budget repository: the budgets table maps category_id -> cap_minor. */
+export class SqliteBudgetRepository implements BudgetRepository {
+  constructor(private db: DatabaseSync) {}
+
+  async replaceAll(budgets: Budget[]): Promise<void> {
+    this.db.exec('DELETE FROM budgets');
+    const insert = this.db.prepare('INSERT INTO budgets (category_id, cap_minor) VALUES (?, ?)');
+    for (const b of budgets) insert.run(b.categoryId, b.capMinor);
+  }
+
+  async listAll(): Promise<Budget[]> {
+    const rows = this.db.prepare('SELECT category_id, cap_minor FROM budgets ORDER BY category_id').all() as unknown as Array<{
+      category_id: number;
+      cap_minor: number;
+    }>;
+    return rows.map((r) => ({ categoryId: r.category_id, capMinor: r.cap_minor }));
   }
 }
