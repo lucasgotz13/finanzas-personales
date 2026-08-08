@@ -49,13 +49,13 @@ Chain strategy: pending
 - [ ] 3.6 src/index.ts bootstrap + pragmas + listen — curl smoke
 
 ## Phase 4: Budgets & Summaries (S6)
-- [ ] 4.1 RED budget tests: rate conversion, month attribution, global cap, over-budget, re-adjust (BM-1..4)
-- [ ] 4.2 GREEN budget use cases (BM-1..4)
-- [ ] 4.3 RED summary tests: AR-tz periods, per-currency, net flow, savings undefined, deleted cats (PS-1..5, IT-3)
-- [ ] 4.4 GREEN summary use cases (PS-1..5, IT-3)
-- [ ] 4.5 SqliteBudgetRepository + summary queries (BM-1, PS-1) — typecheck
-- [ ] 4.6 RED integration: PUT/GET /budgets, /budgets/status, /summaries (BM-1..4, PS-1..5)
-- [ ] 4.7 GREEN budget+summary routes (BM-1..4, PS-1..5) — `npm test -w apps/api`
+- [x] 4.1 RED budget tests: rate conversion, month attribution, global cap, over-budget, re-adjust (BM-1..4)
+- [x] 4.2 GREEN budget use cases (BM-1..4)
+- [x] 4.3 RED summary tests: AR-tz periods, per-currency, net flow, savings undefined, deleted cats (PS-1..5, IT-3)
+- [x] 4.4 GREEN summary use cases (PS-1..5, IT-3)
+- [x] 4.5 SqliteBudgetRepository + summary queries (BM-1, PS-1) — typecheck
+- [x] 4.6 RED integration: PUT/GET /budgets, /budgets/status, /summaries (BM-1..4, PS-1..5)
+- [x] 4.7 GREEN budget+summary routes (BM-1..4, PS-1..5) — `npm test -w apps/api`
 
 ## Phase 5: Web Transactions (S7)
 - [ ] 5.1 apps/web scaffold (Vite+React+TS) + api.ts + useApi hook (D5) — `npm run build -w apps/web`
