@@ -97,3 +97,16 @@ export const api = {
     return request(`/summaries${qs({ period, date })}`);
   },
 };
+
+/** Plain (unindented) category name lookup for lists. */
+export function categoryNameMap(nodes: CategoryNode[]): Map<number, string> {
+  const map = new Map<number, string>();
+  const walk = (list: CategoryNode[]): void => {
+    for (const node of list) {
+      map.set(node.id, node.name);
+      walk(node.children);
+    }
+  };
+  walk(nodes);
+  return map;
+}
