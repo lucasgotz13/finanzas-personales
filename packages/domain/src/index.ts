@@ -35,3 +35,6 @@ export type { CategoryServiceDeps } from './use-cases/categories';
 
 export { BudgetService } from './use-cases/budgets';
 export type { BudgetServiceDeps, BudgetStatus, CategoryBudgetStatus } from './use-cases/budgets';
+
+export { SummaryService } from './use-cases/summaries';
+export type { SummaryServiceDeps, PeriodSummary, CurrencySummary, CategorySummary } from './use-cases/summaries';
