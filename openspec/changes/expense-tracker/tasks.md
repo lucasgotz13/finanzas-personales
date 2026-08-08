@@ -35,10 +35,10 @@ Chain strategy: pending
 - [x] 2.2 GREEN VOs Money(amountMinor,currency,rate), Direction, PeriodKey AR-tz bounds (ET-1, PS-1)
 - [x] 2.3 RED entity tests: amount>0, currency, rate iff non-ARS, no self-ancestor, cap>0 (ET-2, IT-2, CM-1, BM-1)
 - [x] 2.4 GREEN entities + errors VALIDATION_ERROR/NOT_FOUND/CONFLICT + ports repos/Clock (ET-2, CM-1)
-- [ ] 2.5 RED tx use-case tests: FX entry, backdate, re-validate, delete, dupes, income (ET-1/3/5/6, IT-1/2)
-- [ ] 2.6 GREEN tx use cases create/list/update/delete (ET-1..6, IT-1/2)
-- [ ] 2.7 RED category tests: cycles, move, soft-delete w/ children, rename keeps ID (CM-1/3/4/5)
-- [ ] 2.8 GREEN category use cases (CM-1/3/4/5)
+- [x] 2.5 RED tx use-case tests: FX entry, backdate, re-validate, delete, dupes, income (ET-1/3/5/6, IT-1/2)
+- [x] 2.6 GREEN tx use cases create/list/update/delete (ET-1..6, IT-1/2)
+- [x] 2.7 RED category tests: cycles, move, soft-delete w/ children, rename keeps ID (CM-1/3/4/5)
+- [x] 2.8 GREEN category use cases (CM-1/3/4/5)
 
 ## Phase 3: API Adapters (S4+S5)
 - [ ] 3.1 apps/api scaffold (vitest+supertest) + SqliteTransaction/CategoryRepository (ET-1, CM-3) — typecheck
