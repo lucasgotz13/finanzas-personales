@@ -70,6 +70,6 @@ Chain strategy: pending
 - [x] 6.4 Tabs navigation + README run docs (D5) — manual check
 
 ## Phase 7: Verification
-- [ ] 7.1 Full `npm test` across workspaces + fresh smoke: migrate → dev → record expense → budget/summary reflect (ET-1..6, IT-1..3, CM-1..5, BM-1..4, PS-1..5)
+- [x] 7.1 Full `npm test` across workspaces + fresh smoke: migrate → dev → record expense → budget/summary reflect (ET-1..6, IT-1..3, CM-1..5, BM-1..4, PS-1..5)
 
 Threat matrix: all rows N/A (design) — no threat RED tasks.
