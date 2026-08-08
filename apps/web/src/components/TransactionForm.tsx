@@ -13,7 +13,7 @@ const DIRECTION_LABELS: Record<string, string> = { expense: 'Expense', income: '
 /** Manual expense/income form (ET-1..6, IT-1/2): rate is required iff USD. */
 export default function TransactionForm({ categories, onCreated }: TransactionFormProps): JSX.Element {
   const [direction, setDirection] = useState<'expense' | 'income'>('expense');
-  const [amountMinor, setAmountMinor] = useState('');
+  const [amount, setAmount] = useState('');
   const [currency, setCurrency] = useState<'ARS' | 'USD'>('ARS');
   const [rate, setRate] = useState('');
   const [date, setDate] = useState(arDateString(new Date()));
@@ -27,8 +27,9 @@ export default function TransactionForm({ categories, onCreated }: TransactionFo
   async function handleSubmit(e: React.FormEvent): Promise<void> {
     e.preventDefault();
     const details: string[] = [];
-    const amount = Number(amountMinor);
-    if (!Number.isInteger(amount) || amount <= 0) details.push('Amount must be a positive integer.');
+    const parsed = parseFloat(amount);
+    if (!Number.isFinite(parsed) || parsed <= 0) details.push('Amount must be a positive number.');
+    const amountMinor = Math.round(parsed * 100);
     if (currency === 'USD' && (!rate || Number(rate) <= 0)) details.push('FX rate is required for USD.');
     if (categoryId === '') details.push('Select a category.');
     if (details.length > 0) {
@@ -40,7 +41,7 @@ export default function TransactionForm({ categories, onCreated }: TransactionFo
     try {
       const input: CreateTransactionInput = {
         direction,
-        amountMinor: amount,
+        amountMinor,
         currency,
         rate: currency === 'USD' ? Number(rate) : undefined,
         date,
@@ -49,7 +50,7 @@ export default function TransactionForm({ categories, onCreated }: TransactionFo
       };
       const created = await api.createTransaction(input);
       onCreated(created);
-      setAmountMinor('');
+      setAmount('');
       setRate('');
       setNote('');
     } catch (err) {
@@ -73,13 +74,14 @@ export default function TransactionForm({ categories, onCreated }: TransactionFo
         </select>
       </label>
       <label>
-        Amount (minor units)
+        Amount ({currency})
         <input
           type="number"
-          min="1"
-          step="1"
-          value={amountMinor}
-          onChange={(e) => setAmountMinor(e.target.value)}
+          min="0.01"
+          step="0.01"
+          placeholder="1200"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
           data-testid="amount"
         />
       </label>
