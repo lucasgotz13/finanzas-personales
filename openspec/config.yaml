@@ -1,0 +1,38 @@
+# openspec/config.yaml
+schema: spec-driven
+
+context: |
+  Tech stack: not yet chosen (greenfield — decided in explore/propose phases)
+  Architecture: not yet chosen
+  Testing: not yet known — no test runner detected (greenfield, no stack)
+  Style: not yet defined
+
+rules:
+  proposal:
+    - Include rollback plan for risky changes
+  specs:
+    - Use Given/When/Then for scenarios
+    - Use RFC 2119 keywords (MUST, SHALL, SHOULD, MAY)
+  design:
+    - Include sequence diagrams for complex flows
+    - Document architecture decisions with rationale
+  tasks:
+    - Group by phase, use hierarchical numbering
+    - Keep tasks completable in one session
+  apply:
+    guidelines:
+      - Follow existing code patterns (once stack is chosen)
+    tdd: false
+    test_command: ""
+  verify:
+    test_command: ""
+    build_command: ""
+    coverage_threshold: 0
+  archive:
+    - Warn before merging destructive deltas
+
+testing:
+  strict_tdd: false
+  detected: 2026-08-08
+  test_runner: "not yet known (greenfield — no stack)"
+  note: "Testing capabilities will be detected in sdd-explore once the stack is chosen."
