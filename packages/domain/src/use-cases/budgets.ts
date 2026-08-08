@@ -49,6 +49,12 @@ export class BudgetService {
     await this.deps.budgets.replaceAll(budgets);
   }
 
+  /** Current budget map: categoryId -> capMinor (for GET /budgets). */
+  async list(): Promise<Record<string, number>> {
+    const budgets = await this.deps.budgets.listAll();
+    return Object.fromEntries(budgets.map((b) => [String(b.categoryId), b.capMinor]));
+  }
+
   async getStatus(monthKey: string): Promise<BudgetStatus> {
     const { start, end } = PeriodKey.parse('month', monthKey).bounds();
     const budgets = await this.deps.budgets.listAll();
