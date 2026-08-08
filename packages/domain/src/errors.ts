@@ -21,15 +21,15 @@ export class ValidationError extends DomainError {
 }
 
 export class NotFoundError extends DomainError {
-  constructor(message: string) {
-    super('NOT_FOUND', message);
+  constructor(message: string, details: string[] = []) {
+    super('NOT_FOUND', message, details);
     this.name = 'NotFoundError';
   }
 }
 
 export class ConflictError extends DomainError {
-  constructor(message: string) {
-    super('CONFLICT', message);
+  constructor(message: string, details: string[] = []) {
+    super('CONFLICT', message, details);
     this.name = 'ConflictError';
   }
 }
