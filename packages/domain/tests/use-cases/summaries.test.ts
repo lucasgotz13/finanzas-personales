@@ -31,7 +31,7 @@ async function addTx(
   currency: 'ARS' | 'USD',
   categoryId: number,
 ) {
-  await env.transactions.create({ direction, amountMinor, currency, rate: 1, txDate, categoryId });
+  await env.transactions.create({ direction, amountMinor, currency, rate: 1, txDate, categoryId, note: '' });
 }
 
 describe('SummaryService.getSummary — period grouping (PS-1)', () => {

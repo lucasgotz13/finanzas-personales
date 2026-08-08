@@ -1,5 +1,6 @@
 import { Budget } from '../entities/budget';
 import { Money } from '../vo/money';
+import type { Currency } from '../vo/money';
 import { PeriodKey } from '../vo/period-key';
 import { NotFoundError, ValidationError } from '../errors';
 import type { BudgetRepository, CategoryRepository, TransactionRepository } from '../ports/repositories';
@@ -62,7 +63,7 @@ export class BudgetService {
 
     const consumedByCategory = new Map<number, number>();
     for (const tx of expenses) {
-      const ars = new Money({ amountMinor: tx.amountMinor, currency: tx.currency, rate: tx.rate }).toArsMinor();
+      const ars = new Money({ amountMinor: tx.amountMinor, currency: tx.currency as Currency, rate: tx.rate }).toArsMinor();
       consumedByCategory.set(tx.categoryId, (consumedByCategory.get(tx.categoryId) ?? 0) + ars);
     }
 

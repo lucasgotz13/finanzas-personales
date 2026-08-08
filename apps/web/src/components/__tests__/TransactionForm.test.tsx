@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { api } from '../../api';
-import type { CategoryNode } from '../../types';
+import type { ApiTransaction, CategoryNode } from '../../types';
 import TransactionForm from '../TransactionForm';
 
 const categories: CategoryNode[] = [
@@ -17,7 +17,7 @@ describe('TransactionForm', () => {
 
   it('submits a valid ARS expense and calls onCreated (ET-1)', async () => {
     const user = userEvent.setup();
-    const created = { id: 1, direction: 'expense', amountMinor: 15000, currency: 'ARS', rate: 1, date: '2026-07-15', categoryId: 1, note: 'Lunch' };
+    const created: ApiTransaction = { id: 1, direction: 'expense', amountMinor: 15000, currency: 'ARS', rate: 1, date: '2026-07-15', categoryId: 1, note: 'Lunch' };
     const spy = vi.spyOn(api, 'createTransaction').mockResolvedValue(created);
     const onCreated = vi.fn();
 
