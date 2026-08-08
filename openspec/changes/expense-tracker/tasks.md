@@ -41,12 +41,12 @@ Chain strategy: pending
 - [x] 2.8 GREEN category use cases (CM-1/3/4/5)
 
 ## Phase 3: API Adapters (S4+S5)
-- [ ] 3.1 apps/api scaffold (vitest+supertest) + SqliteTransaction/CategoryRepository (ET-1, CM-3) — typecheck
-- [ ] 3.2 RED integration: POST /transactions 201/422 (amount, currency, rate, deleted cat), GET filters, PATCH/DELETE (ET-1/2/5, IT-2, CM-4)
-- [ ] 3.3 GREEN routes + error middleware (ET-1..6, IT-1/2) — `npm test -w apps/api`
-- [ ] 3.4 RED integration: categories tree/POST/PATCH 409 cycle+move/DELETE w/ children (CM-1..5)
-- [ ] 3.5 GREEN /categories routes + tree builder (CM-1..5)
-- [ ] 3.6 src/index.ts bootstrap + pragmas + listen — curl smoke
+- [x] 3.1 apps/api scaffold (vitest+supertest) + SqliteTransaction/CategoryRepository (ET-1, CM-3) — typecheck
+- [x] 3.2 RED integration: POST /transactions 201/422 (amount, currency, rate, deleted cat), GET filters, PATCH/DELETE (ET-1/2/5, IT-2, CM-4)
+- [x] 3.3 GREEN routes + error middleware (ET-1..6, IT-1/2) — `npm test -w apps/api`
+- [x] 3.4 RED integration: categories tree/POST/PATCH 409 cycle+move/DELETE w/ children (CM-1..5)
+- [x] 3.5 GREEN /categories routes + tree builder (CM-1..5)
+- [x] 3.6 src/index.ts bootstrap + pragmas + listen — curl smoke
 
 ## Phase 4: Budgets & Summaries (S6)
 - [x] 4.1 RED budget tests: rate conversion, month attribution, global cap, over-budget, re-adjust (BM-1..4)
