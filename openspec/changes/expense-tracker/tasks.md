@@ -25,10 +25,10 @@ Chain strategy: pending
 | S8 | WU6 web remaining pages (split if >400) | PR #8 | `npm test -w apps/web` | dev smoke, full flow | rm remaining pages |
 
 ## Phase 1: Foundation (S1)
-- [ ] 1.1 Root package.json (workspaces) + tsconfig.base.json (strict) + .gitignore — install + tsc base
-- [ ] 1.2 db/migrations/001_schema.sql: categories, transactions, budgets, schema_migrations; CHECK/INDEX (ET-2, CM-2, BM-1, PS-1)
-- [ ] 1.3 db/migrations/002_seed_categories.sql: IDs 1–10 (CM-2) — migrate: 10 rows
-- [ ] 1.4 scripts/migrate.ts + `npm run migrate` + WAL/busy_timeout pragmas + root README — migrate ×2 idempotent
+- [x] 1.1 Root package.json (workspaces) + tsconfig.base.json (strict) + .gitignore — install + tsc base
+- [x] 1.2 db/migrations/001_schema.sql: categories, transactions, budgets, schema_migrations; CHECK/INDEX (ET-2, CM-2, BM-1, PS-1)
+- [x] 1.3 db/migrations/002_seed_categories.sql: IDs 1–10 (CM-2) — migrate: 10 rows
+- [x] 1.4 scripts/migrate.ts + `npm run migrate` + WAL/busy_timeout pragmas + root README — migrate ×2 idempotent
 
 ## Phase 2: Domain Core (S2+S3)
 - [ ] 2.1 RED packages/domain scaffold + failing VO tests Money/Direction/PeriodKey (ET-1, IT-1, PS-1)
