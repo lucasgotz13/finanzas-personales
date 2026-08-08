@@ -34,7 +34,7 @@ describe('TransactionsPage', () => {
     await screen.findByText(/ARS 150\.00/);
     expect(listSpy).toHaveBeenCalledTimes(1);
 
-    await user.type(screen.getByTestId('amount'), '2500');
+    await user.type(screen.getByTestId('amount'), '25');
     await user.selectOptions(screen.getByTestId('category'), '1');
     await user.click(screen.getByTestId('submit'));
 
