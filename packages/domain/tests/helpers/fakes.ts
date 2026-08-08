@@ -8,6 +8,7 @@ import type {
 import type { Transaction } from '../../src/entities/transaction';
 import type { Category } from '../../src/entities/category';
 import type { Budget } from '../../src/entities/budget';
+import { arDateString } from '../../src/vo/period-key';
 
 /** Fixed clock for deterministic tests. */
 export class FakeClock implements Clock {
@@ -45,13 +46,15 @@ export class InMemoryTransactionRepository implements TransactionRepository {
   }
 
   async list(filters: TransactionFilters): Promise<Transaction[]> {
-    const matchesFrom = (tx: Transaction) => filters.from === undefined || new Date(tx.txDate + 'T00:00:00Z') >= filters.from;
-    const matchesTo = (tx: Transaction) => filters.to === undefined || new Date(tx.txDate + 'T00:00:00Z') < filters.to;
+    // Mirrors the SQLite adapter: compares AR-calendar dates (exact for
+    // AR-midnight bounds such as PeriodKey.bounds()).
+    const fromKey = filters.from !== undefined ? arDateString(filters.from) : undefined;
+    const toKey = filters.to !== undefined ? arDateString(filters.to) : undefined;
     return [...this.rows.values()]
       .filter((tx) => filters.categoryId === undefined || tx.categoryId === filters.categoryId)
       .filter((tx) => filters.direction === undefined || tx.direction === filters.direction)
-      .filter(matchesFrom)
-      .filter(matchesTo);
+      .filter((tx) => fromKey === undefined || tx.txDate >= fromKey)
+      .filter((tx) => toKey === undefined || tx.txDate < toKey);
   }
 
   async update(id: number, tx: Transaction): Promise<Transaction | null> {

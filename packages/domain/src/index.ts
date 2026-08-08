@@ -32,3 +32,6 @@ export type { TransactionServiceDeps, CreateTransactionInput } from './use-cases
 
 export { CategoryService } from './use-cases/categories';
 export type { CategoryServiceDeps } from './use-cases/categories';
+
+export { BudgetService } from './use-cases/budgets';
+export type { BudgetServiceDeps, BudgetStatus, CategoryBudgetStatus } from './use-cases/budgets';
