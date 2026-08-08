@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import TransactionsPage from './pages/TransactionsPage';
 
 export type Tab = 'transactions' | 'categories' | 'budgets' | 'summaries';
 
@@ -8,13 +9,6 @@ const TABS: Array<{ id: Tab; label: string }> = [
   { id: 'budgets', label: 'Budgets' },
   { id: 'summaries', label: 'Summaries' },
 ];
-
-const PLACEHOLDERS: Record<Tab, string> = {
-  transactions: 'Transactions',
-  categories: 'Categories',
-  budgets: 'Budgets',
-  summaries: 'Summaries',
-};
 
 export default function App(): JSX.Element {
   const [tab, setTab] = useState<Tab>('transactions');
@@ -31,7 +25,8 @@ export default function App(): JSX.Element {
         </nav>
       </header>
       <main>
-        <section className="card">{PLACEHOLDERS[tab]}</section>
+        {tab === 'transactions' && <TransactionsPage />}
+        {tab !== 'transactions' && <section className="card">Coming soon.</section>}
       </main>
     </>
   );
