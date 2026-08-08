@@ -30,6 +30,7 @@ async function addExpense(env: ReturnType<typeof build>, txDate: string, categor
     rate,
     txDate,
     categoryId,
+    note: '',
   });
 }
 
@@ -141,7 +142,7 @@ describe('BudgetService.getStatus (BM-1, BM-2, BM-4)', () => {
   it('ignores income when computing consumption', async () => {
     const env = build();
     await env.service.replaceAll({ 1: 100000 });
-    await env.transactions.create({ direction: 'income', amountMinor: 900000, currency: 'ARS', rate: 1, txDate: '2026-07-01', categoryId: 10 });
+    await env.transactions.create({ direction: 'income', amountMinor: 900000, currency: 'ARS', rate: 1, txDate: '2026-07-01', categoryId: 10, note: '' });
     const status = await env.service.getStatus('2026-07');
     expect(status.global.consumed).toBe(0);
   });
