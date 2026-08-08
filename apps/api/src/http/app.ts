@@ -4,6 +4,7 @@ import { CategoryService, TransactionService } from '@finanzas/domain';
 import express from 'express';
 import { SqliteCategoryRepository, SqliteTransactionRepository } from '../sqlite/repositories';
 import { errorHandler, notFoundHandler } from './errors';
+import { categoriesRouter } from './routes/categories';
 import { transactionsRouter } from './routes/transactions';
 
 export interface AppDeps {
@@ -22,6 +23,7 @@ export function buildApp(deps: AppDeps): express.Express {
   const app = express();
   app.use(express.json());
   app.use('/api/v1', transactionsRouter({ transactionService }));
+  app.use('/api/v1', categoriesRouter({ categoryService, clock }));
   app.use(notFoundHandler);
   app.use(errorHandler);
   return app;
