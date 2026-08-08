@@ -26,3 +26,6 @@ export type {
   CategoryRepository,
   BudgetRepository,
 } from './ports/repositories';
+
+export { TransactionService } from './use-cases/transactions';
+export type { TransactionServiceDeps, CreateTransactionInput } from './use-cases/transactions';
