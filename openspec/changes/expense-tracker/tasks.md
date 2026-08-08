@@ -58,10 +58,10 @@ Chain strategy: pending
 - [x] 4.7 GREEN budget+summary routes (BM-1..4, PS-1..5) — `npm test -w apps/api`
 
 ## Phase 5: Web Transactions (S7)
-- [ ] 5.1 apps/web scaffold (Vite+React+TS) + api.ts + useApi hook (D5) — `npm run build -w apps/web`
-- [ ] 5.2 TransactionForm: amount, currency, rate-if-USD, date, category (deleted hidden), note (ET-1/2, IT-1)
-- [ ] 5.3 TransactionList + tabs + Transactions page (ET-1..6, IT-1)
-- [ ] 5.4 RTL tests: form validation, list render (ET-2) — `npm test -w apps/web`
+- [x] 5.1 apps/web scaffold (Vite+React+TS) + api.ts + useApi hook (D5) — `npm run build -w apps/web`
+- [x] 5.2 TransactionForm: amount, currency, rate-if-USD, date, category (deleted hidden), note (ET-1/2, IT-1)
+- [x] 5.3 TransactionList + tabs + Transactions page (ET-1..6, IT-1)
+- [x] 5.4 RTL tests: form validation, list render (ET-2) — `npm test -w apps/web`
 
 ## Phase 6: Web Remaining (S8)
 - [ ] 6.1 CategoryTree + Categories page: add/rename/delete w/ children guard (CM-1..5)
