@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import BudgetsPage from './pages/BudgetsPage';
 import CategoriesPage from './pages/CategoriesPage';
+import SummariesPage from './pages/SummariesPage';
 import TransactionsPage from './pages/TransactionsPage';
 
 export type Tab = 'transactions' | 'categories' | 'budgets' | 'summaries';
@@ -30,7 +31,7 @@ export default function App(): JSX.Element {
         {tab === 'transactions' && <TransactionsPage />}
         {tab === 'categories' && <CategoriesPage />}
         {tab === 'budgets' && <BudgetsPage />}
-        {tab === 'summaries' && <section className="card">Coming soon.</section>}
+        {tab === 'summaries' && <SummariesPage />}
       </main>
     </>
   );

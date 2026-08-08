@@ -49,6 +49,10 @@ npm run dev:web   # terminal 2
 Open http://localhost:5173, record an expense on the Transactions tab, set
 budgets on the Budgets tab, and check the Summaries tab.
 
+The web dev server proxies `/api` to the API on port 3000 (see
+`apps/web/vite.config.ts`). The API runs migrations on boot and is idempotent;
+point `FINANZAS_DB` somewhere else to use a different database file.
+
 ## Layout
 
 ```
