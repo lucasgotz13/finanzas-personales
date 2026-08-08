@@ -1,12 +1,24 @@
 import type {
   BudgetRepository,
   CategoryRepository,
+  Clock,
   TransactionFilters,
   TransactionRepository,
 } from '../../src/ports/repositories';
 import type { Transaction } from '../../src/entities/transaction';
 import type { Category } from '../../src/entities/category';
 import type { Budget } from '../../src/entities/budget';
+
+/** Fixed clock for deterministic tests. */
+export class FakeClock implements Clock {
+  constructor(private date: Date) {}
+  now(): Date {
+    return this.date;
+  }
+  set(date: Date): void {
+    this.date = date;
+  }
+}
 
 let nextId = 1;
 function takeId(): number {
