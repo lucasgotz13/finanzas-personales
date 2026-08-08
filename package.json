@@ -1,0 +1,25 @@
+{
+  "name": "finanzas-personales",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local-first personal finance tracker: multi-currency expenses/income, budgets, period summaries",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm test --workspaces --if-present",
+    "migrate": "tsx scripts/migrate.ts",
+    "dev:api": "npm run dev --workspace apps/api",
+    "dev:web": "npm run dev --workspace apps/web"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
