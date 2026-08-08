@@ -1,0 +1,65 @@
+import type { PeriodSummary } from '../types';
+
+export interface SummaryViewProps {
+  summary: PeriodSummary;
+}
+
+function formatMinor(amountMinor: number, currency: string): string {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(amountMinor / 100);
+}
+
+/** Per-currency totals with net flow and savings rate, plus per-category breakdown (PS-1..5, IT-3). */
+export default function SummaryView({ summary }: SummaryViewProps): JSX.Element {
+  return (
+    <div>
+      <h3>{summary.period}</h3>
+      <table className="data">
+        <thead>
+          <tr>
+            <th>Currency</th>
+            <th>Expenses</th>
+            <th>Income</th>
+            <th>Net flow</th>
+            <th>Savings rate</th>
+          </tr>
+        </thead>
+        <tbody>
+          {summary.currencies.map((c) => (
+            <tr key={c.currency}>
+              <td>{c.currency}</td>
+              <td>{formatMinor(c.expense, c.currency)}</td>
+              <td>{formatMinor(c.income, c.currency)}</td>
+              <td>{formatMinor(c.netFlow, c.currency)}</td>
+              <td>{c.savingsRate === null ? '—' : `${(c.savingsRate * 100).toFixed(1)}%`}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <h4>By category</h4>
+      {summary.categories.length === 0 ? (
+        <div className="empty">No transactions in this period.</div>
+      ) : (
+        <table className="data">
+          <thead>
+            <tr>
+              <th>Category</th>
+              <th>Currency</th>
+              <th>Expenses</th>
+              <th>Income</th>
+            </tr>
+          </thead>
+          <tbody>
+            {summary.categories.map((c) => (
+              <tr key={`${c.categoryId}-${c.currency}`}>
+                <td>{c.name}</td>
+                <td>{c.currency}</td>
+                <td>{formatMinor(c.expense, c.currency)}</td>
+                <td>{formatMinor(c.income, c.currency)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  );
+}
