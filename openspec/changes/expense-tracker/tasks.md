@@ -64,10 +64,10 @@ Chain strategy: pending
 - [x] 5.4 RTL tests: form validation, list render (ET-2) — `npm test -w apps/web`
 
 ## Phase 6: Web Remaining (S8)
-- [ ] 6.1 CategoryTree + Categories page: add/rename/delete w/ children guard (CM-1..5)
-- [ ] 6.2 BudgetEditor + Budgets page + over-budget status (BM-1..4)
-- [ ] 6.3 SummaryView + Summaries page period picker (PS-1..5, IT-3)
-- [ ] 6.4 Tabs navigation + README run docs (D5) — manual check
+- [x] 6.1 CategoryTree + Categories page: add/rename/delete w/ children guard (CM-1..5)
+- [x] 6.2 BudgetEditor + Budgets page + over-budget status (BM-1..4)
+- [x] 6.3 SummaryView + Summaries page period picker (PS-1..5, IT-3)
+- [x] 6.4 Tabs navigation + README run docs (D5) — manual check
 
 ## Phase 7: Verification
 - [ ] 7.1 Full `npm test` across workspaces + fresh smoke: migrate → dev → record expense → budget/summary reflect (ET-1..6, IT-1..3, CM-1..5, BM-1..4, PS-1..5)
