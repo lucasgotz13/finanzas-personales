@@ -26,3 +26,15 @@ export type {
   CategoryRepository,
   BudgetRepository,
 } from './ports/repositories';
+
+export { TransactionService } from './use-cases/transactions';
+export type { TransactionServiceDeps, CreateTransactionInput } from './use-cases/transactions';
+
+export { CategoryService } from './use-cases/categories';
+export type { CategoryServiceDeps } from './use-cases/categories';
+
+export { BudgetService } from './use-cases/budgets';
+export type { BudgetServiceDeps, BudgetStatus, CategoryBudgetStatus } from './use-cases/budgets';
+
+export { SummaryService } from './use-cases/summaries';
+export type { SummaryServiceDeps, PeriodSummary, CurrencySummary, CategorySummary } from './use-cases/summaries';
