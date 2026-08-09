@@ -95,6 +95,14 @@ export function transactionsRouter(deps: TransactionsRouterDeps): Router {
       const id = parseId(req.params.id);
       const existing = await transactionService.getById(id);
       const body = req.body as Record<string, unknown>;
+      // W1 fix (ET-1/ET-2): when the currency changes to a non-ARS currency,
+      // a rate MUST be provided — the existing rate belongs to the old
+      // currency and must never be silently inherited.
+      if (body.currency !== undefined && body.currency !== 'ARS' && body.rate === undefined) {
+        throw new ValidationError('Rate is required when changing currency to a non-ARS currency', [
+          `rate is required for currency ${body.currency}`,
+        ]);
+      }
       const merged: Record<string, unknown> = {
         direction: body.direction ?? existing.direction,
         amountMinor: body.amountMinor ?? existing.amountMinor,
