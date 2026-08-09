@@ -31,20 +31,25 @@ describe('BudgetsPage', () => {
     render(<BudgetsPage />);
     expect(await screen.findByTestId('cap-1')).toBeInTheDocument();
 
-    await user.type(screen.getByTestId('cap-1'), '100000');
+    // Decimal amount in the input → converted to minor units on save
+    await user.type(screen.getByTestId('cap-1'), '1000');
     await user.click(screen.getByTestId('budget-save'));
 
     expect(putBudgets).toHaveBeenCalledWith({ 1: 100000 });
     await vi.waitFor(() => expect(getBudgets).toHaveBeenCalledTimes(2));
   });
 
-  it('renders the over-budget status with badges (BM-4)', async () => {
+  it('renders the over-budget status with formatted amounts and badges (BM-4)', async () => {
     vi.spyOn(api, 'getCategoryTree').mockResolvedValue(categories);
     vi.spyOn(api, 'getBudgets').mockResolvedValue({ 1: 100000 });
     vi.spyOn(api, 'getBudgetStatus').mockResolvedValue(status);
 
     render(<BudgetsPage />);
     expect(await screen.findByText('OVER BUDGET')).toBeInTheDocument();
-    expect(screen.getByText('Global: 120000 / 100000 ARS')).toBeInTheDocument();
+    // Category name from the tree instead of the raw id: appears in the caps editor
+    // table AND the status table (previously the status table rendered "1")
+    expect(screen.getAllByText('Food')).toHaveLength(2);
+    // Minor units (120000/100000) rendered as currency amounts (ARS 1,200.00 / ARS 1,000.00)
+    expect(screen.getByText('Global: ARS 1,200.00 / ARS 1,000.00')).toBeInTheDocument();
   });
 });

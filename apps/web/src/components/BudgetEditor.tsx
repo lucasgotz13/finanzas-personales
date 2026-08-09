@@ -7,10 +7,18 @@ export interface BudgetEditorProps {
   onSave: (caps: Record<string, number>) => Promise<void>;
 }
 
-/** Per-category monthly caps editor; saving PUTs the whole map (BM-3). */
+/** ARS currency formatting for minor-unit amounts (same pattern as SummaryView). */
+function formatMinor(minor: number): string {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'ARS' }).format(minor / 100);
+}
+
+/** Per-category monthly caps editor; saving PUTs the whole map in minor units (BM-3). */
 export default function BudgetEditor({ categories, initialCaps, onSave }: BudgetEditorProps): JSX.Element {
   const [caps, setCaps] = useState<Record<string, string>>(() =>
-    Object.fromEntries(categories.map((c) => [String(c.id), String(initialCaps[String(c.id)] ?? '')])),
+    Object.fromEntries(categories.map((c) => {
+      const minor = initialCaps[String(c.id)];
+      return [String(c.id), minor ? String(minor / 100) : ''];
+    })),
   );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -23,9 +31,9 @@ export default function BudgetEditor({ categories, initialCaps, onSave }: Budget
       for (const cat of categories) {
         const raw = caps[String(cat.id)];
         if (raw !== undefined && raw !== '') {
-          const value = Number(raw);
-          if (!Number.isInteger(value) || value <= 0) {
-            throw new Error(`Cap for "${cat.name}" must be a positive integer.`);
+          const value = Math.round(Number(raw) * 100);
+          if (!Number.isFinite(value) || value <= 0) {
+            throw new Error(`Cap for "${cat.name}" must be a positive amount.`);
           }
           map[String(cat.id)] = value;
         }
@@ -57,8 +65,8 @@ export default function BudgetEditor({ categories, initialCaps, onSave }: Budget
                 <td>
                   <input
                     type="number"
-                    min="1"
-                    step="1"
+                    min="0.01"
+                    step="0.01"
                     value={caps[String(cat.id)] ?? ''}
                     onChange={(e) => setCaps({ ...caps, [String(cat.id)]: e.target.value })}
                     data-testid={`cap-${cat.id}`}
@@ -78,11 +86,11 @@ export default function BudgetEditor({ categories, initialCaps, onSave }: Budget
 }
 
 /** Reads the over-budget status of every budgeted category plus the global budget (BM-2, BM-4). */
-export function BudgetStatusView({ status }: { status: BudgetStatus }): JSX.Element {
+export function BudgetStatusView({ status, categoryNames }: { status: BudgetStatus; categoryNames?: Record<number, string> }): JSX.Element {
   return (
     <div>
       <p data-testid="global-status">
-        Global: {status.global.consumed} / {status.global.cap} ARS{' '}
+        Global: {formatMinor(status.global.consumed)} / {formatMinor(status.global.cap)}{' '}
         <span className={`badge ${status.global.overBudget ? 'over' : 'ok'}`}>{status.global.overBudget ? 'OVER BUDGET' : 'OK'}</span>
       </p>
       {status.categories.length === 0 ? (
@@ -100,9 +108,9 @@ export function BudgetStatusView({ status }: { status: BudgetStatus }): JSX.Elem
           <tbody>
             {status.categories.map((c) => (
               <tr key={c.categoryId}>
-                <td>{c.categoryId}</td>
-                <td>{c.cap}</td>
-                <td>{c.consumed}</td>
+                <td>{categoryNames?.[c.categoryId] ?? c.categoryId}</td>
+                <td>{formatMinor(c.cap)}</td>
+                <td>{formatMinor(c.consumed)}</td>
                 <td>
                   <span className={`badge ${c.overBudget ? 'over' : 'ok'}`}>{c.overBudget ? 'OVER' : 'OK'}</span>
                 </td>
