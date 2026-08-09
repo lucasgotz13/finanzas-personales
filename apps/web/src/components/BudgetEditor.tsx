@@ -86,7 +86,7 @@ export default function BudgetEditor({ categories, initialCaps, onSave }: Budget
 }
 
 /** Reads the over-budget status of every budgeted category plus the global budget (BM-2, BM-4). */
-export function BudgetStatusView({ status }: { status: BudgetStatus }): JSX.Element {
+export function BudgetStatusView({ status, categoryNames }: { status: BudgetStatus; categoryNames?: Record<number, string> }): JSX.Element {
   return (
     <div>
       <p data-testid="global-status">
@@ -108,7 +108,7 @@ export function BudgetStatusView({ status }: { status: BudgetStatus }): JSX.Elem
           <tbody>
             {status.categories.map((c) => (
               <tr key={c.categoryId}>
-                <td>{c.categoryId}</td>
+                <td>{categoryNames?.[c.categoryId] ?? c.categoryId}</td>
                 <td>{formatMinor(c.cap)}</td>
                 <td>{formatMinor(c.consumed)}</td>
                 <td>

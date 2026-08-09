@@ -34,7 +34,12 @@ export default function BudgetsPage(): JSX.Element {
         <h2>Status — {month}</h2>
         <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} aria-label="Status month" />
         {status.error && <div className="error-box">{status.error}</div>}
-        {status.loading ? <div className="empty">Loading…</div> : status.data && <BudgetStatusView status={status.data} />}
+        {status.loading ? <div className="empty">Loading…</div> : status.data && (
+          <BudgetStatusView
+            status={status.data}
+            categoryNames={Object.fromEntries(flattenTree(categories.data ?? []).map((c) => [c.id, c.name]))}
+          />
+        )}
       </section>
     </>
   );

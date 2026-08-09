@@ -46,6 +46,9 @@ describe('BudgetsPage', () => {
 
     render(<BudgetsPage />);
     expect(await screen.findByText('OVER BUDGET')).toBeInTheDocument();
+    // Category name from the tree instead of the raw id: appears in the caps editor
+    // table AND the status table (previously the status table rendered "1")
+    expect(screen.getAllByText('Food')).toHaveLength(2);
     // Minor units (120000/100000) rendered as currency amounts (ARS 1,200.00 / ARS 1,000.00)
     expect(screen.getByText('Global: ARS 1,200.00 / ARS 1,000.00')).toBeInTheDocument();
   });
