@@ -121,6 +121,46 @@ describe('PATCH /api/v1/transactions/:id (ET-5)', () => {
     expect(res.body).toMatchObject({ amountMinor: 5000, currency: 'USD', rate: 950, date: '2026-06-10', categoryId: 2, note: 'Edited' });
   });
 
+  it('rejects changing ARS to USD without a new rate with 422 (W1, ET-1)', async () => {
+    env = createTestApp();
+    const app = env.app;
+    const created = await request(app).post('/api/v1/transactions').send(expense());
+    const res = await request(app).patch(`/api/v1/transactions/${created.body.id}`).send({ currency: 'USD' });
+    expect(res.status).toBe(422);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.details.length).toBeGreaterThan(0);
+    // Original transaction untouched
+    const after = await request(app).get(`/api/v1/transactions?month=2026-07`);
+    expect(after.body[0]).toMatchObject({ currency: 'ARS', rate: 1, amountMinor: 15000 });
+  });
+
+  it('accepts changing ARS to USD when a rate is provided', async () => {
+    env = createTestApp();
+    const app = env.app;
+    const created = await request(app).post('/api/v1/transactions').send(expense());
+    const res = await request(app).patch(`/api/v1/transactions/${created.body.id}`).send({ currency: 'USD', rate: 1200 });
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ currency: 'USD', rate: 1200 });
+  });
+
+  it('normalizes rate to 1 when changing USD to ARS without a rate (ET-1)', async () => {
+    env = createTestApp();
+    const app = env.app;
+    const created = await request(app).post('/api/v1/transactions').send(expense({ currency: 'USD', rate: 950 }));
+    const res = await request(app).patch(`/api/v1/transactions/${created.body.id}`).send({ currency: 'ARS' });
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ currency: 'ARS', rate: 1 });
+  });
+
+  it('keeps the existing rate when patching other fields without changing currency', async () => {
+    env = createTestApp();
+    const app = env.app;
+    const created = await request(app).post('/api/v1/transactions').send(expense({ currency: 'USD', rate: 950 }));
+    const res = await request(app).patch(`/api/v1/transactions/${created.body.id}`).send({ note: 'Still USD' });
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ currency: 'USD', rate: 950, note: 'Still USD' });
+  });
+
   it('returns 404 for a missing transaction', async () => {
     env = createTestApp();
     const res = await request(env.app).patch('/api/v1/transactions/999').send({ amountMinor: 100 });
