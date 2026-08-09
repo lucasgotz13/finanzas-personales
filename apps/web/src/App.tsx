@@ -1,16 +1,18 @@
 import { useState } from 'react';
 import BudgetsPage from './pages/BudgetsPage';
 import CategoriesPage from './pages/CategoriesPage';
+import IndicatorsPage from './pages/IndicatorsPage';
 import SummariesPage from './pages/SummariesPage';
 import TransactionsPage from './pages/TransactionsPage';
 
-export type Tab = 'transactions' | 'categories' | 'budgets' | 'summaries';
+export type Tab = 'transactions' | 'categories' | 'budgets' | 'summaries' | 'indicators';
 
 const TABS: Array<{ id: Tab; label: string }> = [
   { id: 'transactions', label: 'Transactions' },
   { id: 'categories', label: 'Categories' },
   { id: 'budgets', label: 'Budgets' },
   { id: 'summaries', label: 'Summaries' },
+  { id: 'indicators', label: 'Indicators' },
 ];
 
 export default function App(): JSX.Element {
@@ -32,6 +34,7 @@ export default function App(): JSX.Element {
         {tab === 'categories' && <CategoriesPage />}
         {tab === 'budgets' && <BudgetsPage />}
         {tab === 'summaries' && <SummariesPage />}
+        {tab === 'indicators' && <IndicatorsPage />}
       </main>
     </>
   );

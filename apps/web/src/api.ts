@@ -2,6 +2,8 @@ import type {
   BudgetStatus,
   CategoryNode,
   CreateTransactionInput,
+  IndicatorRefreshResult,
+  IndicatorView,
   PeriodSummary,
 } from './types';
 
@@ -95,6 +97,12 @@ export const api = {
   },
   getSummary(period: 'month' | 'quarter' | 'year', date: string): Promise<PeriodSummary> {
     return request(`/summaries${qs({ period, date })}`);
+  },
+  getIndicators(): Promise<IndicatorView[]> {
+    return request('/indicators');
+  },
+  refreshIndicators(force: boolean): Promise<{ results: IndicatorRefreshResult[] }> {
+    return request(`/indicators/refresh${force ? '?force=true' : ''}`, { method: 'POST' });
   },
 };
 

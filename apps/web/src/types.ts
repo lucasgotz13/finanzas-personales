@@ -62,3 +62,21 @@ export interface PeriodSummary {
   currencies: CurrencySummary[];
   categories: CategorySummary[];
 }
+
+export type IndicatorStatus = 'fresh' | 'stale' | 'absent';
+
+export interface IndicatorView {
+  key: string;
+  value: number | null;
+  unit: string;
+  referenceDate: string | null;
+  updatedAt: string | null;
+  stale: boolean;
+  status: IndicatorStatus;
+}
+
+export interface IndicatorRefreshResult {
+  class: string;
+  status: 'updated' | 'cached' | 'failed';
+  error?: string;
+}
