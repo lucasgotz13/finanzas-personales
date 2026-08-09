@@ -10,10 +10,15 @@ const KEY_BY_VARIABLE: Record<number, string> = {
   7: 'badlar',
 };
 
-interface BcraRow {
-  idVariable?: unknown;
+interface BcraPoint {
   fecha?: unknown;
   valor?: unknown;
+}
+
+interface BcraResult {
+  idVariable?: unknown;
+  /** v4.0 nests the daily points under detalle (verified live 2026-08-09). */
+  detalle?: BcraPoint[];
 }
 
 /** Latest {fecha, valor} per BCRA variable; zero/negative values are rejected (EI-2). */
@@ -47,8 +52,15 @@ export class BcraSource implements IndicatorSource {
     if (!Array.isArray(body.results) || body.results.length === 0) {
       throw new Error(`BCRA returned no results for variable ${variable}`);
     }
-    const rows = body.results as BcraRow[];
-    const latest = rows[rows.length - 1];
+    const result = (body.results as BcraResult[]).find((r) => Number(r.idVariable) === variable);
+    const points = result?.detalle;
+    if (!Array.isArray(points) || points.length === 0) {
+      throw new Error(`BCRA returned no series for variable ${variable}`);
+    }
+    // v4.0 returns detalle newest-first; select by max fecha to stay order-independent.
+    const latest = points.reduce((a, b) =>
+      new Date(String(b.fecha)) > new Date(String(a.fecha)) ? b : a,
+    );
     const value = Number(latest.valor);
     if (!Number.isFinite(value) || value <= 0) {
       throw new Error(`BCRA returned an invalid value for variable ${variable}`);
