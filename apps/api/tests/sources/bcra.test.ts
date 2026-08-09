@@ -4,15 +4,15 @@ import { jsonFetch, malformedJsonFetch } from './helpers';
 
 const NOW = new Date('2026-08-09T12:00:00.000Z');
 
-/** v4.0 shape verified live 2026-08-09: points nested under detalle, ascending order. */
+/** v4.0 shape verified live 2026-08-09: points nested under detalle, newest first. */
 const BCRA_OK = {
   status: 200,
   results: [
     {
       idVariable: 1,
       detalle: [
-        { fecha: '2026-08-05', valor: 27500 },
         { fecha: '2026-08-07', valor: 28000 },
+        { fecha: '2026-08-05', valor: 27500 },
       ],
     },
   ],
@@ -24,15 +24,15 @@ const BADLAR_OK = {
     {
       idVariable: 7,
       detalle: [
-        { fecha: '2026-08-05', valor: 37.9 },
         { fecha: '2026-08-07', valor: 38.5 },
+        { fecha: '2026-08-05', valor: 37.9 },
       ],
     },
   ],
 };
 
 describe('BcraSource (EI-2)', () => {
-  it('takes the latest detalle point for variables 1 (reservas) and 7 (badlar)', async () => {
+  it('takes the newest detalle point for variables 1 (reservas) and 7 (badlar)', async () => {
     const fetchFn = jsonFetch(BCRA_OK);
     const fetchBadlar = jsonFetch(BADLAR_OK);
     const fetchMock = ((input: string | URL | Request, init?: RequestInit) =>

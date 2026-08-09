@@ -57,7 +57,10 @@ export class BcraSource implements IndicatorSource {
     if (!Array.isArray(points) || points.length === 0) {
       throw new Error(`BCRA returned no series for variable ${variable}`);
     }
-    const latest = points[points.length - 1]; // chronologically ordered
+    // v4.0 returns detalle newest-first; select by max fecha to stay order-independent.
+    const latest = points.reduce((a, b) =>
+      new Date(String(b.fecha)) > new Date(String(a.fecha)) ? b : a,
+    );
     const value = Number(latest.valor);
     if (!Number.isFinite(value) || value <= 0) {
       throw new Error(`BCRA returned an invalid value for variable ${variable}`);
