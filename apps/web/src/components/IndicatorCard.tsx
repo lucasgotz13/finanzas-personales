@@ -26,7 +26,7 @@ function formatValue(value: number): string {
   return String(Math.round(value * 100) / 100);
 }
 
-/** One indicator card: label, value, unit, relative updatedAt, stale badge (EI-6). */
+/** One indicator card: label, value, unit, relative updatedAt, ref date, badges (EI-6, issue #29). */
 export default function IndicatorCard({ indicator }: { indicator: IndicatorView }): JSX.Element {
   return (
     <div className={`indicator-card${indicator.stale ? ' stale' : ''}`} data-testid={`indicator-${indicator.key}`}>
@@ -38,7 +38,9 @@ export default function IndicatorCard({ indicator }: { indicator: IndicatorView 
       <div className="indicator-updated">
         {indicator.updatedAt ? `updated ${timeAgo(indicator.updatedAt)}` : 'no data yet'}
       </div>
+      {indicator.referenceDate && <div className="indicator-ref">ref {indicator.referenceDate.slice(0, 7)}</div>}
       {indicator.stale && <span className="stale-badge">STALE</span>}
+      {indicator.referenceAged && <span className="aged-badge">OLD REFERENCE</span>}
     </div>
   );
 }

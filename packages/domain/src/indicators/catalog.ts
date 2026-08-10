@@ -46,3 +46,11 @@ export const TTL_BY_CLASS: Record<IndicatorClass, number> = {
   'riesgo-pais': 24 * 60 * 60_000,
   ipc: 12 * 60 * 60_000,
 };
+
+/** Max acceptable reference-date age per class in ms (issue #29): FX ≈ 2 days, BCRA and riesgo país ≈ 7 days, IPC ≈ 90 days (INDEC monthly with ~6-week lag + margin). */
+export const REFERENCE_MAX_AGE_MS: Record<IndicatorClass, number> = {
+  fx: 2 * 24 * 60 * 60_000,
+  bcra: 7 * 24 * 60 * 60_000,
+  'riesgo-pais': 7 * 24 * 60 * 60_000,
+  ipc: 90 * 24 * 60 * 60_000,
+};

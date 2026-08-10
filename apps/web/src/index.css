@@ -244,6 +244,11 @@ button.link {
   color: #888;
 }
 
+.indicator-ref {
+  font-size: 0.75rem;
+  color: #888;
+}
+
 .stale-badge {
   align-self: flex-start;
   font-size: 0.7rem;
@@ -252,4 +257,14 @@ button.link {
   font-weight: 600;
   background: #fdecea;
   color: #b3261e;
+}
+
+.aged-badge {
+  align-self: flex-start;
+  font-size: 0.7rem;
+  border-radius: 10px;
+  padding: 0.1rem 0.5rem;
+  font-weight: 600;
+  background: #fff4e5;
+  color: #b45309;
 }

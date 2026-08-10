@@ -30,6 +30,8 @@ export interface IndicatorView {
   updatedAt: string | null;
   stale: boolean;
   status: IndicatorStatus;
+  /** True when the reference date is older than the class tolerance, regardless of fetch age (issue #29). */
+  referenceAged: boolean;
 }
 
 /** Cached row for one indicator key. `fetchedAt` is a UTC ISO instant. */

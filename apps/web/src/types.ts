@@ -73,6 +73,7 @@ export interface IndicatorView {
   updatedAt: string | null;
   stale: boolean;
   status: IndicatorStatus;
+  referenceAged: boolean;
 }
 
 export interface IndicatorRefreshResult {

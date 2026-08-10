@@ -146,6 +146,46 @@ describe('IndicatorService.getAll (EI-1, EI-4, EI-5)', () => {
     expect(blue?.updatedAt).toBe(arIsoString(new Date(iso(-fxAge))));
     for (const s of h.sources.values()) expect(s.calls).toBe(0);
   });
+
+  it('keeps referenceAged false when the reference is within the class tolerance (issue #29)', async () => {
+    const h = harness(T0);
+    withSources(h, {});
+    // fx tolerance is 2 days; a 1-day-old reference is fine, a 20-day-old IPC reference is fine
+    h.seed('usd-blue', 1350.5, '2026-08-08', iso(0));
+    h.seed('ipc-mensual', 0.2, '2026-07-20', iso(0));
+
+    const views = await h.service.getAll();
+
+    expect(views.every((v) => v.referenceAged === false)).toBe(true);
+    expect(views.find((v) => v.key === 'usd-blue')?.status).toBe('fresh');
+  });
+
+  it('flags an old reference as referenceAged while the fetch status stays fresh (issue #29)', async () => {
+    const h = harness(T0);
+    withSources(h, {});
+    // IPC reference ~100 days old, but fetched now: fetch-fresh yet reference-aged
+    const oldRef = new Date(T0.getTime() - 100 * 24 * 60 * 60_000).toISOString().slice(0, 7);
+    h.seed('ipc-mensual', 0.2, oldRef, iso(0));
+    h.seed('usd-blue', 1350.5, '2026-08-09', iso(0));
+
+    const views = await h.service.getAll();
+
+    const ipc = views.find((v) => v.key === 'ipc-mensual');
+    expect(ipc?.status).toBe('fresh');
+    expect(ipc?.referenceAged).toBe(true);
+    const blue = views.find((v) => v.key === 'usd-blue');
+    expect(blue?.referenceAged).toBe(false);
+  });
+
+  it('reports referenceAged false when no snapshot is cached (issue #29)', async () => {
+    const h = harness(T0);
+    withSources(h, {});
+
+    const views = await h.service.getAll();
+
+    expect(views).toHaveLength(9);
+    expect(views.every((v) => v.status === 'absent' && v.referenceAged === false)).toBe(true);
+  });
 });
 
 describe('IndicatorService.refresh (EI-2, EI-3)', () => {
