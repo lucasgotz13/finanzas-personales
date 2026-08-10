@@ -27,6 +27,7 @@ function freshViews(overrides: Partial<IndicatorView>[] = []): IndicatorView[] {
     updatedAt: new Date().toISOString(),
     stale: false,
     status: 'fresh',
+    referenceAged: false,
     ...overrides[i],
   }));
 }
@@ -49,6 +50,29 @@ describe('IndicatorsPage (EI-6)', () => {
     expect(screen.getAllByText('ARS/USD')).toHaveLength(5);
     expect(screen.getByText('-0.1')).toBeInTheDocument();
     expect(screen.queryByText('STALE')).not.toBeInTheDocument();
+  });
+
+  it('renders the reference date on every card and no OLD REFERENCE when fresh (issue #29)', async () => {
+    vi.spyOn(api, 'getIndicators').mockResolvedValue(freshViews());
+
+    render(<IndicatorsPage />);
+    await screen.findByTestId('indicators-grid');
+
+    expect(screen.getAllByText('ref 2026-08')).toHaveLength(9);
+    expect(screen.queryByText('OLD REFERENCE')).not.toBeInTheDocument();
+  });
+
+  it('shows the OLD REFERENCE badge when aged while the fetch status stays fresh (issue #29)', async () => {
+    const views = freshViews();
+    views[6] = { ...views[6], referenceAged: true }; // ipc-mensual
+    vi.spyOn(api, 'getIndicators').mockResolvedValue(views);
+
+    render(<IndicatorsPage />);
+    await screen.findByTestId('indicators-grid');
+
+    expect(screen.getByTestId('indicator-ipc-mensual')).toHaveTextContent('OLD REFERENCE');
+    expect(screen.queryByText('STALE')).not.toBeInTheDocument();
+    expect(screen.getAllByText('ref 2026-08')).toHaveLength(9);
   });
 
   it('shows a loading state before data arrives', () => {

@@ -1,4 +1,4 @@
-import { CLASS_BY_KEY, KEYS, TTL_BY_CLASS, UNIT_BY_KEY } from './catalog';
+import { CLASS_BY_KEY, KEYS, REFERENCE_MAX_AGE_MS, TTL_BY_CLASS, UNIT_BY_KEY } from './catalog';
 import type { IndicatorCache, IndicatorSource } from './ports';
 import type {
   IndicatorClass,
@@ -97,10 +97,17 @@ export class IndicatorService {
         updatedAt: null,
         stale: false,
         status: 'absent',
+        referenceAged: false,
       };
     }
-    const age = this.deps.clock.now().getTime() - Date.parse(snapshot.fetchedAt);
+    const now = this.deps.clock.now().getTime();
+    const age = now - Date.parse(snapshot.fetchedAt);
     const stale = age > TTL_BY_CLASS[CLASS_BY_KEY[key]];
+    // Reference age is independent of fetch age: IPC can be freshly fetched yet
+    // lag months behind (issue #29).
+    const referenceAged =
+      snapshot.referenceDate !== null &&
+      now - Date.parse(snapshot.referenceDate) > REFERENCE_MAX_AGE_MS[CLASS_BY_KEY[key]];
     return {
       key,
       value: snapshot.value,
@@ -110,6 +117,7 @@ export class IndicatorService {
       updatedAt: arIsoString(new Date(snapshot.fetchedAt)),
       stale,
       status: stale ? 'stale' : 'fresh',
+      referenceAged,
     };
   }
 }
