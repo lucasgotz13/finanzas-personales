@@ -300,6 +300,11 @@ button:disabled {
   color: #b45309;
 }
 
+/* Hidden tabs stay mounted but invisible at EVERY viewport width (P1 #5) */
+.tab-panel.hidden {
+  display: none;
+}
+
 /* --- Responsive: mobile-first adjustments (≤640px) --- */
 @media (max-width: 640px) {
   header.app-header {
@@ -338,11 +343,7 @@ button:disabled {
     padding: 0 0.75rem;
   }
 
-.tab-panel.hidden {
-  display: none;
-}
-
-.card {
+  .card {
     padding: 0.75rem;
   }
 
