@@ -37,3 +37,55 @@ describe('ArgentinadatosSource (EI-1, EI-2)', () => {
     await expect(source.fetch()).rejects.toThrow('malformed JSON');
   });
 });
+
+describe('ArgentinadatosSource IPC (issue #33, EI-2, EI-5)', () => {
+  it('takes the last inflacion series entry as the IPC sample', async () => {
+    const series = [
+      { fecha: '2026-05-31', valor: 2.1 },
+      { fecha: '2026-06-30', valor: 1.9 },
+    ];
+    const source = new ArgentinadatosSource(jsonFetch(series), undefined, 'ipc');
+
+    const samples = await source.fetch();
+
+    expect(samples).toEqual([{ key: 'ipc-mensual', value: 1.9, referenceDate: '2026-06-30' }]);
+  });
+
+  it('accepts negative IPC values (signed monthly variation)', async () => {
+    const source = new ArgentinadatosSource(jsonFetch([{ fecha: '2026-06-30', valor: -0.5 }]), undefined, 'ipc');
+
+    const samples = await source.fetch();
+
+    expect(samples[0].value).toBe(-0.5);
+  });
+
+  it('rejects an empty series', async () => {
+    const source = new ArgentinadatosSource(jsonFetch([]), undefined, 'ipc');
+    await expect(source.fetch()).rejects.toThrow('unexpected shape');
+  });
+
+  it('rejects a non-array payload', async () => {
+    const source = new ArgentinadatosSource(jsonFetch({ data: [] }), undefined, 'ipc');
+    await expect(source.fetch()).rejects.toThrow('unexpected shape');
+  });
+
+  it('rejects non-finite values', async () => {
+    const source = new ArgentinadatosSource(jsonFetch([{ fecha: '2026-06-30', valor: 'nope' }]), undefined, 'ipc');
+    await expect(source.fetch()).rejects.toThrow('invalid valor');
+  });
+
+  it('rejects a missing fecha', async () => {
+    const source = new ArgentinadatosSource(jsonFetch([{ valor: 1.9 }]), undefined, 'ipc');
+    await expect(source.fetch()).rejects.toThrow('missing fecha');
+  });
+
+  it('throws on HTTP 5xx', async () => {
+    const source = new ArgentinadatosSource(jsonFetch({}, 503), undefined, 'ipc');
+    await expect(source.fetch()).rejects.toThrow('HTTP 503');
+  });
+
+  it('throws on malformed JSON', async () => {
+    const source = new ArgentinadatosSource(malformedJsonFetch(), undefined, 'ipc');
+    await expect(source.fetch()).rejects.toThrow('malformed JSON');
+  });
+});

@@ -24,7 +24,7 @@ Read-only snapshot of 9 Argentina indicators (USD blue/oficial/tarjeta/MEP/CCL, 
 
 ### Requirement: EI-2 — Refresh
 
-`POST /api/v1/indicators/refresh` SHALL fetch all classes (dolarapi one call, 5 FX; BCRA v4 catalog+series, reservas, BADLAR; datos.gob.ar, IPC; argentinadatos, riesgo país), update the cache with `fetched_at`, and respond `{results:[{class, status: updated|cached|failed, error?}]}`. A source failure MUST NOT affect other classes (partial success). Zero/negative BCRA values SHALL be treated as failed. IPC series-ID drift SHALL be resolved via datos.gob.ar `/search`, caching the resolved ID.
+`POST /api/v1/indicators/refresh` SHALL fetch all classes (dolarapi one call, 5 FX; BCRA v4 catalog+series, reservas, BADLAR; argentinadatos, IPC via the `inflacion` series last entry and riesgo país), update the cache with `fetched_at`, and respond `{results:[{class, status: updated|cached|failed, error?}]}`. A source failure MUST NOT affect other classes (partial success). Zero/negative BCRA values SHALL be treated as failed. IPC SHALL be the last entry of the argentinadatos `inflacion` series; an empty or malformed series SHALL be treated as failed.
 
 #### Scenario: Full success
 
@@ -46,9 +46,9 @@ Read-only snapshot of 9 Argentina indicators (USD blue/oficial/tarjeta/MEP/CCL, 
 
 - GIVEN reservas = 0 or negative, or negative BADLAR, WHEN refresh, THEN those indicators report `failed`; cache unchanged
 
-#### Scenario: IPC series ID drift
+#### Scenario: IPC last-entry selection
 
-- GIVEN configured IPC series ID yields invalid/empty series, WHEN refresh, THEN resolve ID via `/search`, cache it, retry once, else report `failed`
+- GIVEN the argentinadatos `inflacion` series, WHEN refresh, THEN `ipc-mensual` takes the LAST entry `{valor, fecha}` as its sample; an empty or malformed series reports `failed`
 
 ### Requirement: EI-3 — TTL policy
 
