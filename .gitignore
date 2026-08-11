@@ -5,3 +5,6 @@ finanzas.db-wal
 finanzas.db-shm
 *.log
 .DS_Store
+
+# secrets
+.env
