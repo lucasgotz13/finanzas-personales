@@ -51,13 +51,19 @@ export default function CategoryTree({
         <span className="tree-row">
           {renaming?.id === node.id ? (
             <input
+              aria-label={`Nuevo nombre de ${node.name}`}
               data-testid={`rename-${node.id}`}
               value={renaming.name}
               onChange={(e) => setRenaming({ id: node.id, name: e.target.value })}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && renaming.name.trim() !== '') {
-                  run(() => onRename(node.id, renaming.name.trim()), node.id);
-                  setRenaming(null);
+                  // Keep the input open with the typed value until the rename
+                  // actually succeeds; on failure the error surfaces in the
+                  // error box and the user can correct and retry (P2).
+                  void run(async () => {
+                    await onRename(node.id, renaming.name.trim());
+                    setRenaming(null);
+                  }, node.id);
                 }
                 if (e.key === 'Escape') setRenaming(null);
               }}
@@ -104,7 +110,11 @@ export default function CategoryTree({
 
   return (
     <div>
-      {error && <div className="error-box">{error}</div>}
+      {error && (
+        <div className="error-box" role="alert">
+          {error}
+        </div>
+      )}
       {categories.length === 0 ? <div className="empty">Aún no hay categorías.</div> : <ul className="tree">{renderNodes(categories, 0)}</ul>}
     </div>
   );

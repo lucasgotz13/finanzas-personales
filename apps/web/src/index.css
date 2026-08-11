@@ -2,10 +2,17 @@
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   color: #1a1a1a;
   background: #fafafa;
+  --muted-text: #595959;
 }
 
 body {
   margin: 0;
+}
+
+/* Keyboard focus indicator (WCAG 2.4.7): high-contrast outline on any focusable element */
+:focus-visible {
+  outline: 2px solid #1e3a5f;
+  outline-offset: 2px;
 }
 
 header.app-header {
@@ -67,6 +74,11 @@ button.primary {
   cursor: pointer;
 }
 
+button.primary:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 .error-box {
   color: #b3261e;
   background: #fdecea;
@@ -74,6 +86,15 @@ button.primary {
   border-radius: 4px;
   padding: 0.5rem;
   font-size: 0.85rem;
+}
+
+.success-box {
+  background: #e6f4ea;
+  color: #1e7d32;
+  border-radius: 4px;
+  padding: 0.5rem;
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
 }
 
 form.transaction-form {
@@ -144,7 +165,7 @@ table.data td {
 }
 
 .empty {
-  color: #777;
+  color: var(--muted-text);
   font-style: italic;
   padding: 0.75rem 0;
 }
@@ -194,7 +215,7 @@ button:disabled {
 }
 
 .confirm-prompt .confirm-note {
-  color: #777;
+  color: var(--muted-text);
   font-size: 0.75rem;
 }
 
@@ -216,21 +237,6 @@ button:disabled {
 .indicators-header h2 {
   font-size: 1.05rem;
   margin: 0;
-}
-
-.indicators-header button {
-  background: #1e3a5f;
-  color: #fff;
-  border: none;
-  border-radius: 4px;
-  padding: 0.45rem 1rem;
-  cursor: pointer;
-  font-size: 0.9rem;
-}
-
-.indicators-header button:disabled {
-  opacity: 0.6;
-  cursor: default;
 }
 
 .indicators-grid {
@@ -267,17 +273,17 @@ button:disabled {
 .indicator-unit {
   font-size: 0.8rem;
   font-weight: 400;
-  color: #777;
+  color: var(--muted-text);
 }
 
 .indicator-updated {
   font-size: 0.75rem;
-  color: #888;
+  color: var(--muted-text);
 }
 
 .indicator-ref {
   font-size: 0.75rem;
-  color: #888;
+  color: var(--muted-text);
 }
 
 .stale-badge {
@@ -328,6 +334,9 @@ button:disabled {
     position: sticky;
     top: 0;
     z-index: 10;
+    /* Solid navy behind the sticky bar so content never shows through
+       under inactive labels (navy header color; desktop stays transparent) */
+    background: #1e3a5f;
   }
 
   nav.tabs button {
@@ -355,13 +364,16 @@ button:disabled {
     white-space: nowrap;
   }
 
-  /* Single-column form; 16px inputs prevent iOS focus-zoom */
+  /* Single-column form; 16px inputs prevent iOS focus-zoom (also covers the
+     budget caps table and the category rename inline input) */
   form.transaction-form {
     grid-template-columns: 1fr;
   }
 
   form.transaction-form input,
-  form.transaction-form select {
+  form.transaction-form select,
+  table.data input,
+  ul.tree .tree-row input {
     font-size: 16px;
     padding: 0.55rem;
     min-height: 44px;
@@ -385,7 +397,6 @@ button:disabled {
   }
 
   button.primary,
-  .indicators-header button,
   button.danger,
   button.link {
     min-height: 44px;

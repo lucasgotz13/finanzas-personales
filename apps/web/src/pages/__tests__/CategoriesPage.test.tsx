@@ -84,6 +84,37 @@ describe('CategoriesPage', () => {
     expect(screen.getByTestId('confirm-delete-1')).toBeInTheDocument();
   });
 
+  it('keeps the rename input open with the typed value and shows role=alert when the rename fails (P2)', async () => {
+    vi.spyOn(api, 'getCategoryTree').mockResolvedValue(tree);
+    vi.spyOn(api, 'getDeletedCategories').mockResolvedValue([]);
+    vi.spyOn(api, 'renameCategory').mockRejectedValue(new Error('Name is already taken'));
+
+    const user = userEvent.setup();
+    render(<CategoriesPage />);
+    await screen.findByTestId('delete-1');
+
+    await user.click(screen.getByTestId('rename-btn-1'));
+    expect(screen.getByLabelText('Nuevo nombre de Food')).toBeInTheDocument();
+
+    await user.clear(screen.getByTestId('rename-1'));
+    await user.type(screen.getByTestId('rename-1'), 'Mercado{Enter}');
+
+    expect(api.renameCategory).toHaveBeenCalledWith(1, 'Mercado');
+    expect(await screen.findByRole('alert')).toHaveTextContent('Name is already taken');
+    // Edit mode stays open with the typed value so the user can correct it
+    expect(screen.getByTestId('rename-1')).toHaveValue('Mercado');
+    expect(screen.getByLabelText('Nuevo nombre de Food')).toBeInTheDocument();
+  });
+
+  it('shows the page-level load error with role=alert (P2)', async () => {
+    vi.spyOn(api, 'getCategoryTree').mockRejectedValue(new Error('backend caído'));
+    vi.spyOn(api, 'getDeletedCategories').mockResolvedValue([]);
+
+    render(<CategoriesPage />);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('backend caído');
+  });
+
   it('renders the deleted section with Restore and refreshes both lists on restore', async () => {
     const deletedList: CategoryNode[] = [{ id: 5, name: 'Health', parentId: null, children: [] }];
     vi.spyOn(api, 'getCategoryTree').mockResolvedValue(tree);

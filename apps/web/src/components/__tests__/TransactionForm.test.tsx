@@ -117,6 +117,19 @@ describe('TransactionForm', () => {
     await waitFor(() => expect(spy).toHaveBeenCalledWith(expect.objectContaining({ amountMinor: 1250, currency: 'ARS' })));
   });
 
+  it('rejects a scientific-notation amount (1e3) without calling the API (P2)', async () => {
+    const user = userEvent.setup();
+    const spy = vi.spyOn(api, 'createTransaction').mockResolvedValue({} as never);
+    render(<TransactionForm categories={categories} onCreated={vi.fn()} />);
+
+    await user.type(screen.getByTestId('amount'), '1e3');
+    await user.selectOptions(screen.getByTestId('category'), '1');
+    await user.click(screen.getByTestId('submit'));
+
+    expect(await screen.findByText('El monto debe ser un número positivo.')).toBeInTheDocument();
+    expect(spy).not.toHaveBeenCalled();
+  });
+
   describe('edit mode', () => {
     const existing: ApiTransaction = {
       id: 7,

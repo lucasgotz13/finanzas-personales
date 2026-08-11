@@ -44,7 +44,9 @@ export default function TransactionForm({ categories, onCreated, initial, onUpda
   async function handleSubmit(e: React.FormEvent): Promise<void> {
     e.preventDefault();
     const details: string[] = [];
-    const parsed = parseFloat(amount.replace(',', '.'));
+    // Positive decimal with optional comma/dot separator; rejects scientific
+    // notation (e.g. "1e3") and other formats that parseFloat would accept.
+    const parsed = /^\d+([.,]\d+)?$/.test(amount) ? parseFloat(amount.replace(',', '.')) : NaN;
     if (!Number.isFinite(parsed) || parsed <= 0) details.push('El monto debe ser un número positivo.');
     const amountMinor = Math.round(parsed * 100);
     if (currency === 'USD' && (!rate || Number(rate) <= 0)) details.push('El tipo de cambio es obligatorio para monedas que no son ARS.');

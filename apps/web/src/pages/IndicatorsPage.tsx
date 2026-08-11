@@ -53,12 +53,12 @@ export default function IndicatorsPage(): JSX.Element {
     <section className="card">
       <div className="indicators-header">
         <h2>Argentina — Indicadores económicos</h2>
-        <button type="button" onClick={() => void manualRefresh()} disabled={refreshing} data-testid="indicators-refresh">
+        <button type="button" className="primary" onClick={() => void manualRefresh()} disabled={refreshing} data-testid="indicators-refresh">
           {refreshing ? 'Actualizando…' : 'Refrescar'}
         </button>
       </div>
       {refreshError && (
-        <div className="error-box" data-testid="refresh-error">
+        <div className="error-box" role="alert" data-testid="refresh-error">
           {refreshError}
         </div>
       )}
