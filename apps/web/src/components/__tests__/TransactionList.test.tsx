@@ -24,11 +24,18 @@ const baseProps = {
 describe('TransactionList', () => {
   it('renders rows with category names and formatted amounts', () => {
     render(<TransactionList transactions={transactions} {...baseProps} />);
-    expect(screen.getByText('2026-07-15')).toBeInTheDocument();
+    expect(screen.getByText('15/07/2026')).toBeInTheDocument();
     expect(screen.getByText('Food')).toBeInTheDocument();
     expect(screen.getByText('Lunch')).toBeInTheDocument();
     expect(screen.getByText(/\$\s*150,00/)).toBeInTheDocument();
     expect(screen.getByText(/\+\$\s*9\.000,00/)).toBeInTheDocument();
+  });
+
+  it('renders dates in es-AR format (dd/mm/yyyy)', () => {
+    render(<TransactionList transactions={transactions} {...baseProps} />);
+    expect(screen.getByText('15/07/2026')).toBeInTheDocument();
+    expect(screen.getByText('01/07/2026')).toBeInTheDocument();
+    expect(screen.queryByText('2026-07-15')).not.toBeInTheDocument();
   });
 
   it('renders the Tipo column with Gasto/Ingreso', () => {

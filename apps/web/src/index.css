@@ -557,6 +557,15 @@ ul.tree .tree-row input {
     white-space: nowrap;
   }
 
+  /* The actions column (Editar/Borrar + inline confirm) stays pinned while
+     the table scrolls; card white + hairline so it reads as part of the card. */
+  .data .actions-cell {
+    position: sticky;
+    right: 0;
+    background: #fff;
+    box-shadow: -1px 0 0 #e8e4dc;
+  }
+
   /* Single-column form; 16px inputs prevent iOS focus-zoom (also covers the
      budget caps table and the category rename inline input) */
   form.transaction-form {

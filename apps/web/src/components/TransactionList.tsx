@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { formatDate } from '../dates';
 import type { ApiTransaction } from '../types';
 
 export interface TransactionListProps {
@@ -61,7 +62,7 @@ export default function TransactionList({
       <tbody>
         {transactions.map((tx) => (
           <tr key={tx.id}>
-            <td>{tx.date}</td>
+            <td>{formatDate(tx.date)}</td>
             <td>{tx.note || '—'}</td>
             <td>{categoryNames.get(tx.categoryId) ?? `#${tx.categoryId}`}</td>
             <td className="tx-direction">{tx.direction === 'income' ? 'Ingreso' : 'Gasto'}</td>
@@ -72,7 +73,7 @@ export default function TransactionList({
               </span>
             </td>
             <td className="rate-cell">{tx.currency === 'USD' ? formatRate(tx.rate) : '—'}</td>
-            <td className="row-actions">
+            <td className="row-actions actions-cell">
               <button type="button" className="link muted" onClick={() => onEdit(tx)} disabled={busy}>
                 Editar
               </button>

@@ -1,3 +1,4 @@
+import { formatRefMonth } from '../dates';
 import type { IndicatorView } from '../types';
 
 const LABEL_BY_KEY: Record<string, string> = {
@@ -38,7 +39,7 @@ export default function IndicatorCard({ indicator }: { indicator: IndicatorView 
       <div className="indicator-updated">
         {indicator.updatedAt ? `actualizado ${timeAgo(indicator.updatedAt)}` : 'sin datos aún'}
       </div>
-      {indicator.referenceDate && <div className="indicator-ref">ref {indicator.referenceDate.slice(0, 7)}</div>}
+      {indicator.referenceDate && <div className="indicator-ref">ref {formatRefMonth(indicator.referenceDate)}</div>}
       {indicator.stale && <span className="stale-badge">Vencido</span>}
       {indicator.referenceAged && <span className="aged-badge">Referencia antigua</span>}
     </div>

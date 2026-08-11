@@ -21,7 +21,7 @@ describe('SummariesPage', () => {
   it('renders per-currency totals, savings rate and category rows (PS-2, PS-3, PS-4)', async () => {
     vi.spyOn(api, 'getSummary').mockResolvedValue(summary);
     render(<SummariesPage />);
-    expect(await screen.findByText('2026-07')).toBeInTheDocument();
+    expect(await screen.findByText('Julio 2026')).toBeInTheDocument();
     expect(screen.getByText('$ 9.000,00')).toBeInTheDocument(); // income
     expect(screen.getByText('33.3%')).toBeInTheDocument(); // savings rate
     expect(screen.getByText('Food')).toBeInTheDocument();
