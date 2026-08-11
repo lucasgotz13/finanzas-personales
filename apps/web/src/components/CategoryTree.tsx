@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { translateApiMessage } from '../api';
 import type { CategoryNode } from '../types';
 
 export interface CategoryTreeProps {
@@ -34,7 +35,7 @@ export default function CategoryTree({
     try {
       await action();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Action failed.');
+      setError(translateApiMessage(err instanceof Error ? err.message : 'No se pudo completar la acción.'));
     } finally {
       setBusyId(null);
     }
@@ -65,24 +66,24 @@ export default function CategoryTree({
             <>
               <span>{node.name}</span>
               <button className="link" data-testid={`rename-btn-${node.id}`} onClick={() => setRenaming({ id: node.id, name: node.name })}>
-                Rename
+                Renombrar
               </button>
             </>
           )}
           {confirmingId === node.id ? (
             <span className="confirm-prompt">
-              <span className="confirm-question">Delete permanently?</span>
-              <span className="confirm-note">It can be restored later.</span>
+              <span className="confirm-question">¿Borrar la categoría?</span>
+              <span className="confirm-note">Se puede restaurar más tarde.</span>
               <button
                 className="danger"
                 data-testid={`confirm-delete-${node.id}`}
                 disabled={busyId === node.id}
                 onClick={() => void handleConfirmDelete()}
               >
-                Yes
+                Borrar
               </button>
               <button className="link" data-testid={`cancel-delete-${node.id}`} disabled={busyId === node.id} onClick={onCancelDelete}>
-                No
+                Cancelar
               </button>
             </span>
           ) : (
@@ -92,7 +93,7 @@ export default function CategoryTree({
               disabled={busyId === node.id}
               onClick={() => onDelete(node.id)}
             >
-              Delete
+              Borrar
             </button>
           )}
         </span>
@@ -104,7 +105,7 @@ export default function CategoryTree({
   return (
     <div>
       {error && <div className="error-box">{error}</div>}
-      {categories.length === 0 ? <div className="empty">No categories.</div> : <ul className="tree">{renderNodes(categories, 0)}</ul>}
+      {categories.length === 0 ? <div className="empty">Aún no hay categorías.</div> : <ul className="tree">{renderNodes(categories, 0)}</ul>}
     </div>
   );
 }

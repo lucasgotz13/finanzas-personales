@@ -12,14 +12,14 @@ const LABEL_BY_KEY: Record<string, string> = {
   badlar: 'BADLAR',
 };
 
-/** Human-relative age of an ISO timestamp, e.g. "5 min ago" (EI-6). */
+/** Human-relative age of an ISO timestamp, e.g. "hace 5 min" (EI-6). */
 export function timeAgo(iso: string, now = Date.now()): string {
   const minutes = Math.max(0, Math.floor((now - Date.parse(iso)) / 60_000));
-  if (minutes < 1) return 'just now';
-  if (minutes < 60) return `${minutes} min ago`;
+  if (minutes < 1) return 'recién';
+  if (minutes < 60) return `hace ${minutes} min`;
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours} h ago`;
-  return `${Math.floor(hours / 24)} d ago`;
+  if (hours < 24) return `hace ${hours} h`;
+  return `hace ${Math.floor(hours / 24)} d`;
 }
 
 function formatValue(value: number): string {
@@ -36,11 +36,11 @@ export default function IndicatorCard({ indicator }: { indicator: IndicatorView 
         <span className="indicator-unit"> {indicator.unit}</span>
       </div>
       <div className="indicator-updated">
-        {indicator.updatedAt ? `updated ${timeAgo(indicator.updatedAt)}` : 'no data yet'}
+        {indicator.updatedAt ? `actualizado ${timeAgo(indicator.updatedAt)}` : 'sin datos aún'}
       </div>
       {indicator.referenceDate && <div className="indicator-ref">ref {indicator.referenceDate.slice(0, 7)}</div>}
-      {indicator.stale && <span className="stale-badge">STALE</span>}
-      {indicator.referenceAged && <span className="aged-badge">OLD REFERENCE</span>}
+      {indicator.stale && <span className="stale-badge">VENCIDO</span>}
+      {indicator.referenceAged && <span className="aged-badge">REFERENCIA ANTIGUA</span>}
     </div>
   );
 }

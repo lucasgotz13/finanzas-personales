@@ -5,7 +5,7 @@ export interface SummaryViewProps {
 }
 
 function formatMinor(amountMinor: number, currency: string): string {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(amountMinor / 100);
+  return new Intl.NumberFormat('es-AR', { style: 'currency', currency }).format(amountMinor / 100);
 }
 
 /** Per-currency totals with net flow and savings rate, plus per-category breakdown (PS-1..5, IT-3). */
@@ -16,11 +16,11 @@ export default function SummaryView({ summary }: SummaryViewProps): JSX.Element 
       <table className="data">
         <thead>
           <tr>
-            <th>Currency</th>
-            <th>Expenses</th>
-            <th>Income</th>
-            <th>Net flow</th>
-            <th>Savings rate</th>
+            <th>Moneda</th>
+            <th>Gastos</th>
+            <th>Ingresos</th>
+            <th>Flujo neto</th>
+            <th>Tasa de ahorro</th>
           </tr>
         </thead>
         <tbody>
@@ -35,17 +35,17 @@ export default function SummaryView({ summary }: SummaryViewProps): JSX.Element 
           ))}
         </tbody>
       </table>
-      <h4>By category</h4>
+      <h4>Por categoría</h4>
       {summary.categories.length === 0 ? (
-        <div className="empty">No transactions in this period.</div>
+        <div className="empty">Aún no hay transacciones en este período.</div>
       ) : (
         <table className="data">
           <thead>
             <tr>
-              <th>Category</th>
-              <th>Currency</th>
-              <th>Expenses</th>
-              <th>Income</th>
+              <th>Categoría</th>
+              <th>Moneda</th>
+              <th>Gastos</th>
+              <th>Ingresos</th>
             </tr>
           </thead>
           <tbody>

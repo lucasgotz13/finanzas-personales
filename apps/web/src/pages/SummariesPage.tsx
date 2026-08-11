@@ -12,17 +12,17 @@ export default function SummariesPage(): JSX.Element {
 
   return (
     <section className="card">
-      <h2>Period summary</h2>
+      <h2>Resumen del período</h2>
       <div className="filters">
-        <select value={period} onChange={(e) => setPeriod(e.target.value as 'month' | 'quarter' | 'year')} aria-label="Period">
-          <option value="month">Month</option>
-          <option value="quarter">Quarter</option>
-          <option value="year">Year</option>
+        <select value={period} onChange={(e) => setPeriod(e.target.value as 'month' | 'quarter' | 'year')} aria-label="Período">
+          <option value="month">Mes</option>
+          <option value="quarter">Trimestre</option>
+          <option value="year">Año</option>
         </select>
-        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} aria-label="Reference date" />
+        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} aria-label="Fecha de referencia" />
       </div>
       {summary.error && <div className="error-box">{summary.error}</div>}
-      {summary.loading ? <div className="empty">Loading…</div> : summary.data && <SummaryView summary={summary.data} />}
+      {summary.loading ? <div className="empty">Cargando…</div> : summary.data && <SummaryView summary={summary.data} />}
     </section>
   );
 }

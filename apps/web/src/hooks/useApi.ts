@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { translateApiMessage } from '../api';
 
 export interface ApiState<T> {
   data: T | null;
@@ -23,7 +24,7 @@ export function useApi<T>(fetcher: () => Promise<T>, deps: unknown[]): ApiState<
     setError(null);
     fetcher()
       .then((result) => setData(result))
-      .catch((err: unknown) => setError(err instanceof Error ? err.message : 'Unknown error'))
+      .catch((err: unknown) => setError(translateApiMessage(err instanceof Error ? err.message : 'Error desconocido')))
       .finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [...deps, tick]);

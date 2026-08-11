@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { api } from '../api';
+import { api, translateApiMessage } from '../api';
 import IndicatorCard from '../components/IndicatorCard';
 import { useApi } from '../hooks/useApi';
 
@@ -7,7 +7,7 @@ import { useApi } from '../hooks/useApi';
 const AUTO_REFRESH_MS = 5 * 60_000;
 
 function message(err: unknown): string {
-  return err instanceof Error ? err.message : 'Refresh failed';
+  return translateApiMessage(err instanceof Error ? err.message : 'No se pudo actualizar. Verifique su conexión e intente de nuevo.');
 }
 
 /** Read-only Argentina indicators tab: cache-first GET + auto and manual refresh (EI-6). */
@@ -52,9 +52,9 @@ export default function IndicatorsPage(): JSX.Element {
   return (
     <section className="card">
       <div className="indicators-header">
-        <h2>Argentina — Economic Indicators</h2>
+        <h2>Argentina — Indicadores económicos</h2>
         <button type="button" onClick={() => void manualRefresh()} disabled={refreshing} data-testid="indicators-refresh">
-          {refreshing ? 'Refreshing…' : 'Refresh'}
+          {refreshing ? 'Actualizando…' : 'Refrescar'}
         </button>
       </div>
       {refreshError && (
@@ -64,9 +64,9 @@ export default function IndicatorsPage(): JSX.Element {
       )}
       {indicators.error && <div className="error-box">{indicators.error}</div>}
       {indicators.loading && indicators.data === null ? (
-        <div className="empty">Loading…</div>
+        <div className="empty">Cargando…</div>
       ) : (indicators.data ?? []).length === 0 ? (
-        <div className="empty">No indicators yet — press Refresh.</div>
+        <div className="empty">Aún no hay indicadores — presione Refrescar.</div>
       ) : (
         <div className="indicators-grid" data-testid="indicators-grid">
           {(indicators.data ?? []).map((indicator) => (

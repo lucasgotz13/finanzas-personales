@@ -8,3 +8,6 @@ finanzas.db-shm
 
 # secrets
 .env
+
+# vite dev cache
+.vite/
