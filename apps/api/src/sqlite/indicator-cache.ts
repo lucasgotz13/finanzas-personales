@@ -1,4 +1,4 @@
-import type { DatabaseSync } from 'node:sqlite';
+import type { Client, Row } from '@libsql/client';
 import type { IndicatorCache, IndicatorSnapshot } from '@finanzas/domain';
 
 interface SnapshotRow {
@@ -8,6 +8,15 @@ interface SnapshotRow {
   reference_date: string;
   fetched_at: string;
   source: string;
+}
+
+/** Map a positional result row to an object keyed by the result columns. */
+function toObject(row: Row, columns: string[]): Record<string, unknown> {
+  const obj: Record<string, unknown> = {};
+  for (let i = 0; i < columns.length; i++) {
+    obj[columns[i]] = row[i];
+  }
+  return obj;
 }
 
 function toSnapshot(row: SnapshotRow): IndicatorSnapshot {
@@ -23,19 +32,17 @@ function toSnapshot(row: SnapshotRow): IndicatorSnapshot {
 
 /** SQLite snapshot store for indicator rows; upserts on conflict (EI-1). */
 export class SqliteIndicatorCache implements IndicatorCache {
-  constructor(private db: DatabaseSync) {}
+  constructor(private db: Client) {}
 
   async get(key: string): Promise<IndicatorSnapshot | null> {
-    const row = this.db.prepare('SELECT * FROM indicator_snapshots WHERE key = ?').get(key) as
-      | SnapshotRow
-      | undefined;
-    return row ? toSnapshot(row) : null;
+    const result = await this.db.execute({ sql: 'SELECT * FROM indicator_snapshots WHERE key = ?', args: [key] });
+    const row = result.rows[0] ? toObject(result.rows[0], result.columns) : undefined;
+    return row ? toSnapshot(row as unknown as SnapshotRow) : null;
   }
 
   async set(snapshot: IndicatorSnapshot): Promise<void> {
-    this.db
-      .prepare(
-        `INSERT INTO indicator_snapshots (key, value, unit, reference_date, fetched_at, source)
+    await this.db.execute({
+      sql: `INSERT INTO indicator_snapshots (key, value, unit, reference_date, fetched_at, source)
          VALUES (?, ?, ?, ?, ?, ?)
          ON CONFLICT(key) DO UPDATE SET
            value = excluded.value,
@@ -43,14 +50,14 @@ export class SqliteIndicatorCache implements IndicatorCache {
            reference_date = excluded.reference_date,
            fetched_at = excluded.fetched_at,
            source = excluded.source`,
-      )
-      .run(
+      args: [
         snapshot.key,
         snapshot.value,
         snapshot.unit,
         snapshot.referenceDate,
         snapshot.fetchedAt,
         snapshot.source,
-      );
+      ],
+    });
   }
 }
