@@ -567,7 +567,8 @@ ul.tree .tree-row input {
   }
 
   /* Single-column form; 16px inputs prevent iOS focus-zoom (also covers the
-     budget caps table and the category rename inline input) */
+     budget caps table, the category rename inline input and the filter
+     month/date inputs) */
   form.transaction-form {
     grid-template-columns: 1fr;
   }
@@ -575,7 +576,9 @@ ul.tree .tree-row input {
   form.transaction-form input,
   form.transaction-form select,
   table.data input,
-  ul.tree .tree-row input {
+  ul.tree .tree-row input,
+  .filters input,
+  .filters select {
     font-size: 16px;
     padding: 0.55rem;
     min-height: 44px;

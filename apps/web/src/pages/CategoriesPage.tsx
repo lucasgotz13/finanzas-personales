@@ -82,7 +82,11 @@ export default function CategoriesPage(): JSX.Element {
               Agregar
             </button>
           </div>
-          {formError && <div className="error-box">{formError}</div>}
+          {formError && (
+            <div className="error-box" role="alert">
+              {formError}
+            </div>
+          )}
         </form>
       </section>
       <section className="card">
@@ -113,10 +117,17 @@ export default function CategoriesPage(): JSX.Element {
           />
         )}
       </section>
-      {(deleted.data ?? []).length > 0 && (
+      {(deleted.data ?? []).length > 0 || deleted.error !== null ? (
         <section className="card" data-testid="deleted-section">
           <h2>Categorías borradas</h2>
-          {deleted.error && <div className="error-box">{deleted.error}</div>}
+          {deleted.error && (
+            <div className="error-box" role="alert">
+              {deleted.error}{' '}
+              <button type="button" className="link" data-testid="retry-deleted" onClick={() => deleted.reload()}>
+                Reintentar
+              </button>
+            </div>
+          )}
           {restoreError && (
             <div className="error-box" role="alert">
               {restoreError}
@@ -140,7 +151,7 @@ export default function CategoriesPage(): JSX.Element {
             ))}
           </ul>
         </section>
-      )}
+      ) : null}
     </>
   );
 }

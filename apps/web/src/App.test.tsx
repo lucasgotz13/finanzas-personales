@@ -36,12 +36,12 @@ describe('App tab switching', () => {
     const note = await screen.findByTestId('note');
     await user.type(note, 'rent');
 
-    await user.click(screen.getByRole('button', { name: 'Categorías' }));
+    await user.click(screen.getByRole('tab', { name: 'Categorías' }));
 
     // The transaction form is still in the DOM, just hidden (no unmount).
     expect(document.querySelector('[data-testid="note"]')).not.toBeNull();
 
-    await user.click(screen.getByRole('button', { name: 'Transacciones' }));
+    await user.click(screen.getByRole('tab', { name: 'Transacciones' }));
 
     expect(screen.getByTestId('note')).toHaveValue('rent');
   });
@@ -54,10 +54,32 @@ describe('App tab switching', () => {
     await screen.findByTestId('note');
 
     for (const tab of ['Categorías', 'Presupuestos', 'Resúmenes', 'Indicadores', 'Transacciones']) {
-      await user.click(screen.getByRole('button', { name: tab }));
+      await user.click(screen.getByRole('tab', { name: tab }));
     }
 
     expect(screen.getByTestId('note')).toBeInTheDocument();
+  });
+
+  it('exposes the navs as tablists with role=tab and aria-selected on each tab (P3 #14)', async () => {
+    mockAllApis();
+    render(<App />);
+    await screen.findByTestId('note');
+
+    // The desktop tablist is visible to the a11y tree; the mobile bottom bar
+    // carries the same roles but is display:none at desktop widths.
+    expect(screen.getByRole('tablist', { name: 'Secciones' })).toBeInTheDocument();
+    expect(document.querySelector('.bottom-bar')?.getAttribute('role')).toBe('tablist');
+    expect(document.querySelector('.desktop-tabs')?.getAttribute('role')).toBe('tablist');
+
+    const transactionsTab = screen.getByRole('tab', { name: 'Transacciones' });
+    const categoriesTab = screen.getByRole('tab', { name: 'Categorías' });
+    expect(transactionsTab).toHaveAttribute('aria-selected', 'true');
+    expect(categoriesTab).toHaveAttribute('aria-selected', 'false');
+
+    const user = userEvent.setup();
+    await user.click(categoriesTab);
+    expect(categoriesTab).toHaveAttribute('aria-selected', 'true');
+    expect(transactionsTab).toHaveAttribute('aria-selected', 'false');
   });
 
   it('switches tabs from the mobile bottom bar, sharing state with the header tabs', async () => {

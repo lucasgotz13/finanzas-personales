@@ -62,12 +62,12 @@ describe('TransactionForm', () => {
     await user.type(screen.getByTestId('amount'), '25');
     await user.type(screen.getByTestId('rate'), '950');
 
-    expect(screen.getByText(/≈\s*\$\s*23\.750,00\s*ARS\s*al\s*tipo\s*950/)).toBeInTheDocument();
+    expect(screen.getByText(/≈\s*\$\s*23\.750,00\s*al\s*tipo\s*950/)).toBeInTheDocument();
 
     // Live update as the parsed amount changes (25 USD → 30 USD @ 950).
     await user.clear(screen.getByTestId('amount'));
     await user.type(screen.getByTestId('amount'), '30');
-    expect(screen.getByText(/≈\s*\$\s*28\.500,00\s*ARS\s*al\s*tipo\s*950/)).toBeInTheDocument();
+    expect(screen.getByText(/≈\s*\$\s*28\.500,00\s*al\s*tipo\s*950/)).toBeInTheDocument();
   });
 
   it('hides the conversion line for ARS amounts', async () => {
@@ -115,6 +115,69 @@ describe('TransactionForm', () => {
     await user.click(screen.getByTestId('submit'));
 
     await waitFor(() => expect(spy).toHaveBeenCalledWith(expect.objectContaining({ amountMinor: 2500, currency: 'USD', rate: 950 })));
+  });
+
+  it('prefills the rate with the last USD rate on the next entry, still editable (P3 #6)', async () => {
+    const user = userEvent.setup();
+    const spy = vi.spyOn(api, 'createTransaction').mockResolvedValue({} as never);
+    render(<TransactionForm categories={categories} onCreated={vi.fn()} />);
+
+    await user.selectOptions(screen.getByTestId('currency'), 'USD');
+    await user.type(screen.getByTestId('amount'), '25');
+    await user.clear(screen.getByTestId('rate'));
+    await user.type(screen.getByTestId('rate'), '968.5');
+    await user.selectOptions(screen.getByTestId('category'), '1');
+    await user.click(screen.getByTestId('submit'));
+
+    await waitFor(() => expect(spy).toHaveBeenCalledWith(expect.objectContaining({ currency: 'USD', rate: 968.5 })));
+    // Next entry: currency memory keeps USD and the rate comes back prefilled.
+    expect(screen.getByTestId('rate')).toHaveValue(968.5);
+    // Still editable: the user can overwrite the remembered rate.
+    await user.clear(screen.getByTestId('rate'));
+    await user.type(screen.getByTestId('rate'), '970');
+    expect(screen.getByTestId('rate')).toHaveValue(970);
+  });
+
+  it('keeps the remembered rate across ARS saves (P3 #6)', async () => {
+    const user = userEvent.setup();
+    const spy = vi.spyOn(api, 'createTransaction').mockResolvedValue({} as never);
+    render(<TransactionForm categories={categories} onCreated={vi.fn()} />);
+
+    // Save a USD entry at 900; the rate is remembered.
+    await user.selectOptions(screen.getByTestId('currency'), 'USD');
+    await user.type(screen.getByTestId('amount'), '10');
+    await user.clear(screen.getByTestId('rate'));
+    await user.type(screen.getByTestId('rate'), '900');
+    await user.selectOptions(screen.getByTestId('category'), '1');
+    await user.click(screen.getByTestId('submit'));
+    await waitFor(() => expect(spy).toHaveBeenCalledTimes(1));
+
+    // An ARS save does not touch the memory.
+    await user.selectOptions(screen.getByTestId('currency'), 'ARS');
+    await user.type(screen.getByTestId('amount'), '50');
+    await user.click(screen.getByTestId('submit'));
+    await waitFor(() => expect(spy).toHaveBeenCalledWith(expect.objectContaining({ currency: 'ARS', rate: undefined })));
+
+    // The next USD entry starts prefilled with the last USD rate.
+    await user.selectOptions(screen.getByTestId('currency'), 'USD');
+    expect(screen.getByTestId('rate')).toHaveValue(900);
+  });
+
+  it('clears the stale rate-required error when the currency changes (P3 #10)', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(api, 'createTransaction').mockResolvedValue({} as never);
+    render(<TransactionForm categories={categories} onCreated={vi.fn()} />);
+
+    await user.selectOptions(screen.getByTestId('currency'), 'USD');
+    await user.clear(screen.getByTestId('rate'));
+    await user.type(screen.getByTestId('amount'), '25');
+    await user.selectOptions(screen.getByTestId('category'), '1');
+    await user.click(screen.getByTestId('submit'));
+    expect(await screen.findByText('El tipo de cambio es obligatorio para monedas que no son ARS.')).toBeInTheDocument();
+
+    // Switching to ARS drops the FX error; the monto error, if any, stays.
+    await user.selectOptions(screen.getByTestId('currency'), 'ARS');
+    expect(screen.queryByText('El tipo de cambio es obligatorio para monedas que no son ARS.')).not.toBeInTheDocument();
   });
 
   it('converts a decimal amount to minor units (1200.5 → 120050)', async () => {

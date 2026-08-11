@@ -17,10 +17,13 @@ export default function IndicatorsPage(): JSX.Element {
   const [refreshing, setRefreshing] = useState(false);
   const [refreshError, setRefreshError] = useState<string | null>(null);
 
-  // Auto-refresh every 5 min while mounted (page unmounts with the tab):
-  // non-forced refresh respects the server TTL, then reloads the views.
+  // Auto-refresh every 5 min while the document is visible. Panels stay
+  // mounted (P1), so the interval pauses in hidden tabs and fires once on
+  // visibilitychange back to visible. The refresh is never forced: the
+  // server TTL gates the fetch, then the views reload (EI-6).
   useEffect(() => {
-    const id = setInterval(() => {
+    let intervalId: ReturnType<typeof setInterval> | undefined;
+    const tick = (): void => {
       void (async () => {
         try {
           await api.refreshIndicators(false);
@@ -31,8 +34,30 @@ export default function IndicatorsPage(): JSX.Element {
           setTick((t) => t + 1);
         }
       })();
-    }, AUTO_REFRESH_MS);
-    return () => clearInterval(id);
+    };
+    const start = (): void => {
+      if (intervalId === undefined) intervalId = setInterval(tick, AUTO_REFRESH_MS);
+    };
+    const stop = (): void => {
+      if (intervalId !== undefined) {
+        clearInterval(intervalId);
+        intervalId = undefined;
+      }
+    };
+    const onVisibilityChange = (): void => {
+      if (document.visibilityState === 'visible') {
+        start();
+        tick(); // catch up once right when the tab becomes visible again
+      } else {
+        stop();
+      }
+    };
+    if (!document.hidden) start();
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => {
+      stop();
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -62,7 +87,14 @@ export default function IndicatorsPage(): JSX.Element {
           {refreshError}
         </div>
       )}
-      {indicators.error && <div className="error-box">{indicators.error}</div>}
+      {indicators.error && (
+        <div className="error-box" role="alert">
+          {indicators.error}{' '}
+          <button type="button" className="link" data-testid="retry-indicators" onClick={() => indicators.reload()}>
+            Reintentar
+          </button>
+        </div>
+      )}
       {indicators.loading && indicators.data === null ? (
         <div className="empty">Cargando…</div>
       ) : (indicators.data ?? []).length === 0 ? (

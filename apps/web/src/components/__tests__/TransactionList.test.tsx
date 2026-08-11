@@ -98,4 +98,22 @@ describe('TransactionList', () => {
     expect(screen.getAllByRole('button', { name: 'Borrar' })).toHaveLength(2);
     expect(screen.getAllByRole('button', { name: 'Editar' })).toHaveLength(2);
   });
+
+  it('moves focus to the confirm Borrar when the prompt opens and back to Editar on cancel (P3 #1)', async () => {
+    const user = userEvent.setup();
+    const onCancelDelete = vi.fn();
+    const { rerender } = render(
+      <TransactionList transactions={transactions} {...baseProps} confirmingId={null} onCancelDelete={onCancelDelete} />,
+    );
+
+    await user.click(screen.getAllByRole('button', { name: 'Borrar' })[0]);
+    expect(baseProps.onDelete).toHaveBeenCalledWith(transactions[0]);
+
+    rerender(<TransactionList transactions={transactions} {...baseProps} confirmingId={1} onCancelDelete={onCancelDelete} />);
+    expect(document.activeElement).toBe(screen.getAllByRole('button', { name: 'Borrar' })[0]);
+
+    await user.click(screen.getByRole('button', { name: 'Cancelar' }));
+    expect(onCancelDelete).toHaveBeenCalledTimes(1);
+    expect(document.activeElement).toBe(screen.getAllByRole('button', { name: 'Editar' })[0]);
+  });
 });

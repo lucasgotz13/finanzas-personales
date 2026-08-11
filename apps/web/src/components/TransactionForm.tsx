@@ -15,6 +15,10 @@ export interface TransactionFormProps {
 
 const DIRECTION_LABELS: Record<string, string> = { expense: 'Gasto', income: 'Ingreso' };
 
+// Last USD rate entered, remembered across entries so the next USD save
+// starts prefilled (editable); ARS saves never touch it (P2/P3 #6).
+let lastUsdRate: string | null = null;
+
 /** Manual expense/income form (ET-1..6, IT-1/2): rate is required iff USD. */
 export default function TransactionForm({ categories, onCreated, initial, onUpdate, onCancel }: TransactionFormProps): JSX.Element {
   // State seeds from `initial` on mount; the parent remounts (key) to switch
@@ -83,8 +87,14 @@ export default function TransactionForm({ categories, onCreated, initial, onUpda
         onCreated(created);
         // Field memory: keep direction/currency/date/category, clear amount/rate/note (ET-1)
         setAmount('');
-        setRate('');
         setNote('');
+        if (currency === 'USD') {
+          // Rate reuse: remember the rate and prefill the next entry with it.
+          lastUsdRate = String(Number(rate));
+          setRate(lastUsdRate);
+        } else {
+          setRate('');
+        }
       }
     } catch (err) {
       setErrors([translateApiMessage(err instanceof Error ? err.message : 'No se pudo guardar la transacción.')]);
@@ -123,14 +133,31 @@ export default function TransactionForm({ categories, onCreated, initial, onUpda
         />
         {convertedArs !== null && (
           <span className="conversion-line" data-testid="conversion-line">
-            ≈ {new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(convertedArs)} ARS al tipo{' '}
+            ≈ {new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(convertedArs)} al tipo{' '}
             {new Intl.NumberFormat('es-AR').format(rateValue)}
           </span>
         )}
       </label>
       <label>
         Moneda
-        <select value={currency} onChange={(e) => setCurrency(e.target.value as 'ARS' | 'USD')} data-testid="currency">
+        <select
+          value={currency}
+          onChange={(e) => {
+            const next = e.target.value as 'ARS' | 'USD';
+            setCurrency(next);
+            // Changing currency invalidates the stale rate-required error;
+            // every other error stays until the next submit (P2/P3 #10).
+            if (next === 'ARS') {
+              setErrors((prev) => prev.filter((err) => !err.includes('tipo de cambio')));
+            }
+            // Rate reuse: an empty USD field starts from the last USD rate
+            // (create mode only; edits prefill from the row being edited).
+            if (next === 'USD' && !initial && rate === '' && lastUsdRate !== null) {
+              setRate(lastUsdRate);
+            }
+          }}
+          data-testid="currency"
+        >
           <option value="ARS">ARS</option>
           <option value="USD">USD</option>
         </select>

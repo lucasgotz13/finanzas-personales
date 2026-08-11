@@ -24,7 +24,9 @@ export function timeAgo(iso: string, now = Date.now()): string {
 }
 
 function formatValue(value: number): string {
-  return String(Math.round(value * 100) / 100);
+  // es-AR grouping: 1345.5 → '1.345,5' (negative and zero pass through sane).
+  if (value === 0) return '0';
+  return new Intl.NumberFormat('es-AR', { maximumFractionDigits: 2 }).format(value);
 }
 
 /** One indicator card: label, value, unit, relative updatedAt, ref date, badges (EI-6, issue #29). */

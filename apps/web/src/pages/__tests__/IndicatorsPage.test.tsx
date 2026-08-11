@@ -34,8 +34,13 @@ function freshViews(overrides: Partial<IndicatorView>[] = []): IndicatorView[] {
 
 describe('IndicatorsPage (EI-6)', () => {
   afterEach(() => {
-    vi.restoreAllMocks();
+    // Real timers FIRST: restoring them before restoreAllMocks avoids a
+    // descriptor conflict with the clearInterval spy (fake timers + spy).
     vi.useRealTimers();
+    vi.restoreAllMocks();
+    // Restore the visibilityState/hidden overrides installed by the polling-gate test.
+    delete (document as { visibilityState?: unknown }).visibilityState;
+    delete (document as { hidden?: unknown }).hidden;
   });
 
   it('renders 9 cards with label, value, unit and updatedAt, no badge', async () => {
@@ -46,9 +51,9 @@ describe('IndicatorsPage (EI-6)', () => {
     expect(await screen.findByTestId('indicators-grid')).toBeInTheDocument();
     expect(screen.getAllByTestId(/^indicator-/)).toHaveLength(9);
     expect(screen.getByText('USD Blue')).toBeInTheDocument();
-    expect(screen.getByText('1350.5')).toBeInTheDocument();
+    expect(screen.getByText('1.350,5')).toBeInTheDocument();
     expect(screen.getAllByText('ARS/USD')).toHaveLength(5);
-    expect(screen.getByText('-0.1')).toBeInTheDocument();
+    expect(screen.getByText('-0,1')).toBeInTheDocument();
     expect(screen.queryByText('Vencido')).not.toBeInTheDocument();
   });
 
@@ -131,7 +136,7 @@ describe('IndicatorsPage (EI-6)', () => {
     });
 
     expect(screen.getByText('Vencido')).toBeInTheDocument();
-    expect(screen.getByText('1350.5')).toBeInTheDocument();
+    expect(screen.getByText('1.350,5')).toBeInTheDocument();
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(FIVE_MINUTES);
@@ -197,5 +202,62 @@ describe('IndicatorsPage (EI-6)', () => {
     unmount();
 
     expect(clearSpy).toHaveBeenCalled();
+  });
+
+  it('pauses the 5-min cadence while hidden and refreshes once on visibilitychange (P3 #3)', async () => {
+    vi.spyOn(api, 'getIndicators').mockResolvedValue(freshViews());
+    const refresh = vi.spyOn(api, 'refreshIndicators').mockResolvedValue({ results: [] });
+
+    const visibility = { hidden: false };
+    Object.defineProperty(document, 'visibilityState', {
+      configurable: true,
+      get: () => (visibility.hidden ? 'hidden' : 'visible'),
+    });
+    Object.defineProperty(document, 'hidden', { configurable: true, get: () => visibility.hidden });
+
+    vi.useFakeTimers();
+    render(<IndicatorsPage />);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(api.getIndicators).toHaveBeenCalledTimes(1);
+
+    // Visible cadence: one refresh per 5 minutes.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(FIVE_MINUTES);
+    });
+    expect(refresh).toHaveBeenCalledTimes(1);
+
+    // Tab hidden: the interval pauses.
+    visibility.hidden = true;
+    act(() => {
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3 * FIVE_MINUTES);
+    });
+    expect(refresh).toHaveBeenCalledTimes(1);
+
+    // Back to visible: exactly one catch-up refresh, then the cadence resumes.
+    visibility.hidden = false;
+    await act(async () => {
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    expect(refresh).toHaveBeenCalledTimes(2);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(FIVE_MINUTES);
+    });
+    expect(refresh).toHaveBeenCalledTimes(3);
+  });
+
+  it('shows the fetch error in a role=alert box and Reintentar reloads the views (P3 #4, #9)', async () => {
+    const getIndicators = vi.spyOn(api, 'getIndicators').mockRejectedValue(new Error('panel caído'));
+    const user = userEvent.setup();
+
+    render(<IndicatorsPage />);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('panel caído');
+    await user.click(screen.getByTestId('retry-indicators'));
+    await vi.waitFor(() => expect(getIndicators).toHaveBeenCalledTimes(2));
   });
 });

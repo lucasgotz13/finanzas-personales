@@ -25,4 +25,16 @@ describe('IndicatorCard', () => {
     render(<IndicatorCard indicator={{ ...indicator, referenceDate: null }} />);
     expect(screen.queryByText(/^ref /)).not.toBeInTheDocument();
   });
+
+  it('formats values with es-AR grouping (1345.5 → "1.345,5") (P3 #7)', () => {
+    render(<IndicatorCard indicator={{ ...indicator, value: 1345.5 }} />);
+    expect(screen.getByText('1.345,5')).toBeInTheDocument();
+  });
+
+  it('formats negative values with es-AR grouping and zero as "0" (P3 #7)', () => {
+    render(<IndicatorCard indicator={{ ...indicator, value: -0.1 }} />);
+    expect(screen.getByText('-0,1')).toBeInTheDocument();
+    render(<IndicatorCard indicator={{ ...indicator, value: 0 }} />);
+    expect(screen.getByText('0')).toBeInTheDocument();
+  });
 });

@@ -18,7 +18,13 @@ const TABS: Array<{ id: Tab; label: string }> = [
 export default function App(): JSX.Element {
   const [tab, setTab] = useState<Tab>('transactions');
   const tabButtons = TABS.map((t) => (
-    <button key={t.id} className={tab === t.id ? 'active' : ''} onClick={() => setTab(t.id)}>
+    <button
+      key={t.id}
+      role="tab"
+      aria-selected={tab === t.id}
+      className={tab === t.id ? 'active' : ''}
+      onClick={() => setTab(t.id)}
+    >
       {t.label}
     </button>
   ));
@@ -27,7 +33,7 @@ export default function App(): JSX.Element {
       <header className="app-header">
         <h1>Finanzas Personales</h1>
         {/* Desktop tabs; hidden on mobile where the bottom bar takes over. */}
-        <nav className="tabs desktop-tabs" aria-label="Secciones">
+        <nav className="tabs desktop-tabs" role="tablist" aria-label="Secciones">
           {tabButtons}
         </nav>
       </header>
@@ -50,7 +56,7 @@ export default function App(): JSX.Element {
       </main>
       {/* Mobile-first navigation: thumb-reachable, same buttons and state as
           the header tabs (CSS swaps them at the ≤640px breakpoint). */}
-      <nav className="bottom-bar mobile-only" aria-label="Secciones">
+      <nav className="bottom-bar mobile-only" role="tablist" aria-label="Secciones">
         {tabButtons}
       </nav>
     </>
