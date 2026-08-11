@@ -165,7 +165,7 @@ export default function TransactionForm({ categories, onCreated, initial, onUpda
           {submitting ? 'Guardando…' : 'Guardar'}
         </button>
         {initial && (
-          <button type="button" className="link" onClick={handleCancel} disabled={submitting} data-testid="cancel">
+          <button type="button" className="link muted" onClick={handleCancel} disabled={submitting} data-testid="cancel">
             Cancelar
           </button>
         )}

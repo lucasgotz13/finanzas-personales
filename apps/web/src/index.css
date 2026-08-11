@@ -16,8 +16,9 @@
   --danger-bg: #fdecea;
   --warn: #b45309;
   --warn-bg: #fff4e5;
-  --ok: #1e7d32;
-  --ok-bg: #e6f4ea;
+  /* OK chip: ink on a light gray-green tint — state, never the action green. */
+  --ok: var(--ink);
+  --ok-bg: #eef2ee;
 }
 
 body {
@@ -71,7 +72,7 @@ nav.tabs button:hover {
 nav.tabs button.active {
   color: var(--ink);
   font-weight: 700;
-  border-bottom-color: var(--action);
+  border-bottom-color: var(--ink);
 }
 
 /* Desktop header tabs swap with the bottom bar at the ≤640px breakpoint. */
@@ -108,8 +109,12 @@ button.primary:hover:not(:disabled) {
   background: var(--action-hover);
 }
 
+/* Disabled primary: neutral gray-warm with ink-muted text — the action hue
+   is for actionable buttons only, not a faded green. */
 button.primary:disabled {
-  opacity: 0.45;
+  background: #d9d5cc;
+  color: var(--muted-text);
+  opacity: 1;
   cursor: default;
 }
 
@@ -293,7 +298,7 @@ ul.tree .tree-row {
   padding: 0.25rem 0;
 }
 
-/* Action links (Editar, Renombrar, Restaurar, Cancelar): action green. */
+/* Action links (Renombrar, Restaurar): a click performs something — action green. */
 button.link {
   border: none;
   background: none;
@@ -305,6 +310,16 @@ button.link {
 
 button.link:hover {
   color: var(--action-hover);
+}
+
+/* Non-action text links (row Editar/Cancelar, form Cancelar): ink underline
+   without the action color — green on the first viewport is Guardar only. */
+button.link.muted {
+  color: var(--muted-text);
+}
+
+button.link.muted:hover {
+  color: var(--ink);
 }
 
 button:disabled {
@@ -341,12 +356,20 @@ button:disabled {
   margin-bottom: 0.75rem;
 }
 
+/* Indicators page: plain header row on the ground, indicator cards directly
+   on the warm paper — no card-in-card chrome. */
+.indicators-page {
+  margin-bottom: 1rem;
+}
+
 .indicators-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
   margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--hairline);
 }
 
 .indicators-header h2 {
@@ -496,6 +519,7 @@ ul.tree .tree-row input {
   .bottom-bar button {
     flex: 1;
     border: none;
+    border-top: 2px solid transparent;
     background: transparent;
     color: var(--ink);
     font-size: 0.8rem;
@@ -508,9 +532,12 @@ ul.tree .tree-row input {
     text-overflow: ellipsis;
   }
 
+  /* Active nav item is a state, not an action: ink bold + 2px underline
+     (matches the desktop tabs), never the action green. */
   .bottom-bar button.active {
-    color: var(--action);
+    color: var(--ink);
     font-weight: 700;
+    border-top-color: var(--ink);
   }
 
   main {

@@ -118,8 +118,8 @@ describe('BudgetsPage', () => {
     vi.spyOn(api, 'getBudgetStatus').mockResolvedValue(status);
 
     render(<BudgetsPage />);
-    // Global and per-category badges both read "SOBRE EL PRESUPUESTO".
-    expect(await screen.findAllByText('SOBRE EL PRESUPUESTO')).toHaveLength(2);
+    // Global and per-category badges both read "Sobre el presupuesto".
+    expect(await screen.findAllByText('Sobre el presupuesto')).toHaveLength(2);
     // Category name from the tree instead of the raw id: appears in the caps editor
     // table AND the status table (previously the status table rendered "1")
     expect(screen.getAllByText('Food')).toHaveLength(2);

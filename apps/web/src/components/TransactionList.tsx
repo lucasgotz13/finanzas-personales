@@ -66,14 +66,14 @@ export default function TransactionList({
             <td>{categoryNames.get(tx.categoryId) ?? `#${tx.categoryId}`}</td>
             <td className="tx-direction">{tx.direction === 'income' ? 'Ingreso' : 'Gasto'}</td>
             <td>
-              <span className={tx.direction === 'income' ? 'badge ok row-amount' : 'row-amount'}>
+              <span className="row-amount">
                 {tx.direction === 'income' ? '+' : '−'}
                 {formatAmount(tx)}
               </span>
             </td>
             <td className="rate-cell">{tx.currency === 'USD' ? formatRate(tx.rate) : '—'}</td>
             <td className="row-actions">
-              <button type="button" className="link" onClick={() => onEdit(tx)} disabled={busy}>
+              <button type="button" className="link muted" onClick={() => onEdit(tx)} disabled={busy}>
                 Editar
               </button>
               {confirmingId === tx.id ? (
@@ -83,7 +83,7 @@ export default function TransactionList({
                   <button type="button" className="danger" onClick={handleConfirm} disabled={busy}>
                     Borrar
                   </button>
-                  <button type="button" className="link" onClick={onCancelDelete} disabled={busy}>
+                  <button type="button" className="link muted" onClick={onCancelDelete} disabled={busy}>
                     Cancelar
                   </button>
                 </span>

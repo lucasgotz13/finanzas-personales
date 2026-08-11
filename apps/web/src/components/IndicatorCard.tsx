@@ -39,8 +39,8 @@ export default function IndicatorCard({ indicator }: { indicator: IndicatorView 
         {indicator.updatedAt ? `actualizado ${timeAgo(indicator.updatedAt)}` : 'sin datos aún'}
       </div>
       {indicator.referenceDate && <div className="indicator-ref">ref {indicator.referenceDate.slice(0, 7)}</div>}
-      {indicator.stale && <span className="stale-badge">VENCIDO</span>}
-      {indicator.referenceAged && <span className="aged-badge">REFERENCIA ANTIGUA</span>}
+      {indicator.stale && <span className="stale-badge">Vencido</span>}
+      {indicator.referenceAged && <span className="aged-badge">Referencia antigua</span>}
     </div>
   );
 }
