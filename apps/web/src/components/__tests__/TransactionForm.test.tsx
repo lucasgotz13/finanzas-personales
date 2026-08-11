@@ -117,6 +117,18 @@ describe('TransactionForm', () => {
     await waitFor(() => expect(spy).toHaveBeenCalledWith(expect.objectContaining({ amountMinor: 1250, currency: 'ARS' })));
   });
 
+  it('parses dot as the es-AR thousands separator (1.234 → 123400 minor units)', async () => {
+    const user = userEvent.setup();
+    const spy = vi.spyOn(api, 'createTransaction').mockResolvedValue({} as never);
+    render(<TransactionForm categories={categories} onCreated={vi.fn()} />);
+
+    await user.type(screen.getByTestId('amount'), '1.234');
+    await user.selectOptions(screen.getByTestId('category'), '1');
+    await user.click(screen.getByTestId('submit'));
+
+    await waitFor(() => expect(spy).toHaveBeenCalledWith(expect.objectContaining({ amountMinor: 123400, currency: 'ARS' })));
+  });
+
   it('rejects a scientific-notation amount (1e3) without calling the API (P2)', async () => {
     const user = userEvent.setup();
     const spy = vi.spyOn(api, 'createTransaction').mockResolvedValue({} as never);

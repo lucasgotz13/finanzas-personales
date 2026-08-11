@@ -55,6 +55,22 @@ describe('BudgetsPage', () => {
     expect(putBudgets).toHaveBeenCalledWith({ 1: 100050 });
   });
 
+  it('parses dot as the es-AR thousands separator in caps (1.500 → 150000 minor units)', async () => {
+    vi.spyOn(api, 'getCategoryTree').mockResolvedValue(categories);
+    const getBudgets = vi.spyOn(api, 'getBudgets').mockResolvedValue({});
+    const putBudgets = vi.spyOn(api, 'putBudgets').mockResolvedValue({ 1: 150000 });
+    vi.spyOn(api, 'getBudgetStatus').mockResolvedValue(status);
+
+    const user = userEvent.setup();
+    render(<BudgetsPage />);
+    await screen.findByTestId('cap-1');
+
+    await user.type(screen.getByTestId('cap-1'), '1.500');
+    await user.click(screen.getByTestId('budget-save'));
+
+    expect(putBudgets).toHaveBeenCalledWith({ 1: 150000 });
+  });
+
   it('submits with Enter, shows and clears the success message, and exposes cap aria-labels (P2)', async () => {
     vi.spyOn(api, 'getCategoryTree').mockResolvedValue(categories);
     const getBudgets = vi.spyOn(api, 'getBudgets').mockResolvedValue({});

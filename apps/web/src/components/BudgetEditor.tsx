@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { translateApiMessage } from '../api';
 import type { BudgetStatus } from '../types';
+import { parseEsArAmount } from '../amount';
 
 export interface BudgetEditorProps {
   categories: Array<{ id: number; name: string }>;
@@ -12,9 +13,6 @@ export interface BudgetEditorProps {
 function formatMinor(minor: number): string {
   return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(minor / 100);
 }
-
-/** Positive decimal with optional comma/dot separator; rejects scientific notation (P2). */
-const CAP_PATTERN = /^\d+([.,]\d+)?$/;
 
 /** Per-category monthly caps editor; saving PUTs the whole map in minor units (BM-3). */
 export default function BudgetEditor({ categories, initialCaps, onSave }: BudgetEditorProps): JSX.Element {
@@ -44,14 +42,12 @@ export default function BudgetEditor({ categories, initialCaps, onSave }: Budget
       for (const cat of categories) {
         const raw = caps[String(cat.id)];
         if (raw !== undefined && raw !== '') {
-          if (!CAP_PATTERN.test(raw)) {
+          // es-AR amount parsing: dot = thousands, comma = decimal (issue #45).
+          const value = parseEsArAmount(raw);
+          if (value === null || value <= 0) {
             throw new Error(`El tope para "${cat.name}" debe ser un monto positivo.`);
           }
-          const value = Math.round(Number(raw.replace(',', '.')) * 100);
-          if (!Number.isFinite(value) || value <= 0) {
-            throw new Error(`El tope para "${cat.name}" debe ser un monto positivo.`);
-          }
-          map[String(cat.id)] = value;
+          map[String(cat.id)] = Math.round(value * 100);
         }
       }
       await onSave(map);

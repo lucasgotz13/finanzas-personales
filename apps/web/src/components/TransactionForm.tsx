@@ -1,6 +1,7 @@
 import { arDateString } from '@finanzas/domain';
 import { useState } from 'react';
 import { api, flattenTree, translateApiMessage } from '../api';
+import { parseEsArAmount } from '../amount';
 import type { ApiTransaction, CategoryNode, CreateTransactionInput } from '../types';
 
 export interface TransactionFormProps {
@@ -44,11 +45,11 @@ export default function TransactionForm({ categories, onCreated, initial, onUpda
   async function handleSubmit(e: React.FormEvent): Promise<void> {
     e.preventDefault();
     const details: string[] = [];
-    // Positive decimal with optional comma/dot separator; rejects scientific
-    // notation (e.g. "1e3") and other formats that parseFloat would accept.
-    const parsed = /^\d+([.,]\d+)?$/.test(amount) ? parseFloat(amount.replace(',', '.')) : NaN;
-    if (!Number.isFinite(parsed) || parsed <= 0) details.push('El monto debe ser un número positivo.');
-    const amountMinor = Math.round(parsed * 100);
+    // es-AR amount parsing: dot = thousands separator, comma = decimal (issue #45).
+    // Returns null for invalid input (e.g. "1e3"), never NaN.
+    const parsed = parseEsArAmount(amount);
+    if (parsed === null || parsed <= 0) details.push('El monto debe ser un número positivo.');
+    const amountMinor = parsed === null ? 0 : Math.round(parsed * 100);
     if (currency === 'USD' && (!rate || Number(rate) <= 0)) details.push('El tipo de cambio es obligatorio para monedas que no son ARS.');
     if (categoryId === '') details.push('Seleccionar categoría.');
     if (details.length > 0) {
