@@ -25,6 +25,20 @@ export default function TransactionsPage(): JSX.Element {
     () => api.listTransactions({ month, direction: direction === 'all' ? undefined : direction }),
     [month, direction],
   );
+  // Month totals come from the full month (no direction filter), so the money
+  // card stays honest when the list below is filtered to a single direction.
+  const monthTotals = useApi(() => api.listTransactions({ month }), [month]);
+
+  // Net flow per currency (income − expense), the honest "Total del mes".
+  const totals = useMemo(() => {
+    const net: Record<'ARS' | 'USD', number> = { ARS: 0, USD: 0 };
+    let hasRows = false;
+    for (const tx of monthTotals.data ?? []) {
+      hasRows = true;
+      net[tx.currency] += tx.direction === 'income' ? tx.amountMinor : -tx.amountMinor;
+    }
+    return hasRows ? (['ARS', 'USD'] as const).map((currency) => ({ currency, netMinor: net[currency] })) : [];
+  }, [monthTotals.data]);
 
   // Local list is the render source: hook data lands here after every fetch,
   // and mutations adjust it immediately (no full-list "Loading…" flash).
@@ -45,11 +59,13 @@ export default function TransactionsPage(): JSX.Element {
     setLocalTransactions((prev) => (prev ? [created, ...prev] : [created]));
     // Background refetch catches backdated entries; the list stays visible.
     transactions.reload();
+    monthTotals.reload();
   }
 
   function handleUpdate(updated: ApiTransaction): void {
     setLocalTransactions((prev) => prev?.map((t) => (t.id === updated.id ? updated : t)) ?? null);
     setEditing(null);
+    monthTotals.reload();
   }
 
   function handleEdit(tx: ApiTransaction): void {
@@ -70,6 +86,7 @@ export default function TransactionsPage(): JSX.Element {
       setLocalTransactions((prev) => prev?.filter((t) => t.id !== confirmingId) ?? prev);
       setConfirmingId(null);
       setDeleteError(null);
+      monthTotals.reload();
     } catch (err) {
       setDeleteError(translateApiMessage(err instanceof Error ? err.message : 'No se pudo borrar la transacción.'));
     }
@@ -79,6 +96,23 @@ export default function TransactionsPage(): JSX.Element {
 
   return (
     <>
+      <section className="card money-card" data-testid="month-total">
+        <h2>Total del mes</h2>
+        {totals.length === 0 ? (
+          <span className="total-empty">—</span>
+        ) : (
+          <div className="totals">
+            {totals.map((t) => (
+              <div key={t.currency} className="total">
+                <span className="total-currency">{t.currency}</span>
+                <span className="total-amount">
+                  {new Intl.NumberFormat('es-AR', { style: 'currency', currency: t.currency }).format(t.netMinor / 100)}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
       <section className="card">
         <h2>{editing ? 'Editar transacción' : 'Registrar transacción'}</h2>
         <TransactionForm

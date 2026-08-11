@@ -116,7 +116,7 @@ export default function BudgetEditor({ categories, initialCaps, onSave }: Budget
 export function BudgetStatusView({ status, categoryNames }: { status: BudgetStatus; categoryNames?: Record<number, string> }): JSX.Element {
   return (
     <div>
-      <p data-testid="global-status">
+      <p data-testid="global-status" className="money">
         Global: {formatMinor(status.global.consumed)} / {formatMinor(status.global.cap)}{' '}
         <span className={`badge ${status.global.overBudget ? 'over' : 'ok'}`}>{status.global.overBudget ? 'SOBRE EL PRESUPUESTO' : 'OK'}</span>
       </p>
@@ -136,8 +136,8 @@ export function BudgetStatusView({ status, categoryNames }: { status: BudgetStat
             {status.categories.map((c) => (
               <tr key={c.categoryId}>
                 <td>{categoryNames?.[c.categoryId] ?? c.categoryId}</td>
-                <td>{formatMinor(c.cap)}</td>
-                <td>{formatMinor(c.consumed)}</td>
+                <td className="money">{formatMinor(c.cap)}</td>
+                <td className="money">{formatMinor(c.consumed)}</td>
                 <td>
                   <span className={`badge ${c.overBudget ? 'over' : 'ok'}`}>{c.overBudget ? 'SOBRE EL PRESUPUESTO' : 'OK'}</span>
                 </td>

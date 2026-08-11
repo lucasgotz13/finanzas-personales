@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import App from './App';
@@ -58,5 +58,28 @@ describe('App tab switching', () => {
     }
 
     expect(screen.getByTestId('note')).toBeInTheDocument();
+  });
+
+  it('switches tabs from the mobile bottom bar, sharing state with the header tabs', async () => {
+    mockAllApis();
+    render(<App />);
+    await screen.findByTestId('note');
+
+    const bottomBar = document.querySelector('.bottom-bar');
+    expect(bottomBar).not.toBeNull();
+
+    const indicatorsButton = Array.from(bottomBar!.querySelectorAll('button')).find((b) => b.textContent === 'Indicadores');
+    expect(indicatorsButton).toBeDefined();
+    fireEvent.click(indicatorsButton!);
+    const clickedIndicator = indicatorsButton!;
+
+    // The Indicators panel is now the visible one.
+    const visiblePanel = Array.from(document.querySelectorAll('.tab-panel')).find((p) => !p.classList.contains('hidden'));
+    expect(visiblePanel?.textContent).toContain('Argentina — Indicadores económicos');
+
+    // The same state drives the desktop header tabs.
+    const desktopButton = Array.from(document.querySelectorAll('nav.tabs.desktop-tabs button')).find((b) => b.textContent === 'Indicadores');
+    expect(desktopButton?.classList.contains('active')).toBe(true);
+    expect(clickedIndicator.classList.contains('active')).toBe(true);
   });
 });

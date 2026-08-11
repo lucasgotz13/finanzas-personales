@@ -17,16 +17,18 @@ const TABS: Array<{ id: Tab; label: string }> = [
 
 export default function App(): JSX.Element {
   const [tab, setTab] = useState<Tab>('transactions');
+  const tabButtons = TABS.map((t) => (
+    <button key={t.id} className={tab === t.id ? 'active' : ''} onClick={() => setTab(t.id)}>
+      {t.label}
+    </button>
+  ));
   return (
     <>
       <header className="app-header">
         <h1>Finanzas Personales</h1>
-        <nav className="tabs">
-          {TABS.map((t) => (
-            <button key={t.id} className={tab === t.id ? 'active' : ''} onClick={() => setTab(t.id)}>
-              {t.label}
-            </button>
-          ))}
+        {/* Desktop tabs; hidden on mobile where the bottom bar takes over. */}
+        <nav className="tabs desktop-tabs" aria-label="Secciones">
+          {tabButtons}
         </nav>
       </header>
       <main>
@@ -46,6 +48,11 @@ export default function App(): JSX.Element {
           <IndicatorsPage />
         </div>
       </main>
+      {/* Mobile-first navigation: thumb-reachable, same buttons and state as
+          the header tabs (CSS swaps them at the ≤640px breakpoint). */}
+      <nav className="bottom-bar mobile-only" aria-label="Secciones">
+        {tabButtons}
+      </nav>
     </>
   );
 }

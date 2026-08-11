@@ -54,6 +54,42 @@ describe('TransactionForm', () => {
     expect(await screen.findByText('El tipo de cambio es obligatorio para monedas que no son ARS.')).toBeInTheDocument();
   });
 
+  it('shows a live ARS conversion line while typing a USD amount with a valid rate', async () => {
+    const user = userEvent.setup();
+    render(<TransactionForm categories={categories} onCreated={vi.fn()} />);
+
+    await user.selectOptions(screen.getByTestId('currency'), 'USD');
+    await user.type(screen.getByTestId('amount'), '25');
+    await user.type(screen.getByTestId('rate'), '950');
+
+    expect(screen.getByText(/≈\s*\$\s*23\.750,00\s*ARS\s*al\s*tipo\s*950/)).toBeInTheDocument();
+
+    // Live update as the parsed amount changes (25 USD → 30 USD @ 950).
+    await user.clear(screen.getByTestId('amount'));
+    await user.type(screen.getByTestId('amount'), '30');
+    expect(screen.getByText(/≈\s*\$\s*28\.500,00\s*ARS\s*al\s*tipo\s*950/)).toBeInTheDocument();
+  });
+
+  it('hides the conversion line for ARS amounts', async () => {
+    const user = userEvent.setup();
+    render(<TransactionForm categories={categories} onCreated={vi.fn()} />);
+
+    await user.type(screen.getByTestId('amount'), '25');
+    expect(screen.queryByText(/al tipo/)).not.toBeInTheDocument();
+  });
+
+  it('hides the conversion line until the FX rate is valid', async () => {
+    const user = userEvent.setup();
+    render(<TransactionForm categories={categories} onCreated={vi.fn()} />);
+
+    await user.selectOptions(screen.getByTestId('currency'), 'USD');
+    await user.type(screen.getByTestId('amount'), '25');
+    expect(screen.queryByText(/al tipo/)).not.toBeInTheDocument();
+
+    await user.type(screen.getByTestId('rate'), '0');
+    expect(screen.queryByText(/al tipo/)).not.toBeInTheDocument();
+  });
+
   it('rejects a non-positive amount without calling the API (ET-2)', async () => {
     const user = userEvent.setup();
     const spy = vi.spyOn(api, 'createTransaction').mockResolvedValue({} as never);

@@ -16,6 +16,11 @@ function formatAmount(tx: ApiTransaction): string {
   return new Intl.NumberFormat('es-AR', { style: 'currency', currency: tx.currency }).format(value);
 }
 
+/** FX-at-entry in es-AR number format, e.g. 1.345,5 (W1: rate is captured at entry). */
+function formatRate(rate: number): string {
+  return new Intl.NumberFormat('es-AR').format(rate);
+}
+
 /** Expense/income table for the current period with per-row edit/delete actions. */
 export default function TransactionList({
   transactions,
@@ -41,13 +46,15 @@ export default function TransactionList({
     return <div className="empty">Aún no hay transacciones en este período.</div>;
   }
   return (
-    <table className="data">
+    <table className="data" data-testid="transaction-list">
       <thead>
         <tr>
           <th>Fecha</th>
+          <th>Concepto</th>
           <th>Categoría</th>
-          <th>Nota</th>
+          <th>Tipo</th>
           <th>Monto</th>
+          <th>Tipo de cambio</th>
           <th>Acciones</th>
         </tr>
       </thead>
@@ -55,14 +62,16 @@ export default function TransactionList({
         {transactions.map((tx) => (
           <tr key={tx.id}>
             <td>{tx.date}</td>
-            <td>{categoryNames.get(tx.categoryId) ?? `#${tx.categoryId}`}</td>
             <td>{tx.note || '—'}</td>
+            <td>{categoryNames.get(tx.categoryId) ?? `#${tx.categoryId}`}</td>
+            <td className="tx-direction">{tx.direction === 'income' ? 'Ingreso' : 'Gasto'}</td>
             <td>
-              <span className={tx.direction === 'income' ? 'badge ok' : ''}>
+              <span className={tx.direction === 'income' ? 'badge ok row-amount' : 'row-amount'}>
                 {tx.direction === 'income' ? '+' : '−'}
                 {formatAmount(tx)}
               </span>
             </td>
+            <td className="rate-cell">{tx.currency === 'USD' ? formatRate(tx.rate) : '—'}</td>
             <td className="row-actions">
               <button type="button" className="link" onClick={() => onEdit(tx)} disabled={busy}>
                 Editar

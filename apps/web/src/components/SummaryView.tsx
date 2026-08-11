@@ -27,9 +27,9 @@ export default function SummaryView({ summary }: SummaryViewProps): JSX.Element 
           {summary.currencies.map((c) => (
             <tr key={c.currency}>
               <td>{c.currency}</td>
-              <td>{formatMinor(c.expense, c.currency)}</td>
-              <td>{formatMinor(c.income, c.currency)}</td>
-              <td>{formatMinor(c.netFlow, c.currency)}</td>
+              <td className="money">{formatMinor(c.expense, c.currency)}</td>
+              <td className="money">{formatMinor(c.income, c.currency)}</td>
+              <td className="money">{formatMinor(c.netFlow, c.currency)}</td>
               <td>{c.savingsRate === null ? '—' : `${(c.savingsRate * 100).toFixed(1)}%`}</td>
             </tr>
           ))}
@@ -53,8 +53,8 @@ export default function SummaryView({ summary }: SummaryViewProps): JSX.Element 
               <tr key={`${c.categoryId}-${c.currency}`}>
                 <td>{c.name}</td>
                 <td>{c.currency}</td>
-                <td>{formatMinor(c.expense, c.currency)}</td>
-                <td>{formatMinor(c.income, c.currency)}</td>
+                <td className="money">{formatMinor(c.expense, c.currency)}</td>
+                <td className="money">{formatMinor(c.income, c.currency)}</td>
               </tr>
             ))}
           </tbody>

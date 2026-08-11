@@ -31,6 +31,13 @@ export default function TransactionForm({ categories, onCreated, initial, onUpda
 
   const options = flattenTree(categories);
 
+  // Live ARS conversion preview (USD only): parsed amount × FX at entry.
+  // es-AR amount parsing: dot = thousands separator, comma = decimal (issue #45).
+  const parsedAmount = parseEsArAmount(amount);
+  const rateValue = Number(rate);
+  const showConversion = currency === 'USD' && parsedAmount !== null && parsedAmount > 0 && Number.isFinite(rateValue) && rateValue > 0;
+  const convertedArs = showConversion ? parsedAmount * rateValue : null;
+
   function resetForm(): void {
     setDirection('expense');
     setAmount('');
@@ -45,7 +52,6 @@ export default function TransactionForm({ categories, onCreated, initial, onUpda
   async function handleSubmit(e: React.FormEvent): Promise<void> {
     e.preventDefault();
     const details: string[] = [];
-    // es-AR amount parsing: dot = thousands separator, comma = decimal (issue #45).
     // Returns null for invalid input (e.g. "1e3"), never NaN.
     const parsed = parseEsArAmount(amount);
     if (parsed === null || parsed <= 0) details.push('El monto debe ser un número positivo.');
@@ -115,6 +121,12 @@ export default function TransactionForm({ categories, onCreated, initial, onUpda
           onChange={(e) => setAmount(e.target.value)}
           data-testid="amount"
         />
+        {convertedArs !== null && (
+          <span className="conversion-line" data-testid="conversion-line">
+            ≈ {new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(convertedArs)} ARS al tipo{' '}
+            {new Intl.NumberFormat('es-AR').format(rateValue)}
+          </span>
+        )}
       </label>
       <label>
         Moneda
