@@ -74,6 +74,12 @@ export const api = {
   createTransaction(input: CreateTransactionInput): Promise<import('./types').ApiTransaction> {
     return request('/transactions', { method: 'POST', body: JSON.stringify(input) });
   },
+  updateTransaction(id: number, input: CreateTransactionInput): Promise<import('./types').ApiTransaction> {
+    return request(`/transactions/${id}`, { method: 'PATCH', body: JSON.stringify(input) });
+  },
+  deleteTransaction(id: number): Promise<void> {
+    return request(`/transactions/${id}`, { method: 'DELETE' });
+  },
   getCategoryTree(): Promise<CategoryNode[]> {
     return request('/categories/tree');
   },

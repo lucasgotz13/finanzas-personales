@@ -99,6 +99,9 @@ form.transaction-form select {
 
 form.transaction-form .actions {
   grid-column: 1 / -1;
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
 }
 
 button.danger {
@@ -165,6 +168,33 @@ button.link {
   text-decoration: underline;
   cursor: pointer;
   font-size: 0.85rem;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.row-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.confirm-prompt {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+}
+
+.confirm-prompt .confirm-question {
+  font-weight: 600;
+}
+
+.confirm-prompt .confirm-note {
+  color: #777;
+  font-size: 0.75rem;
 }
 
 .filters {
