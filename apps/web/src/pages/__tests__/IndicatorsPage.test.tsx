@@ -58,7 +58,7 @@ describe('IndicatorsPage (EI-6)', () => {
     render(<IndicatorsPage />);
     await screen.findByTestId('indicators-grid');
 
-    expect(screen.getAllByText('ref 2026-08')).toHaveLength(9);
+    expect(screen.getAllByText('ref ago 2026')).toHaveLength(9);
     expect(screen.queryByText('Referencia antigua')).not.toBeInTheDocument();
   });
 
@@ -72,7 +72,7 @@ describe('IndicatorsPage (EI-6)', () => {
 
     expect(screen.getByTestId('indicator-ipc-mensual')).toHaveTextContent('Referencia antigua');
     expect(screen.queryByText('Vencido')).not.toBeInTheDocument();
-    expect(screen.getAllByText('ref 2026-08')).toHaveLength(9);
+    expect(screen.getAllByText('ref ago 2026')).toHaveLength(9);
   });
 
   it('shows a loading state before data arrives', () => {

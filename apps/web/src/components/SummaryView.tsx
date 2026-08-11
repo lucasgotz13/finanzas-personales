@@ -1,3 +1,4 @@
+import { formatMonth } from '../dates';
 import type { PeriodSummary } from '../types';
 
 export interface SummaryViewProps {
@@ -12,7 +13,7 @@ function formatMinor(amountMinor: number, currency: string): string {
 export default function SummaryView({ summary }: SummaryViewProps): JSX.Element {
   return (
     <div>
-      <h3>{summary.period}</h3>
+      <h3>{formatMonth(summary.period)}</h3>
       <table className="data">
         <thead>
           <tr>

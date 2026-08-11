@@ -1,7 +1,9 @@
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { arDateString } from '@finanzas/domain';
 import { api } from '../../api';
+import { formatMonth } from '../../dates';
 import type { ApiTransaction, CategoryNode } from '../../types';
 import TransactionsPage from '../TransactionsPage';
 
@@ -29,6 +31,15 @@ describe('TransactionsPage', () => {
     await within(await listTable()).findByText(/\$\s*150,00/);
     expect(screen.getByTestId('amount')).toBeInTheDocument();
     expect(screen.queryByText('Cargando…')).not.toBeInTheDocument();
+  });
+
+  it('shows the selected month as an es-AR month name in the heading', async () => {
+    vi.spyOn(api, 'getCategoryTree').mockResolvedValue(categories);
+    vi.spyOn(api, 'listTransactions').mockResolvedValue(transactions);
+    render(<TransactionsPage />);
+    const month = arDateString(new Date()).slice(0, 7);
+    expect(await screen.findByText(`Transacciones — ${formatMonth(month)}`)).toBeInTheDocument();
+    expect(screen.queryByText(`Transacciones — ${month}`)).not.toBeInTheDocument();
   });
 
   it('shows the month total per currency in the money card (ARS and USD)', async () => {

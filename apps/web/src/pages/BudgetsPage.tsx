@@ -1,6 +1,7 @@
 import { arDateString } from '@finanzas/domain';
 import { useState } from 'react';
 import { api } from '../api';
+import { formatMonth } from '../dates';
 import { useApi } from '../hooks/useApi';
 import BudgetEditor, { BudgetStatusView } from '../components/BudgetEditor';
 import type { CategoryNode } from '../types';
@@ -31,7 +32,7 @@ export default function BudgetsPage(): JSX.Element {
         />
       </section>
       <section className="card">
-        <h2>Estado — {month}</h2>
+        <h2>Estado — {formatMonth(month)}</h2>
         <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} aria-label="Mes del estado" />
         {status.error && <div className="error-box">{status.error}</div>}
         {status.loading ? <div className="empty">Cargando…</div> : status.data && (

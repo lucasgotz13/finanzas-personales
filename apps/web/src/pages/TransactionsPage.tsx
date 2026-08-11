@@ -1,6 +1,7 @@
 import { arDateString } from '@finanzas/domain';
 import { useEffect, useMemo, useState } from 'react';
 import { api, categoryNameMap, translateApiMessage } from '../api';
+import { formatMonth } from '../dates';
 import { useApi } from '../hooks/useApi';
 import TransactionForm from '../components/TransactionForm';
 import TransactionList from '../components/TransactionList';
@@ -125,7 +126,7 @@ export default function TransactionsPage(): JSX.Element {
         />
       </section>
       <section className="card">
-        <h2>Transacciones — {month}</h2>
+        <h2>Transacciones — {formatMonth(month)}</h2>
         <div className="filters">
           <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} aria-label="Mes" />
           <nav className="tabs">
