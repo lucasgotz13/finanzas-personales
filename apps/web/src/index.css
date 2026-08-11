@@ -268,3 +268,94 @@ button.link {
   background: #fff4e5;
   color: #b45309;
 }
+
+/* --- Responsive: mobile-first adjustments (≤640px) --- */
+@media (max-width: 640px) {
+  header.app-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 0.6rem 0.75rem;
+  }
+
+  header.app-header h1 {
+    font-size: 1rem;
+    margin-right: 0;
+  }
+
+  nav.tabs {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    gap: 0.15rem;
+    /* Sticky tabs: always reachable while scrolling content */
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  nav.tabs button {
+    flex: 0 0 auto;
+    padding: 0.55rem 0.7rem;
+    font-size: 0.9rem;
+    min-height: 44px;
+    white-space: nowrap;
+  }
+
+  main {
+    margin: 1rem auto;
+    padding: 0 0.75rem;
+  }
+
+  .card {
+    padding: 0.75rem;
+  }
+
+  /* Tables scroll horizontally inside their card instead of bursting it */
+  table.data {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap;
+  }
+
+  /* Single-column form; 16px inputs prevent iOS focus-zoom */
+  form.transaction-form {
+    grid-template-columns: 1fr;
+  }
+
+  form.transaction-form input,
+  form.transaction-form select {
+    font-size: 16px;
+    padding: 0.55rem;
+    min-height: 44px;
+  }
+
+  .filters {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .indicators-header {
+    flex-wrap: wrap;
+  }
+
+  .indicators-grid {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
+
+  .indicator-value {
+    font-size: 1.2rem;
+  }
+
+  button.primary,
+  .indicators-header button,
+  button.danger,
+  button.link {
+    min-height: 44px;
+  }
+
+  ul.tree .tree-row {
+    gap: 0.4rem;
+  }
+}
