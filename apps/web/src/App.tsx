@@ -8,11 +8,11 @@ import TransactionsPage from './pages/TransactionsPage';
 export type Tab = 'transactions' | 'categories' | 'budgets' | 'summaries' | 'indicators';
 
 const TABS: Array<{ id: Tab; label: string }> = [
-  { id: 'transactions', label: 'Transactions' },
-  { id: 'categories', label: 'Categories' },
-  { id: 'budgets', label: 'Budgets' },
-  { id: 'summaries', label: 'Summaries' },
-  { id: 'indicators', label: 'Indicators' },
+  { id: 'transactions', label: 'Transacciones' },
+  { id: 'categories', label: 'Categorías' },
+  { id: 'budgets', label: 'Presupuestos' },
+  { id: 'summaries', label: 'Resúmenes' },
+  { id: 'indicators', label: 'Indicadores' },
 ];
 
 export default function App(): JSX.Element {

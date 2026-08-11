@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { api, flattenTree } from '../api';
+import { api, flattenTree, translateApiMessage } from '../api';
 import { useApi } from '../hooks/useApi';
 import CategoryTree from '../components/CategoryTree';
 import type { CategoryNode } from '../types';
@@ -25,7 +25,7 @@ export default function CategoriesPage(): JSX.Element {
       setParentId('');
       categories.reload();
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'Could not add the category.');
+      setFormError(translateApiMessage(err instanceof Error ? err.message : 'No se pudo agregar la categoría.'));
     }
   }
 
@@ -39,7 +39,7 @@ export default function CategoriesPage(): JSX.Element {
       deleted.reload();
     } catch (err) {
       // Keep the prompt open so the user can retry or cancel.
-      setDeleteError(err instanceof Error ? err.message : 'Could not delete the category.');
+      setDeleteError(translateApiMessage(err instanceof Error ? err.message : 'No se pudo borrar la categoría.'));
     }
   }
 
@@ -51,7 +51,7 @@ export default function CategoriesPage(): JSX.Element {
       categories.reload();
       deleted.reload();
     } catch (err) {
-      setRestoreError(err instanceof Error ? err.message : 'Could not restore the category.');
+      setRestoreError(translateApiMessage(err instanceof Error ? err.message : 'No se pudo restaurar la categoría.'));
     } finally {
       setRestoringId(null);
     }
@@ -60,16 +60,16 @@ export default function CategoriesPage(): JSX.Element {
   return (
     <>
       <section className="card">
-        <h2>Add category</h2>
+        <h2>Agregar categoría</h2>
         <form className="transaction-form" onSubmit={handleAdd} noValidate>
           <label>
-            Name
+            Nombre
             <input value={name} onChange={(e) => setName(e.target.value)} data-testid="cat-name" />
           </label>
           <label>
-            Parent (optional)
+            Padre (opcional)
             <select value={parentId} onChange={(e) => setParentId(e.target.value)} data-testid="cat-parent">
-              <option value="">Root</option>
+              <option value="">Raíz</option>
               {flattenTree(categories.data ?? []).map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
@@ -79,14 +79,14 @@ export default function CategoriesPage(): JSX.Element {
           </label>
           <div className="actions">
             <button type="submit" className="primary" data-testid="cat-add">
-              Add
+              Agregar
             </button>
           </div>
           {formError && <div className="error-box">{formError}</div>}
         </form>
       </section>
       <section className="card">
-        <h2>Categories</h2>
+        <h2>Categorías</h2>
         {categories.error && <div className="error-box">{categories.error}</div>}
         {deleteError && (
           <div className="error-box" role="alert">
@@ -94,7 +94,7 @@ export default function CategoriesPage(): JSX.Element {
           </div>
         )}
         {categories.loading ? (
-          <div className="empty">Loading…</div>
+          <div className="empty">Cargando…</div>
         ) : (
           <CategoryTree
             categories={categories.data ?? []}
@@ -111,7 +111,7 @@ export default function CategoriesPage(): JSX.Element {
       </section>
       {(deleted.data ?? []).length > 0 && (
         <section className="card" data-testid="deleted-section">
-          <h2>Deleted categories</h2>
+          <h2>Categorías borradas</h2>
           {deleted.error && <div className="error-box">{deleted.error}</div>}
           {restoreError && (
             <div className="error-box" role="alert">
@@ -129,7 +129,7 @@ export default function CategoriesPage(): JSX.Element {
                     disabled={restoringId === node.id}
                     onClick={() => void restoreCategory(node.id)}
                   >
-                    Restore
+                    Restaurar
                   </button>
                 </span>
               </li>

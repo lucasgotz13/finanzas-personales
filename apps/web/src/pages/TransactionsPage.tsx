@@ -1,6 +1,6 @@
 import { arDateString } from '@finanzas/domain';
 import { useEffect, useMemo, useState } from 'react';
-import { api, categoryNameMap } from '../api';
+import { api, categoryNameMap, translateApiMessage } from '../api';
 import { useApi } from '../hooks/useApi';
 import TransactionForm from '../components/TransactionForm';
 import TransactionList from '../components/TransactionList';
@@ -71,7 +71,7 @@ export default function TransactionsPage(): JSX.Element {
       setConfirmingId(null);
       setDeleteError(null);
     } catch (err) {
-      setDeleteError(err instanceof Error ? err.message : 'Could not delete the transaction.');
+      setDeleteError(translateApiMessage(err instanceof Error ? err.message : 'No se pudo borrar la transacción.'));
     }
   }
 
@@ -80,7 +80,7 @@ export default function TransactionsPage(): JSX.Element {
   return (
     <>
       <section className="card">
-        <h2>{editing ? 'Edit transaction' : 'Record a transaction'}</h2>
+        <h2>{editing ? 'Editar transacción' : 'Registrar transacción'}</h2>
         <TransactionForm
           key={editing?.id ?? 'create'}
           categories={categories.data ?? []}
@@ -91,13 +91,13 @@ export default function TransactionsPage(): JSX.Element {
         />
       </section>
       <section className="card">
-        <h2>Transactions — {month}</h2>
+        <h2>Transacciones — {month}</h2>
         <div className="filters">
-          <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} aria-label="Month" />
+          <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} aria-label="Mes" />
           <nav className="tabs">
             {(['all', 'expense', 'income'] as const).map((d) => (
               <button key={d} className={direction === d ? 'active' : ''} onClick={() => setDirection(d)}>
-                {d === 'all' ? 'All' : d[0].toUpperCase() + d.slice(1)}
+                {d === 'all' ? 'Todas' : d === 'expense' ? 'Gasto' : 'Ingreso'}
               </button>
             ))}
           </nav>
@@ -109,7 +109,7 @@ export default function TransactionsPage(): JSX.Element {
         )}
         {transactions.error && !deleteError && <div className="error-box">{transactions.error}</div>}
         {listLoading ? (
-          <div className="empty">Loading…</div>
+          <div className="empty">Cargando…</div>
         ) : (
           <TransactionList
             transactions={localTransactions ?? []}

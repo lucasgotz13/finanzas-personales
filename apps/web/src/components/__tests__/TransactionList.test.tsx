@@ -27,13 +27,13 @@ describe('TransactionList', () => {
     expect(screen.getByText('2026-07-15')).toBeInTheDocument();
     expect(screen.getByText('Food')).toBeInTheDocument();
     expect(screen.getByText('Lunch')).toBeInTheDocument();
-    expect(screen.getByText(/ARS 150\.00/)).toBeInTheDocument();
-    expect(screen.getByText(/ARS 9,000\.00/)).toBeInTheDocument();
+    expect(screen.getByText(/\$\s*150,00/)).toBeInTheDocument();
+    expect(screen.getByText(/\+\$\s*9\.000,00/)).toBeInTheDocument();
   });
 
   it('renders an empty state when there are no transactions', () => {
     render(<TransactionList transactions={[]} {...baseProps} />);
-    expect(screen.getByText(/No transactions yet/)).toBeInTheDocument();
+    expect(screen.getByText(/Aún no hay transacciones/)).toBeInTheDocument();
   });
 
   it('falls back to the category id when the name is unknown', () => {
@@ -45,33 +45,33 @@ describe('TransactionList', () => {
     const user = userEvent.setup();
     render(<TransactionList transactions={transactions} {...baseProps} />);
 
-    await user.click(screen.getAllByRole('button', { name: 'Edit' })[0]);
+    await user.click(screen.getAllByRole('button', { name: 'Editar' })[0]);
     expect(baseProps.onEdit).toHaveBeenCalledWith(transactions[0]);
 
-    await user.click(screen.getAllByRole('button', { name: 'Delete' })[1]);
+    await user.click(screen.getAllByRole('button', { name: 'Borrar' })[1]);
     expect(baseProps.onDelete).toHaveBeenCalledWith(transactions[1]);
   });
 
-  it('replaces the Delete button with an inline confirm for the confirming row', async () => {
+  it('replaces the Borrar button with an inline confirm for the confirming row', async () => {
     const user = userEvent.setup();
     render(<TransactionList transactions={transactions} {...baseProps} confirmingId={1} />);
 
-    expect(screen.getByText('Delete permanently?')).toBeInTheDocument();
-    expect(screen.getByText('Removes it from budgets and summaries.')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Yes' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'No' })).toBeInTheDocument();
+    expect(screen.getByText('¿Borrar la transacción?')).toBeInTheDocument();
+    expect(screen.getByText('Se eliminará de presupuestos y resúmenes.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Cancelar' })).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'Yes' }));
+    await user.click(screen.getAllByRole('button', { name: 'Borrar' })[0]);
     expect(baseProps.onConfirmDelete).toHaveBeenCalledTimes(1);
     expect(baseProps.onDelete).not.toHaveBeenCalledWith(transactions[0]);
 
-    await user.click(screen.getByRole('button', { name: 'No' }));
+    await user.click(screen.getByRole('button', { name: 'Cancelar' }));
     expect(baseProps.onCancelDelete).toHaveBeenCalledTimes(1);
   });
 
-  it('keeps Delete buttons visible on non-confirming rows', () => {
+  it('keeps Borrar buttons visible on non-confirming rows', () => {
     render(<TransactionList transactions={transactions} {...baseProps} confirmingId={1} />);
-    expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument();
-    expect(screen.getAllByRole('button', { name: 'Edit' })).toHaveLength(2);
+    // Row 1 shows the inline confirm; row 2 keeps its own Borrar button.
+    expect(screen.getAllByRole('button', { name: 'Borrar' })).toHaveLength(2);
+    expect(screen.getAllByRole('button', { name: 'Editar' })).toHaveLength(2);
   });
 });

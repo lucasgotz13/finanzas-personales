@@ -13,7 +13,7 @@ export interface TransactionListProps {
 
 function formatAmount(tx: ApiTransaction): string {
   const value = tx.amountMinor / 100;
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: tx.currency }).format(value);
+  return new Intl.NumberFormat('es-AR', { style: 'currency', currency: tx.currency }).format(value);
 }
 
 /** Expense/income table for the current period with per-row edit/delete actions. */
@@ -38,17 +38,17 @@ export default function TransactionList({
   }
 
   if (transactions.length === 0) {
-    return <div className="empty">No transactions yet for this period.</div>;
+    return <div className="empty">Aún no hay transacciones en este período.</div>;
   }
   return (
     <table className="data">
       <thead>
         <tr>
-          <th>Date</th>
-          <th>Category</th>
-          <th>Note</th>
-          <th>Amount</th>
-          <th>Actions</th>
+          <th>Fecha</th>
+          <th>Categoría</th>
+          <th>Nota</th>
+          <th>Monto</th>
+          <th>Acciones</th>
         </tr>
       </thead>
       <tbody>
@@ -65,22 +65,22 @@ export default function TransactionList({
             </td>
             <td className="row-actions">
               <button type="button" className="link" onClick={() => onEdit(tx)} disabled={busy}>
-                Edit
+                Editar
               </button>
               {confirmingId === tx.id ? (
                 <span className="confirm-prompt">
-                  <span className="confirm-question">Delete permanently?</span>
-                  <span className="confirm-note">Removes it from budgets and summaries.</span>
+                  <span className="confirm-question">¿Borrar la transacción?</span>
+                  <span className="confirm-note">Se eliminará de presupuestos y resúmenes.</span>
                   <button type="button" className="danger" onClick={handleConfirm} disabled={busy}>
-                    Yes
+                    Borrar
                   </button>
                   <button type="button" className="link" onClick={onCancelDelete} disabled={busy}>
-                    No
+                    Cancelar
                   </button>
                 </span>
               ) : (
                 <button type="button" className="danger" onClick={() => onDelete(tx)} disabled={busy}>
-                  Delete
+                  Borrar
                 </button>
               )}
             </td>

@@ -19,10 +19,10 @@ describe('TransactionsPage', () => {
     vi.spyOn(api, 'getCategoryTree').mockResolvedValue(categories);
     vi.spyOn(api, 'listTransactions').mockResolvedValue(transactions);
     render(<TransactionsPage />);
-    expect(await screen.findByText(/Transactions —/)).toBeInTheDocument();
-    expect(await screen.findByText(/ARS 150\.00/)).toBeInTheDocument();
+    expect(await screen.findByText(/Transacciones —/)).toBeInTheDocument();
+    expect(await screen.findByText(/\$\s*150,00/)).toBeInTheDocument();
     expect(screen.getByTestId('amount')).toBeInTheDocument();
-    expect(screen.queryByText('Loading…')).not.toBeInTheDocument();
+    expect(screen.queryByText('Cargando…')).not.toBeInTheDocument();
   });
 
   it('adds the created transaction to the list immediately and reloads in the background (ET-1)', async () => {
@@ -36,19 +36,19 @@ describe('TransactionsPage', () => {
 
     const user = userEvent.setup();
     render(<TransactionsPage />);
-    await screen.findByText(/ARS 150\.00/);
+    await screen.findByText(/\$\s*150,00/);
     expect(listSpy).toHaveBeenCalledTimes(1);
 
     await user.type(screen.getByTestId('amount'), '25');
     await user.selectOptions(screen.getByTestId('category'), '1');
     await user.click(screen.getByTestId('submit'));
 
-    expect(await screen.findByText(/ARS 25\.00/)).toBeInTheDocument();
-    expect(screen.queryByText('Loading…')).not.toBeInTheDocument();
+    expect(await screen.findByText(/\$\s*25,00/)).toBeInTheDocument();
+    expect(screen.queryByText('Cargando…')).not.toBeInTheDocument();
     await waitFor(() => expect(listSpy).toHaveBeenCalledTimes(2));
   });
 
-  it('edits a row: prefills the form, PATCHes and updates the list without a Loading… flash', async () => {
+  it('edits a row: prefills the form, PATCHes and updates the list without a Cargando… flash', async () => {
     vi.spyOn(api, 'getCategoryTree').mockResolvedValue(categories);
     vi.spyOn(api, 'listTransactions').mockResolvedValue(transactions);
     const updated: ApiTransaction = { ...transactions[0], amountMinor: 30000, note: 'Lunch with client' };
@@ -56,10 +56,10 @@ describe('TransactionsPage', () => {
 
     const user = userEvent.setup();
     render(<TransactionsPage />);
-    await screen.findByText(/ARS 150\.00/);
+    await screen.findByText(/\$\s*150,00/);
 
-    await user.click(screen.getByRole('button', { name: 'Edit' }));
-    expect(screen.getByTestId('amount')).toHaveValue(150);
+    await user.click(screen.getByRole('button', { name: 'Editar' }));
+    expect(screen.getByTestId('amount')).toHaveValue('150');
     expect(screen.getByTestId('note')).toHaveValue('Lunch');
     expect(screen.getByTestId('cancel')).toBeInTheDocument();
 
@@ -72,9 +72,9 @@ describe('TransactionsPage', () => {
     await waitFor(() =>
       expect(updateSpy).toHaveBeenCalledWith(1, expect.objectContaining({ amountMinor: 30000, note: 'Lunch with client' })),
     );
-    expect(await screen.findByText(/ARS 300\.00/)).toBeInTheDocument();
-    expect(screen.queryByText(/ARS 150\.00/)).not.toBeInTheDocument();
-    expect(screen.queryByText('Loading…')).not.toBeInTheDocument();
+    expect(await screen.findByText(/\$\s*300,00/)).toBeInTheDocument();
+    expect(screen.queryByText(/\$\s*150,00/)).not.toBeInTheDocument();
+    expect(screen.queryByText('Cargando…')).not.toBeInTheDocument();
     expect(screen.queryByTestId('cancel')).not.toBeInTheDocument();
   });
 
@@ -85,17 +85,17 @@ describe('TransactionsPage', () => {
 
     const user = userEvent.setup();
     render(<TransactionsPage />);
-    await screen.findByText(/ARS 150\.00/);
+    await screen.findByText(/\$\s*150,00/);
 
-    await user.click(screen.getByRole('button', { name: 'Delete' }));
-    expect(screen.getByText('Delete permanently?')).toBeInTheDocument();
-    expect(screen.getByText('Removes it from budgets and summaries.')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Borrar' }));
+    expect(screen.getByText('¿Borrar la transacción?')).toBeInTheDocument();
+    expect(screen.getByText('Se eliminará de presupuestos y resúmenes.')).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'Yes' }));
+    await user.click(screen.getByRole('button', { name: 'Borrar' }));
     await waitFor(() => expect(deleteSpy).toHaveBeenCalledWith(1));
-    expect(screen.queryByText(/ARS 150\.00/)).not.toBeInTheDocument();
-    expect(screen.queryByText('Delete permanently?')).not.toBeInTheDocument();
-    expect(screen.queryByText('Loading…')).not.toBeInTheDocument();
+    expect(screen.queryByText(/\$\s*150,00/)).not.toBeInTheDocument();
+    expect(screen.queryByText('¿Borrar la transacción?')).not.toBeInTheDocument();
+    expect(screen.queryByText('Cargando…')).not.toBeInTheDocument();
   });
 
   it('keeps the row when the delete confirmation is cancelled', async () => {
@@ -105,13 +105,13 @@ describe('TransactionsPage', () => {
 
     const user = userEvent.setup();
     render(<TransactionsPage />);
-    await screen.findByText(/ARS 150\.00/);
+    await screen.findByText(/\$\s*150,00/);
 
-    await user.click(screen.getByRole('button', { name: 'Delete' }));
-    await user.click(screen.getByRole('button', { name: 'No' }));
+    await user.click(screen.getByRole('button', { name: 'Borrar' }));
+    await user.click(screen.getByRole('button', { name: 'Cancelar' }));
 
     expect(deleteSpy).not.toHaveBeenCalled();
-    expect(screen.getByText(/ARS 150\.00/)).toBeInTheDocument();
-    expect(screen.queryByText('Delete permanently?')).not.toBeInTheDocument();
+    expect(screen.getByText(/\$\s*150,00/)).toBeInTheDocument();
+    expect(screen.queryByText('¿Borrar la transacción?')).not.toBeInTheDocument();
   });
 });

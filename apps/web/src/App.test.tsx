@@ -36,12 +36,12 @@ describe('App tab switching', () => {
     const note = await screen.findByTestId('note');
     await user.type(note, 'rent');
 
-    await user.click(screen.getByRole('button', { name: 'Categories' }));
+    await user.click(screen.getByRole('button', { name: 'Categorías' }));
 
     // The transaction form is still in the DOM, just hidden (no unmount).
     expect(document.querySelector('[data-testid="note"]')).not.toBeNull();
 
-    await user.click(screen.getByRole('button', { name: 'Transactions' }));
+    await user.click(screen.getByRole('button', { name: 'Transacciones' }));
 
     expect(screen.getByTestId('note')).toHaveValue('rent');
   });
@@ -53,7 +53,7 @@ describe('App tab switching', () => {
 
     await screen.findByTestId('note');
 
-    for (const tab of ['Categories', 'Budgets', 'Summaries', 'Indicators', 'Transactions']) {
+    for (const tab of ['Categorías', 'Presupuestos', 'Resúmenes', 'Indicadores', 'Transacciones']) {
       await user.click(screen.getByRole('button', { name: tab }));
     }
 

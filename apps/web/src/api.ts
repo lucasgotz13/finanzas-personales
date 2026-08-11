@@ -9,6 +9,28 @@ import type {
 
 export const API_BASE = '/api/v1';
 
+/** Known backend error messages mapped to es-AR for display (backend copy stays English). */
+const API_MESSAGE_TRANSLATIONS: Record<string, string> = {
+  'Rate is required when changing currency to a non-ARS currency': 'El tipo de cambio es obligatorio al cambiar a una moneda que no es ARS.',
+  'Cannot delete a category with children': 'No se puede borrar una categoría con subcategorías.',
+  'Invalid name': 'Nombre inválido.',
+  'Invalid parentId': 'Categoría padre inválida.',
+  'Nothing to update': 'No hay nada para actualizar.',
+  'Invalid category id': 'Identificador de categoría inválido.',
+  'Invalid transaction id': 'Identificador de transacción inválido.',
+  'Invalid date range': 'Rango de fechas inválido.',
+  'Invalid period': 'Período inválido.',
+  'Invalid date': 'Fecha inválida.',
+  'Invalid month': 'Mes inválido.',
+  'Invalid budgets payload': 'Datos de presupuesto inválidos.',
+  'Route not found': 'Ruta no encontrada.',
+};
+
+/** Maps a known backend error message to es-AR; unknown messages pass through unchanged. */
+export function translateApiMessage(message: string): string {
+  return API_MESSAGE_TRANSLATIONS[message] ?? message;
+}
+
 interface ErrorEnvelope {
   error?: { code?: string; message?: string; details?: string[] };
 }
@@ -40,7 +62,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     throw new ApiError(
       res.status,
       body?.error?.code ?? 'UNKNOWN',
-      body?.error?.message ?? `Request failed (${res.status})`,
+      body?.error?.message ?? `Solicitud fallida (${res.status})`,
       body?.error?.details ?? [],
     );
   }

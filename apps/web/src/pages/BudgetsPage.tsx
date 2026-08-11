@@ -19,7 +19,7 @@ export default function BudgetsPage(): JSX.Element {
   return (
     <>
       <section className="card">
-        <h2>Monthly caps (ARS)</h2>
+        <h2>Topes mensuales (ARS)</h2>
         {categories.error && <div className="error-box">{categories.error}</div>}
         <BudgetEditor
           categories={flattenTree(categories.data ?? [])}
@@ -31,10 +31,10 @@ export default function BudgetsPage(): JSX.Element {
         />
       </section>
       <section className="card">
-        <h2>Status — {month}</h2>
-        <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} aria-label="Status month" />
+        <h2>Estado — {month}</h2>
+        <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} aria-label="Mes del estado" />
         {status.error && <div className="error-box">{status.error}</div>}
-        {status.loading ? <div className="empty">Loading…</div> : status.data && (
+        {status.loading ? <div className="empty">Cargando…</div> : status.data && (
           <BudgetStatusView
             status={status.data}
             categoryNames={Object.fromEntries(flattenTree(categories.data ?? []).map((c) => [c.id, c.name]))}

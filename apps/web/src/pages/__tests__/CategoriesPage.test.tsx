@@ -79,7 +79,7 @@ describe('CategoriesPage', () => {
     await user.click(screen.getByTestId('delete-1'));
     await user.click(screen.getByTestId('confirm-delete-1'));
 
-    expect(await screen.findByText('Cannot delete a category with children')).toBeInTheDocument();
+    expect(await screen.findByText('No se puede borrar una categoría con subcategorías.')).toBeInTheDocument();
     // The prompt stays open so the user can retry or cancel.
     expect(screen.getByTestId('confirm-delete-1')).toBeInTheDocument();
   });

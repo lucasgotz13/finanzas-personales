@@ -49,20 +49,20 @@ describe('IndicatorsPage (EI-6)', () => {
     expect(screen.getByText('1350.5')).toBeInTheDocument();
     expect(screen.getAllByText('ARS/USD')).toHaveLength(5);
     expect(screen.getByText('-0.1')).toBeInTheDocument();
-    expect(screen.queryByText('STALE')).not.toBeInTheDocument();
+    expect(screen.queryByText('VENCIDO')).not.toBeInTheDocument();
   });
 
-  it('renders the reference date on every card and no OLD REFERENCE when fresh (issue #29)', async () => {
+  it('renders the reference date on every card and no REFERENCIA ANTIGUA when fresh (issue #29)', async () => {
     vi.spyOn(api, 'getIndicators').mockResolvedValue(freshViews());
 
     render(<IndicatorsPage />);
     await screen.findByTestId('indicators-grid');
 
     expect(screen.getAllByText('ref 2026-08')).toHaveLength(9);
-    expect(screen.queryByText('OLD REFERENCE')).not.toBeInTheDocument();
+    expect(screen.queryByText('REFERENCIA ANTIGUA')).not.toBeInTheDocument();
   });
 
-  it('shows the OLD REFERENCE badge when aged while the fetch status stays fresh (issue #29)', async () => {
+  it('shows the REFERENCIA ANTIGUA badge when aged while the fetch status stays fresh (issue #29)', async () => {
     const views = freshViews();
     views[6] = { ...views[6], referenceAged: true }; // ipc-mensual
     vi.spyOn(api, 'getIndicators').mockResolvedValue(views);
@@ -70,8 +70,8 @@ describe('IndicatorsPage (EI-6)', () => {
     render(<IndicatorsPage />);
     await screen.findByTestId('indicators-grid');
 
-    expect(screen.getByTestId('indicator-ipc-mensual')).toHaveTextContent('OLD REFERENCE');
-    expect(screen.queryByText('STALE')).not.toBeInTheDocument();
+    expect(screen.getByTestId('indicator-ipc-mensual')).toHaveTextContent('REFERENCIA ANTIGUA');
+    expect(screen.queryByText('VENCIDO')).not.toBeInTheDocument();
     expect(screen.getAllByText('ref 2026-08')).toHaveLength(9);
   });
 
@@ -80,7 +80,7 @@ describe('IndicatorsPage (EI-6)', () => {
 
     render(<IndicatorsPage />);
 
-    expect(screen.getByText('Loading…')).toBeInTheDocument();
+    expect(screen.getByText('Cargando…')).toBeInTheDocument();
   });
 
   it('shows an empty state when the API returns no indicators', async () => {
@@ -88,11 +88,11 @@ describe('IndicatorsPage (EI-6)', () => {
 
     render(<IndicatorsPage />);
 
-    expect(await screen.findByText('No indicators yet — press Refresh.')).toBeInTheDocument();
+    expect(await screen.findByText('Aún no hay indicadores — presione Refrescar.')).toBeInTheDocument();
     expect(screen.queryByTestId('indicators-grid')).not.toBeInTheDocument();
   });
 
-  it('keeps the grid visible during auto-refresh (no Loading… collapse)', async () => {
+  it('keeps the grid visible during auto-refresh (no Cargando… collapse)', async () => {
     vi.spyOn(api, 'getIndicators').mockResolvedValue(freshViews());
     vi.spyOn(api, 'refreshIndicators').mockResolvedValue({ results: [] });
 
@@ -109,7 +109,7 @@ describe('IndicatorsPage (EI-6)', () => {
     });
 
     expect(screen.getByTestId('indicators-grid')).toBeInTheDocument();
-    expect(screen.queryByText('Loading…')).not.toBeInTheDocument();
+    expect(screen.queryByText('Cargando…')).not.toBeInTheDocument();
     expect(api.refreshIndicators).toHaveBeenCalledWith(false);
   });
 
@@ -130,7 +130,7 @@ describe('IndicatorsPage (EI-6)', () => {
       await vi.advanceTimersByTimeAsync(0);
     });
 
-    expect(screen.getByText('STALE')).toBeInTheDocument();
+    expect(screen.getByText('VENCIDO')).toBeInTheDocument();
     expect(screen.getByText('1350.5')).toBeInTheDocument();
 
     await act(async () => {
@@ -139,7 +139,7 @@ describe('IndicatorsPage (EI-6)', () => {
 
     expect(api.refreshIndicators).toHaveBeenCalledWith(false);
     expect(screen.getByTestId('refresh-error')).toHaveTextContent('sources down');
-    expect(screen.getByText('STALE')).toBeInTheDocument();
+    expect(screen.getByText('VENCIDO')).toBeInTheDocument();
   });
 
   it('manual refresh forces the server refresh and reloads the views', async () => {

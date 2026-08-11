@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { translateApiMessage } from '../api';
 import type { BudgetStatus } from '../types';
 
 export interface BudgetEditorProps {
@@ -9,7 +10,7 @@ export interface BudgetEditorProps {
 
 /** ARS currency formatting for minor-unit amounts (same pattern as SummaryView). */
 function formatMinor(minor: number): string {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'ARS' }).format(minor / 100);
+  return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(minor / 100);
 }
 
 /** Per-category monthly caps editor; saving PUTs the whole map in minor units (BM-3). */
@@ -31,16 +32,16 @@ export default function BudgetEditor({ categories, initialCaps, onSave }: Budget
       for (const cat of categories) {
         const raw = caps[String(cat.id)];
         if (raw !== undefined && raw !== '') {
-          const value = Math.round(Number(raw) * 100);
+          const value = Math.round(Number(raw.replace(',', '.')) * 100);
           if (!Number.isFinite(value) || value <= 0) {
-            throw new Error(`Cap for "${cat.name}" must be a positive amount.`);
+            throw new Error(`El tope para "${cat.name}" debe ser un monto positivo.`);
           }
           map[String(cat.id)] = value;
         }
       }
       await onSave(map);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not save budgets.');
+      setError(translateApiMessage(err instanceof Error ? err.message : 'No se pudieron guardar los presupuestos.'));
     } finally {
       setSaving(false);
     }
@@ -49,13 +50,13 @@ export default function BudgetEditor({ categories, initialCaps, onSave }: Budget
   return (
     <div>
       {categories.length === 0 ? (
-        <div className="empty">No categories to budget.</div>
+        <div className="empty">Aún no hay categorías para presupuestar.</div>
       ) : (
         <table className="data">
           <thead>
             <tr>
-              <th>Category</th>
-              <th>Monthly cap (ARS)</th>
+              <th>Categoría</th>
+              <th>Tope mensual (ARS)</th>
             </tr>
           </thead>
           <tbody>
@@ -64,9 +65,8 @@ export default function BudgetEditor({ categories, initialCaps, onSave }: Budget
                 <td>{cat.name}</td>
                 <td>
                   <input
-                    type="number"
-                    min="0.01"
-                    step="0.01"
+                    type="text"
+                    inputMode="decimal"
                     value={caps[String(cat.id)] ?? ''}
                     onChange={(e) => setCaps({ ...caps, [String(cat.id)]: e.target.value })}
                     data-testid={`cap-${cat.id}`}
@@ -79,7 +79,7 @@ export default function BudgetEditor({ categories, initialCaps, onSave }: Budget
       )}
       {error && <div className="error-box">{error}</div>}
       <button className="primary" onClick={handleSave} disabled={saving} data-testid="budget-save">
-        {saving ? 'Saving…' : 'Save budgets'}
+        {saving ? 'Guardando…' : 'Guardar presupuestos'}
       </button>
     </div>
   );
@@ -91,18 +91,18 @@ export function BudgetStatusView({ status, categoryNames }: { status: BudgetStat
     <div>
       <p data-testid="global-status">
         Global: {formatMinor(status.global.consumed)} / {formatMinor(status.global.cap)}{' '}
-        <span className={`badge ${status.global.overBudget ? 'over' : 'ok'}`}>{status.global.overBudget ? 'OVER BUDGET' : 'OK'}</span>
+        <span className={`badge ${status.global.overBudget ? 'over' : 'ok'}`}>{status.global.overBudget ? 'SOBRE EL PRESUPUESTO' : 'OK'}</span>
       </p>
       {status.categories.length === 0 ? (
-        <div className="empty">No budgets configured for this month.</div>
+        <div className="empty">Aún no hay presupuestos configurados para este mes.</div>
       ) : (
         <table className="data">
           <thead>
             <tr>
-              <th>Category</th>
-              <th>Cap</th>
-              <th>Consumed</th>
-              <th>Status</th>
+              <th>Categoría</th>
+              <th>Tope</th>
+              <th>Consumido</th>
+              <th>Estado</th>
             </tr>
           </thead>
           <tbody>
@@ -112,7 +112,7 @@ export function BudgetStatusView({ status, categoryNames }: { status: BudgetStat
                 <td>{formatMinor(c.cap)}</td>
                 <td>{formatMinor(c.consumed)}</td>
                 <td>
-                  <span className={`badge ${c.overBudget ? 'over' : 'ok'}`}>{c.overBudget ? 'OVER' : 'OK'}</span>
+                  <span className={`badge ${c.overBudget ? 'over' : 'ok'}`}>{c.overBudget ? 'SOBRE EL PRESUPUESTO' : 'OK'}</span>
                 </td>
               </tr>
             ))}

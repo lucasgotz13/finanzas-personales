@@ -51,7 +51,7 @@ describe('TransactionForm', () => {
     await user.type(screen.getByTestId('amount'), '25');
     await user.selectOptions(screen.getByTestId('category'), '1');
     await user.click(screen.getByTestId('submit'));
-    expect(await screen.findByText('FX rate is required for USD.')).toBeInTheDocument();
+    expect(await screen.findByText('El tipo de cambio es obligatorio para monedas que no son ARS.')).toBeInTheDocument();
   });
 
   it('rejects a non-positive amount without calling the API (ET-2)', async () => {
@@ -63,7 +63,7 @@ describe('TransactionForm', () => {
     await user.selectOptions(screen.getByTestId('category'), '1');
     await user.click(screen.getByTestId('submit'));
 
-    expect(await screen.findByText('Amount must be a positive number.')).toBeInTheDocument();
+    expect(await screen.findByText('El monto debe ser un número positivo.')).toBeInTheDocument();
     expect(spy).not.toHaveBeenCalled();
   });
 
@@ -81,16 +81,40 @@ describe('TransactionForm', () => {
     await waitFor(() => expect(spy).toHaveBeenCalledWith(expect.objectContaining({ amountMinor: 2500, currency: 'USD', rate: 950 })));
   });
 
-  it('converts a decimal amount to minor units (1200.50 → 120050)', async () => {
+  it('converts a decimal amount to minor units (1200.5 → 120050)', async () => {
     const user = userEvent.setup();
     const spy = vi.spyOn(api, 'createTransaction').mockResolvedValue({} as never);
     render(<TransactionForm categories={categories} onCreated={vi.fn()} />);
 
-    await user.type(screen.getByTestId('amount'), '1200.50');
+    await user.type(screen.getByTestId('amount'), '1200.5');
     await user.selectOptions(screen.getByTestId('category'), '1');
     await user.click(screen.getByTestId('submit'));
 
     await waitFor(() => expect(spy).toHaveBeenCalledWith(expect.objectContaining({ amountMinor: 120050, currency: 'ARS' })));
+  });
+
+  it('accepts a decimal comma amount (12,50 → 1250 minor units)', async () => {
+    const user = userEvent.setup();
+    const spy = vi.spyOn(api, 'createTransaction').mockResolvedValue({} as never);
+    render(<TransactionForm categories={categories} onCreated={vi.fn()} />);
+
+    await user.type(screen.getByTestId('amount'), '12,50');
+    await user.selectOptions(screen.getByTestId('category'), '1');
+    await user.click(screen.getByTestId('submit'));
+
+    await waitFor(() => expect(spy).toHaveBeenCalledWith(expect.objectContaining({ amountMinor: 1250, currency: 'ARS' })));
+  });
+
+  it('accepts a dot-decimal amount (12.50 → 1250 minor units)', async () => {
+    const user = userEvent.setup();
+    const spy = vi.spyOn(api, 'createTransaction').mockResolvedValue({} as never);
+    render(<TransactionForm categories={categories} onCreated={vi.fn()} />);
+
+    await user.type(screen.getByTestId('amount'), '12.50');
+    await user.selectOptions(screen.getByTestId('category'), '1');
+    await user.click(screen.getByTestId('submit'));
+
+    await waitFor(() => expect(spy).toHaveBeenCalledWith(expect.objectContaining({ amountMinor: 1250, currency: 'ARS' })));
   });
 
   describe('edit mode', () => {
@@ -108,8 +132,8 @@ describe('TransactionForm', () => {
     it('prefills every field with the initial transaction (amount in decimal units)', () => {
       render(<TransactionForm categories={categories} initial={existing} onCreated={vi.fn()} onUpdate={vi.fn()} onCancel={vi.fn()} />);
 
-      expect(screen.getByTestId('amount')).toHaveValue(2500);
-      expect(screen.getByLabelText('Type')).toHaveValue('income');
+      expect(screen.getByTestId('amount')).toHaveValue('2500');
+      expect(screen.getByLabelText('Tipo')).toHaveValue('income');
       expect(screen.getByTestId('currency')).toHaveValue('USD');
       expect(screen.getByTestId('rate')).toHaveValue(950);
       expect(screen.getByTestId('date')).toHaveValue('2026-07-20');
@@ -143,8 +167,8 @@ describe('TransactionForm', () => {
         }),
       );
       expect(onUpdate).toHaveBeenCalledWith(updated);
-      await waitFor(() => expect(screen.getByTestId('amount')).toHaveValue(null));
-      expect(screen.getByTestId('submit')).toHaveTextContent('Save');
+      await waitFor(() => expect(screen.getByTestId('amount')).toHaveValue(''));
+      expect(screen.getByTestId('submit')).toHaveTextContent('Guardar');
     });
 
     it('cancels edit mode and resets the form', async () => {
@@ -154,7 +178,7 @@ describe('TransactionForm', () => {
 
       await user.click(screen.getByTestId('cancel'));
       expect(onCancel).toHaveBeenCalledTimes(1);
-      expect(screen.getByTestId('amount')).toHaveValue(null);
+      expect(screen.getByTestId('amount')).toHaveValue('');
       expect(screen.getByTestId('currency')).toHaveValue('ARS');
       expect(screen.getByTestId('category')).toHaveValue('');
     });
@@ -168,7 +192,7 @@ describe('TransactionForm', () => {
       await user.selectOptions(screen.getByTestId('currency'), 'USD');
       await user.click(screen.getByTestId('submit'));
 
-      expect(await screen.findByText('FX rate is required for USD.')).toBeInTheDocument();
+      expect(await screen.findByText('El tipo de cambio es obligatorio para monedas que no son ARS.')).toBeInTheDocument();
       expect(spy).not.toHaveBeenCalled();
     });
   });

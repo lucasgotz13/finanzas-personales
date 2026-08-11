@@ -1,6 +1,6 @@
 import { arDateString } from '@finanzas/domain';
 import { useState } from 'react';
-import { api, flattenTree } from '../api';
+import { api, flattenTree, translateApiMessage } from '../api';
 import type { ApiTransaction, CategoryNode, CreateTransactionInput } from '../types';
 
 export interface TransactionFormProps {
@@ -12,7 +12,7 @@ export interface TransactionFormProps {
   onCancel?: () => void;
 }
 
-const DIRECTION_LABELS: Record<string, string> = { expense: 'Expense', income: 'Income' };
+const DIRECTION_LABELS: Record<string, string> = { expense: 'Gasto', income: 'Ingreso' };
 
 /** Manual expense/income form (ET-1..6, IT-1/2): rate is required iff USD. */
 export default function TransactionForm({ categories, onCreated, initial, onUpdate, onCancel }: TransactionFormProps): JSX.Element {
@@ -44,11 +44,11 @@ export default function TransactionForm({ categories, onCreated, initial, onUpda
   async function handleSubmit(e: React.FormEvent): Promise<void> {
     e.preventDefault();
     const details: string[] = [];
-    const parsed = parseFloat(amount);
-    if (!Number.isFinite(parsed) || parsed <= 0) details.push('Amount must be a positive number.');
+    const parsed = parseFloat(amount.replace(',', '.'));
+    if (!Number.isFinite(parsed) || parsed <= 0) details.push('El monto debe ser un número positivo.');
     const amountMinor = Math.round(parsed * 100);
-    if (currency === 'USD' && (!rate || Number(rate) <= 0)) details.push('FX rate is required for USD.');
-    if (categoryId === '') details.push('Select a category.');
+    if (currency === 'USD' && (!rate || Number(rate) <= 0)) details.push('El tipo de cambio es obligatorio para monedas que no son ARS.');
+    if (categoryId === '') details.push('Seleccionar categoría.');
     if (details.length > 0) {
       setErrors(details);
       return;
@@ -78,7 +78,7 @@ export default function TransactionForm({ categories, onCreated, initial, onUpda
         setNote('');
       }
     } catch (err) {
-      setErrors([err instanceof Error ? err.message : 'Could not save the transaction.']);
+      setErrors([translateApiMessage(err instanceof Error ? err.message : 'No se pudo guardar la transacción.')]);
     } finally {
       setSubmitting(false);
     }
@@ -93,7 +93,7 @@ export default function TransactionForm({ categories, onCreated, initial, onUpda
     // noValidate: the form validates with its own friendly messages (ET-2)
     <form className="transaction-form" onSubmit={handleSubmit} noValidate>
       <label>
-        Type
+        Tipo
         <select value={direction} onChange={(e) => setDirection(e.target.value as 'expense' | 'income')}>
           {Object.entries(DIRECTION_LABELS).map(([value, label]) => (
             <option key={value} value={value}>
@@ -103,11 +103,10 @@ export default function TransactionForm({ categories, onCreated, initial, onUpda
         </select>
       </label>
       <label>
-        Amount ({currency})
+        Monto ({currency})
         <input
-          type="number"
-          min="0.01"
-          step="0.01"
+          type="text"
+          inputMode="decimal"
           placeholder="1200"
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
@@ -115,7 +114,7 @@ export default function TransactionForm({ categories, onCreated, initial, onUpda
         />
       </label>
       <label>
-        Currency
+        Moneda
         <select value={currency} onChange={(e) => setCurrency(e.target.value as 'ARS' | 'USD')} data-testid="currency">
           <option value="ARS">ARS</option>
           <option value="USD">USD</option>
@@ -123,18 +122,18 @@ export default function TransactionForm({ categories, onCreated, initial, onUpda
       </label>
       {currency === 'USD' && (
         <label>
-          FX rate at entry
+          Tipo de cambio al momento
           <input type="number" min="0.0001" step="any" value={rate} onChange={(e) => setRate(e.target.value)} data-testid="rate" />
         </label>
       )}
       <label>
-        Date
+        Fecha
         <input type="date" value={date} onChange={(e) => setDate(e.target.value)} data-testid="date" />
       </label>
       <label>
-        Category
+        Categoría
         <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} data-testid="category">
-          <option value="">Select…</option>
+          <option value="">Seleccionar…</option>
           {options.map((c) => (
             <option key={c.id} value={c.id}>
               {c.name}
@@ -143,16 +142,16 @@ export default function TransactionForm({ categories, onCreated, initial, onUpda
         </select>
       </label>
       <label>
-        Note
+        Nota
         <input type="text" value={note} onChange={(e) => setNote(e.target.value)} data-testid="note" />
       </label>
       <div className="actions">
         <button type="submit" className="primary" disabled={submitting} data-testid="submit">
-          {submitting ? 'Saving…' : 'Save'}
+          {submitting ? 'Guardando…' : 'Guardar'}
         </button>
         {initial && (
           <button type="button" className="link" onClick={handleCancel} disabled={submitting} data-testid="cancel">
-            Cancel
+            Cancelar
           </button>
         )}
       </div>
