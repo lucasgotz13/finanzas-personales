@@ -87,7 +87,11 @@ export default function CategoriesPage(): JSX.Element {
       </section>
       <section className="card">
         <h2>Categorías</h2>
-        {categories.error && <div className="error-box">{categories.error}</div>}
+        {categories.error && (
+          <div className="error-box" role="alert">
+            {categories.error}
+          </div>
+        )}
         {deleteError && (
           <div className="error-box" role="alert">
             {deleteError}

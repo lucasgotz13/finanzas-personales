@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { api } from '../../api';
@@ -53,6 +53,47 @@ describe('BudgetsPage', () => {
     await user.click(screen.getByTestId('budget-save'));
 
     expect(putBudgets).toHaveBeenCalledWith({ 1: 100050 });
+  });
+
+  it('submits with Enter, shows and clears the success message, and exposes cap aria-labels (P2)', async () => {
+    vi.spyOn(api, 'getCategoryTree').mockResolvedValue(categories);
+    const getBudgets = vi.spyOn(api, 'getBudgets').mockResolvedValue({});
+    const putBudgets = vi.spyOn(api, 'putBudgets').mockResolvedValue({ 1: 100000 });
+    vi.spyOn(api, 'getBudgetStatus').mockResolvedValue(status);
+
+    const user = userEvent.setup();
+    render(<BudgetsPage />);
+    await screen.findByTestId('cap-1');
+
+    // Cap inputs are reachable by their Spanish aria-labels
+    expect(screen.getByLabelText('Tope mensual de Food')).toBeInTheDocument();
+    expect(screen.getByLabelText('Tope mensual de Transport')).toBeInTheDocument();
+
+    await user.type(screen.getByTestId('cap-1'), '1000{Enter}');
+
+    await waitFor(() => expect(putBudgets).toHaveBeenCalledWith({ 1: 100000 }));
+    expect(await screen.findByText('Presupuestos guardados.')).toBeInTheDocument();
+
+    // Transient success: clears on its own after ~2s
+    await waitFor(() => expect(screen.queryByText('Presupuestos guardados.')).not.toBeInTheDocument(), { timeout: 3000 });
+    await vi.waitFor(() => expect(getBudgets).toHaveBeenCalledTimes(2));
+  });
+
+  it('rejects a scientific-notation cap (1e3) with a validation error and does not save (P2)', async () => {
+    vi.spyOn(api, 'getCategoryTree').mockResolvedValue(categories);
+    vi.spyOn(api, 'getBudgets').mockResolvedValue({});
+    const putBudgets = vi.spyOn(api, 'putBudgets').mockResolvedValue({});
+    vi.spyOn(api, 'getBudgetStatus').mockResolvedValue(status);
+
+    const user = userEvent.setup();
+    render(<BudgetsPage />);
+    await screen.findByTestId('cap-1');
+
+    await user.type(screen.getByTestId('cap-1'), '1e3');
+    await user.click(screen.getByTestId('budget-save'));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('El tope para "Food" debe ser un monto positivo.');
+    expect(putBudgets).not.toHaveBeenCalled();
   });
 
   it('renders the over-budget status with formatted amounts and badges (BM-4)', async () => {

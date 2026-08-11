@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { translateApiMessage } from '../api';
 import type { BudgetStatus } from '../types';
 
@@ -13,6 +13,9 @@ function formatMinor(minor: number): string {
   return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(minor / 100);
 }
 
+/** Positive decimal with optional comma/dot separator; rejects scientific notation (P2). */
+const CAP_PATTERN = /^\d+([.,]\d+)?$/;
+
 /** Per-category monthly caps editor; saving PUTs the whole map in minor units (BM-3). */
 export default function BudgetEditor({ categories, initialCaps, onSave }: BudgetEditorProps): JSX.Element {
   const [caps, setCaps] = useState<Record<string, string>>(() =>
@@ -23,15 +26,27 @@ export default function BudgetEditor({ categories, initialCaps, onSave }: Budget
   );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+
+  // Transient success message: clears ~2s after it appears (and on unmount).
+  useEffect(() => {
+    if (!success) return;
+    const t = setTimeout(() => setSuccess(false), 2000);
+    return () => clearTimeout(t);
+  }, [success]);
 
   async function handleSave(): Promise<void> {
     setError(null);
+    setSuccess(false);
     setSaving(true);
     try {
       const map: Record<string, number> = {};
       for (const cat of categories) {
         const raw = caps[String(cat.id)];
         if (raw !== undefined && raw !== '') {
+          if (!CAP_PATTERN.test(raw)) {
+            throw new Error(`El tope para "${cat.name}" debe ser un monto positivo.`);
+          }
           const value = Math.round(Number(raw.replace(',', '.')) * 100);
           if (!Number.isFinite(value) || value <= 0) {
             throw new Error(`El tope para "${cat.name}" debe ser un monto positivo.`);
@@ -40,6 +55,7 @@ export default function BudgetEditor({ categories, initialCaps, onSave }: Budget
         }
       }
       await onSave(map);
+      setSuccess(true);
     } catch (err) {
       setError(translateApiMessage(err instanceof Error ? err.message : 'No se pudieron guardar los presupuestos.'));
     } finally {
@@ -48,7 +64,12 @@ export default function BudgetEditor({ categories, initialCaps, onSave }: Budget
   }
 
   return (
-    <div>
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        void handleSave();
+      }}
+    >
       {categories.length === 0 ? (
         <div className="empty">Aún no hay categorías para presupuestar.</div>
       ) : (
@@ -67,6 +88,7 @@ export default function BudgetEditor({ categories, initialCaps, onSave }: Budget
                   <input
                     type="text"
                     inputMode="decimal"
+                    aria-label={`Tope mensual de ${cat.name}`}
                     value={caps[String(cat.id)] ?? ''}
                     onChange={(e) => setCaps({ ...caps, [String(cat.id)]: e.target.value })}
                     data-testid={`cap-${cat.id}`}
@@ -77,11 +99,20 @@ export default function BudgetEditor({ categories, initialCaps, onSave }: Budget
           </tbody>
         </table>
       )}
-      {error && <div className="error-box">{error}</div>}
-      <button className="primary" onClick={handleSave} disabled={saving} data-testid="budget-save">
+      {error && (
+        <div className="error-box" role="alert">
+          {error}
+        </div>
+      )}
+      {success && (
+        <div className="success-box" role="status" data-testid="budget-success">
+          Presupuestos guardados.
+        </div>
+      )}
+      <button type="submit" className="primary" disabled={saving} data-testid="budget-save">
         {saving ? 'Guardando…' : 'Guardar presupuestos'}
       </button>
-    </div>
+    </form>
   );
 }
 

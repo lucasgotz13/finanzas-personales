@@ -156,6 +156,19 @@ describe('IndicatorsPage (EI-6)', () => {
     await vi.waitFor(() => expect(api.getIndicators).toHaveBeenCalledTimes(2));
   });
 
+  it('surfaces the refresh error in a role=alert box (P2)', async () => {
+    vi.spyOn(api, 'getIndicators').mockResolvedValue(freshViews());
+    vi.spyOn(api, 'refreshIndicators').mockRejectedValue(new Error('fuente caída'));
+    const user = userEvent.setup();
+
+    render(<IndicatorsPage />);
+    await screen.findByTestId('indicators-grid');
+
+    await user.click(screen.getByTestId('indicators-refresh'));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('fuente caída');
+  });
+
   it('auto-refreshes non-forced every 5 minutes while mounted', async () => {
     vi.spyOn(api, 'getIndicators').mockResolvedValue(freshViews());
     vi.spyOn(api, 'refreshIndicators').mockResolvedValue({ results: [] });
