@@ -31,6 +31,23 @@ describe('TransactionList', () => {
     expect(screen.getByText(/\+\$\s*9\.000,00/)).toBeInTheDocument();
   });
 
+  it('renders the Tipo column with Gasto/Ingreso', () => {
+    render(<TransactionList transactions={transactions} {...baseProps} />);
+    expect(screen.getByText('Gasto')).toBeInTheDocument();
+    expect(screen.getByText('Ingreso')).toBeInTheDocument();
+  });
+
+  it('shows the FX-at-entry in the rate column for USD rows and a dash for ARS rows', () => {
+    const mixed: ApiTransaction[] = [
+      transactions[0],
+      { id: 3, direction: 'expense', amountMinor: 50000, currency: 'USD', rate: 950, date: '2026-07-10', categoryId: 1, note: 'Airbnb' },
+    ];
+    render(<TransactionList transactions={mixed} {...baseProps} />);
+    expect(screen.getByText('Tipo de cambio')).toBeInTheDocument();
+    expect(screen.getByText('950')).toBeInTheDocument();
+    expect(screen.getByText('—')).toBeInTheDocument();
+  });
+
   it('renders an empty state when there are no transactions', () => {
     render(<TransactionList transactions={[]} {...baseProps} />);
     expect(screen.getByText(/Aún no hay transacciones/)).toBeInTheDocument();

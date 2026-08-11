@@ -1,33 +1,52 @@
 :root {
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  color: #1a1a1a;
-  background: #fafafa;
+  color: #1a1815;
+  background: #f7f5f0;
+  /* La billetera tokens: warm paper ground, warm near-black ink, ONE action
+     green reserved for actionable elements, semantic chips for state. */
+  --ink: #1a1815;
   --muted-text: #595959;
+  --ground: #f7f5f0;
+  --card: #ffffff;
+  --hairline: #e8e4dc;
+  --shadow: 0 1px 3px rgba(26, 24, 21, 0.06);
+  --action: #0e7a3d;
+  --action-hover: #0b6634;
+  --danger: #b3261e;
+  --danger-bg: #fdecea;
+  --warn: #b45309;
+  --warn-bg: #fff4e5;
+  --ok: #1e7d32;
+  --ok-bg: #e6f4ea;
 }
 
 body {
   margin: 0;
+  background: var(--ground);
+  color: var(--ink);
 }
 
-/* Keyboard focus indicator (WCAG 2.4.7): high-contrast outline on any focusable element */
+/* Keyboard focus indicator (WCAG 2.4.7): action-green outline on any focusable element */
 :focus-visible {
-  outline: 2px solid #1e3a5f;
+  outline: 2px solid var(--action);
   outline-offset: 2px;
 }
 
+/* The header sits ON the ground: no navy block, ink title, underline tabs. */
 header.app-header {
   display: flex;
   align-items: center;
   gap: 1rem;
   padding: 0.75rem 1.5rem;
-  background: #1e3a5f;
-  color: #fff;
+  background: transparent;
+  color: var(--ink);
 }
 
 header.app-header h1 {
   font-size: 1.1rem;
   margin: 0;
   margin-right: 1rem;
+  color: var(--ink);
 }
 
 nav.tabs {
@@ -37,61 +56,76 @@ nav.tabs {
 
 nav.tabs button {
   border: none;
+  border-bottom: 2px solid transparent;
   background: transparent;
-  color: #cfe0f0;
+  color: var(--muted-text);
   padding: 0.5rem 0.9rem;
   cursor: pointer;
   font-size: 0.95rem;
-  border-radius: 6px 6px 0 0;
+}
+
+nav.tabs button:hover {
+  color: var(--ink);
 }
 
 nav.tabs button.active {
-  background: #fafafa;
-  color: #1e3a5f;
-  font-weight: 600;
+  color: var(--ink);
+  font-weight: 700;
+  border-bottom-color: var(--action);
+}
+
+/* Desktop header tabs swap with the bottom bar at the ≤640px breakpoint. */
+nav.tabs.desktop-tabs {
+  display: flex;
 }
 
 main {
   max-width: 900px;
   margin: 1.5rem auto;
-  padding: 0 1rem;
+  padding: 0 1rem 1rem;
 }
 
 .card {
-  background: #fff;
-  border: 1px solid #e2e2e2;
-  border-radius: 8px;
+  background: var(--card);
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
   padding: 1rem;
   margin-bottom: 1rem;
+  box-shadow: var(--shadow);
 }
 
 button.primary {
-  background: #1e3a5f;
+  background: var(--action);
   color: #fff;
   border: none;
-  border-radius: 4px;
+  border-radius: 8px;
   padding: 0.5rem 1rem;
   cursor: pointer;
+  font-weight: 600;
+}
+
+button.primary:hover:not(:disabled) {
+  background: var(--action-hover);
 }
 
 button.primary:disabled {
-  opacity: 0.6;
+  opacity: 0.45;
   cursor: default;
 }
 
 .error-box {
-  color: #b3261e;
-  background: #fdecea;
+  color: var(--danger);
+  background: var(--danger-bg);
   border: 1px solid #f5c6c0;
-  border-radius: 4px;
+  border-radius: 8px;
   padding: 0.5rem;
   font-size: 0.85rem;
 }
 
 .success-box {
-  background: #e6f4ea;
-  color: #1e7d32;
-  border-radius: 4px;
+  background: var(--ok-bg);
+  color: var(--ok);
+  border-radius: 8px;
   padding: 0.5rem;
   font-size: 0.85rem;
   margin-top: 0.5rem;
@@ -112,10 +146,19 @@ form.transaction-form label {
 
 form.transaction-form input,
 form.transaction-form select {
-  padding: 0.4rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+  padding: 0.45rem;
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
   font-size: 0.95rem;
+  background: var(--card);
+  color: var(--ink);
+}
+
+/* Live USD→ARS conversion preview under the amount (muted, tabular). */
+.conversion-line {
+  color: var(--muted-text);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
 }
 
 form.transaction-form .actions {
@@ -125,13 +168,18 @@ form.transaction-form .actions {
   align-items: center;
 }
 
+/* One consistent danger style everywhere (Borrar, category delete). */
 button.danger {
-  background: #b3261e;
+  background: var(--danger);
   color: #fff;
   border: none;
-  border-radius: 4px;
+  border-radius: 8px;
   padding: 0.35rem 0.8rem;
   cursor: pointer;
+}
+
+button.danger:hover:not(:disabled) {
+  background: #8f1c16;
 }
 
 table.data {
@@ -143,25 +191,87 @@ table.data {
 table.data th,
 table.data td {
   text-align: left;
-  padding: 0.45rem 0.6rem;
-  border-bottom: 1px solid #eee;
+  padding: 0.55rem 0.6rem;
+  border-bottom: 1px solid var(--hairline);
 }
 
-.badge {
-  font-size: 0.75rem;
-  border-radius: 10px;
-  padding: 0.1rem 0.5rem;
+table.data th {
+  color: var(--muted-text);
+  font-size: 0.8rem;
   font-weight: 600;
 }
 
+/* Money is always the loudest thing: tabular figures on every amount. */
+.money {
+  font-variant-numeric: tabular-nums;
+}
+
+/* List amounts: 1rem, 600, tabular. */
+.row-amount {
+  font-size: 1rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* FX-at-entry cell: quiet tabular figure. */
+.rate-cell {
+  font-variant-numeric: tabular-nums;
+  color: var(--muted-text);
+}
+
+.tx-direction {
+  color: var(--muted-text);
+}
+
+/* Semantic state chips: pill radius, 600, uppercase via CSS. */
+.badge {
+  font-size: 0.75rem;
+  border-radius: 999px;
+  padding: 0.1rem 0.5rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
 .badge.over {
-  background: #fdecea;
-  color: #b3261e;
+  background: var(--danger-bg);
+  color: var(--danger);
 }
 
 .badge.ok {
-  background: #e6f4ea;
-  color: #1e7d32;
+  background: var(--ok-bg);
+  color: var(--ok);
+}
+
+/* Month-total money card: per-currency totals, large tabular figures. */
+.money-card h2 {
+  font-size: 1rem;
+  margin: 0 0 0.5rem;
+  color: var(--muted-text);
+  font-weight: 600;
+}
+
+.totals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem 2.5rem;
+}
+
+.total .total-currency {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--muted-text);
+}
+
+.total .total-amount {
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+.total-empty {
+  color: var(--muted-text);
 }
 
 .empty {
@@ -183,17 +293,22 @@ ul.tree .tree-row {
   padding: 0.25rem 0;
 }
 
+/* Action links (Editar, Renombrar, Restaurar, Cancelar): action green. */
 button.link {
   border: none;
   background: none;
-  color: #1e3a5f;
+  color: var(--action);
   text-decoration: underline;
   cursor: pointer;
   font-size: 0.85rem;
 }
 
+button.link:hover {
+  color: var(--action-hover);
+}
+
 button:disabled {
-  opacity: 0.6;
+  opacity: 0.45;
   cursor: default;
 }
 
@@ -246,13 +361,14 @@ button:disabled {
 }
 
 .indicator-card {
-  background: #fff;
-  border: 1px solid #e2e2e2;
-  border-radius: 8px;
+  background: var(--card);
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
   padding: 0.75rem 1rem;
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
+  box-shadow: var(--shadow);
 }
 
 .indicator-card.stale {
@@ -261,13 +377,14 @@ button:disabled {
 
 .indicator-label {
   font-size: 0.8rem;
-  color: #555;
+  color: var(--muted-text);
 }
 
 .indicator-value {
   font-size: 1.35rem;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
 }
 
 .indicator-unit {
@@ -286,24 +403,37 @@ button:disabled {
   color: var(--muted-text);
 }
 
-.stale-badge {
-  align-self: flex-start;
-  font-size: 0.7rem;
-  border-radius: 10px;
-  padding: 0.1rem 0.5rem;
-  font-weight: 600;
-  background: #fdecea;
-  color: #b3261e;
-}
-
+/* Freshness chips (VENCIDO / REFERENCIA ANTIGUA): danger / warning palette. */
+.stale-badge,
 .aged-badge {
   align-self: flex-start;
   font-size: 0.7rem;
-  border-radius: 10px;
+  border-radius: 999px;
   padding: 0.1rem 0.5rem;
   font-weight: 600;
-  background: #fff4e5;
-  color: #b45309;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.stale-badge {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.aged-badge {
+  background: var(--warn-bg);
+  color: var(--warn);
+}
+
+/* Warm-card material for inline inputs (budget caps, category rename). */
+table.data input,
+ul.tree .tree-row input {
+  padding: 0.4rem;
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  background: var(--card);
+  color: var(--ink);
 }
 
 /* Hidden tabs stay mounted but invisible at EVERY viewport width (P1 #5) */
@@ -311,7 +441,11 @@ button:disabled {
   display: none;
 }
 
-/* --- Responsive: mobile-first adjustments (≤640px) --- */
+/* --- Mobile: bottom bar at thumb reach (≤640px) --- */
+.bottom-bar {
+  display: none;
+}
+
 @media (max-width: 640px) {
   header.app-header {
     flex-direction: column;
@@ -325,18 +459,17 @@ button:disabled {
     margin-right: 0;
   }
 
+  /* Header tabs hide on mobile; the bottom bar owns navigation. */
+  nav.tabs.desktop-tabs {
+    display: none;
+  }
+
+  /* Page-level filter tabs (Todas/Gasto/Ingreso) scroll horizontally. */
   nav.tabs {
     width: 100%;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     gap: 0.15rem;
-    /* Sticky tabs: always reachable while scrolling content */
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    /* Solid navy behind the sticky bar so content never shows through
-       under inactive labels (navy header color; desktop stays transparent) */
-    background: #1e3a5f;
   }
 
   nav.tabs button {
@@ -347,9 +480,42 @@ button:disabled {
     white-space: nowrap;
   }
 
+  .bottom-bar {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 20;
+    background: var(--card);
+    border-top: 1px solid var(--hairline);
+    box-shadow: 0 -1px 3px rgba(26, 24, 21, 0.06);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .bottom-bar button {
+    flex: 1;
+    border: none;
+    background: transparent;
+    color: var(--ink);
+    font-size: 0.8rem;
+    font-weight: 500;
+    padding: 0.5rem 0.25rem;
+    min-height: 44px;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .bottom-bar button.active {
+    color: var(--action);
+    font-weight: 700;
+  }
+
   main {
     margin: 1rem auto;
-    padding: 0 0.75rem;
+    padding: 0 0.75rem calc(3.5rem + env(safe-area-inset-bottom));
   }
 
   .card {
@@ -394,6 +560,10 @@ button:disabled {
 
   .indicator-value {
     font-size: 1.2rem;
+  }
+
+  .total .total-amount {
+    font-size: 1.4rem;
   }
 
   button.primary,

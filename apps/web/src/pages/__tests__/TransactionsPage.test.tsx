@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { api } from '../../api';
@@ -10,6 +10,12 @@ const transactions: ApiTransaction[] = [
   { id: 1, direction: 'expense', amountMinor: 15000, currency: 'ARS', rate: 1, date: '2026-07-15', categoryId: 1, note: 'Lunch' },
 ];
 
+/** Amount assertions are scoped to the list table because the month-total
+ *  money card legitimately renders the same figures (duplicate text). */
+async function listTable(): Promise<HTMLElement> {
+  return screen.findByTestId('transaction-list');
+}
+
 describe('TransactionsPage', () => {
   afterEach(() => {
     vi.restoreAllMocks();
@@ -20,9 +26,24 @@ describe('TransactionsPage', () => {
     vi.spyOn(api, 'listTransactions').mockResolvedValue(transactions);
     render(<TransactionsPage />);
     expect(await screen.findByText(/Transacciones —/)).toBeInTheDocument();
-    expect(await screen.findByText(/\$\s*150,00/)).toBeInTheDocument();
+    await within(await listTable()).findByText(/\$\s*150,00/);
     expect(screen.getByTestId('amount')).toBeInTheDocument();
     expect(screen.queryByText('Cargando…')).not.toBeInTheDocument();
+  });
+
+  it('shows the month total per currency in the money card (ARS and USD)', async () => {
+    const mixed: ApiTransaction[] = [
+      transactions[0],
+      { id: 3, direction: 'income', amountMinor: 100000, currency: 'USD', rate: 950, date: '2026-07-10', categoryId: 1, note: 'Airbnb' },
+    ];
+    vi.spyOn(api, 'getCategoryTree').mockResolvedValue(categories);
+    vi.spyOn(api, 'listTransactions').mockResolvedValue(mixed);
+    render(<TransactionsPage />);
+
+    expect(await screen.findByText('Total del mes')).toBeInTheDocument();
+    const card = screen.getByTestId('month-total');
+    expect(within(card).getByText(/\$\s*150,00/)).toBeInTheDocument(); // ARS net: a single expense
+    expect(within(card).getByText(/US\$\s*1\.000,00/)).toBeInTheDocument(); // USD net: a single income
   });
 
   it('adds the created transaction to the list immediately and reloads in the background (ET-1)', async () => {
@@ -36,16 +57,18 @@ describe('TransactionsPage', () => {
 
     const user = userEvent.setup();
     render(<TransactionsPage />);
-    await screen.findByText(/\$\s*150,00/);
-    expect(listSpy).toHaveBeenCalledTimes(1);
+    await within(await listTable()).findByText(/\$\s*150,00/);
+    // List + month-total card each fetch the month (2 calls on mount).
+    expect(listSpy).toHaveBeenCalledTimes(2);
 
     await user.type(screen.getByTestId('amount'), '25');
     await user.selectOptions(screen.getByTestId('category'), '1');
     await user.click(screen.getByTestId('submit'));
 
-    expect(await screen.findByText(/\$\s*25,00/)).toBeInTheDocument();
+    expect(await within(await listTable()).findByText(/\$\s*25,00/)).toBeInTheDocument();
     expect(screen.queryByText('Cargando…')).not.toBeInTheDocument();
-    await waitFor(() => expect(listSpy).toHaveBeenCalledTimes(2));
+    // Both hooks reload after the create (4 calls total).
+    await waitFor(() => expect(listSpy).toHaveBeenCalledTimes(4));
   });
 
   it('edits a row: prefills the form, PATCHes and updates the list without a Cargando… flash', async () => {
@@ -56,7 +79,7 @@ describe('TransactionsPage', () => {
 
     const user = userEvent.setup();
     render(<TransactionsPage />);
-    await screen.findByText(/\$\s*150,00/);
+    await within(await listTable()).findByText(/\$\s*150,00/);
 
     await user.click(screen.getByRole('button', { name: 'Editar' }));
     expect(screen.getByTestId('amount')).toHaveValue('150');
@@ -72,8 +95,8 @@ describe('TransactionsPage', () => {
     await waitFor(() =>
       expect(updateSpy).toHaveBeenCalledWith(1, expect.objectContaining({ amountMinor: 30000, note: 'Lunch with client' })),
     );
-    expect(await screen.findByText(/\$\s*300,00/)).toBeInTheDocument();
-    expect(screen.queryByText(/\$\s*150,00/)).not.toBeInTheDocument();
+    expect(await within(await listTable()).findByText(/\$\s*300,00/)).toBeInTheDocument();
+    expect(within(await listTable()).queryByText(/\$\s*150,00/)).not.toBeInTheDocument();
     expect(screen.queryByText('Cargando…')).not.toBeInTheDocument();
     expect(screen.queryByTestId('cancel')).not.toBeInTheDocument();
   });
@@ -85,7 +108,7 @@ describe('TransactionsPage', () => {
 
     const user = userEvent.setup();
     render(<TransactionsPage />);
-    await screen.findByText(/\$\s*150,00/);
+    await within(await listTable()).findByText(/\$\s*150,00/);
 
     await user.click(screen.getByRole('button', { name: 'Borrar' }));
     expect(screen.getByText('¿Borrar la transacción?')).toBeInTheDocument();
@@ -93,7 +116,8 @@ describe('TransactionsPage', () => {
 
     await user.click(screen.getByRole('button', { name: 'Borrar' }));
     await waitFor(() => expect(deleteSpy).toHaveBeenCalledWith(1));
-    expect(screen.queryByText(/\$\s*150,00/)).not.toBeInTheDocument();
+    // The only row is gone: the list falls back to its empty state.
+    expect(await screen.findByText('Aún no hay transacciones en este período.')).toBeInTheDocument();
     expect(screen.queryByText('¿Borrar la transacción?')).not.toBeInTheDocument();
     expect(screen.queryByText('Cargando…')).not.toBeInTheDocument();
   });
@@ -105,13 +129,13 @@ describe('TransactionsPage', () => {
 
     const user = userEvent.setup();
     render(<TransactionsPage />);
-    await screen.findByText(/\$\s*150,00/);
+    await within(await listTable()).findByText(/\$\s*150,00/);
 
     await user.click(screen.getByRole('button', { name: 'Borrar' }));
     await user.click(screen.getByRole('button', { name: 'Cancelar' }));
 
     expect(deleteSpy).not.toHaveBeenCalled();
-    expect(screen.getByText(/\$\s*150,00/)).toBeInTheDocument();
+    expect(within(await listTable()).getByText(/\$\s*150,00/)).toBeInTheDocument();
     expect(screen.queryByText('¿Borrar la transacción?')).not.toBeInTheDocument();
   });
 });
