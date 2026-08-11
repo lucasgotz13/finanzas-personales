@@ -1,4 +1,4 @@
-import type { DatabaseSync } from 'node:sqlite';
+import type { Client } from '@libsql/client';
 import type { Clock, IndicatorSource } from '@finanzas/domain';
 import { BudgetService, CategoryService, IndicatorService, SummaryService, TransactionService } from '@finanzas/domain';
 import express from 'express';
@@ -16,7 +16,7 @@ import { summariesRouter } from './routes/summaries';
 import { transactionsRouter } from './routes/transactions';
 
 export interface AppDeps {
-  db: DatabaseSync;
+  db: Client;
   clock: Clock;
   /** Optional indicator sources; tests inject stubs (EI-7). Defaults to the real adapters. */
   indicatorSources?: IndicatorSource[];

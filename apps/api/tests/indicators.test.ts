@@ -52,7 +52,7 @@ function makeSources(): StubSet {
   };
 }
 
-function makeEnv(sources: StubSet): TestEnv {
+function makeEnv(sources: StubSet): Promise<TestEnv> {
   return createTestApp(T0, { indicatorSources: [sources.fx, sources.bcra, sources.rp, sources.ipc] });
 }
 
@@ -62,7 +62,7 @@ afterEach(() => env?.cleanup());
 describe('GET /api/v1/indicators (EI-1, EI-4, EI-5)', () => {
   it('returns 9 fresh views after a successful refresh, without fetching', async () => {
     const stubs = makeSources();
-    env = makeEnv(stubs);
+    env = await makeEnv(stubs);
     await request(env.app).post('/api/v1/indicators/refresh');
 
     const res = await request(env.app).get('/api/v1/indicators');
@@ -92,7 +92,7 @@ describe('GET /api/v1/indicators (EI-1, EI-4, EI-5)', () => {
 
   it('returns absent views with null values on an empty cache', async () => {
     const stubs = makeSources();
-    env = makeEnv(stubs);
+    env = await makeEnv(stubs);
     const res = await request(env.app).get('/api/v1/indicators');
 
     expect(res.status).toBe(200);
@@ -108,13 +108,12 @@ describe('GET /api/v1/indicators (EI-1, EI-4, EI-5)', () => {
 
   it('serves expired snapshots as stale with the last successful updatedAt', async () => {
     const stubs = makeSources();
-    env = makeEnv(stubs);
-    env.db
-      .prepare(
-        `INSERT INTO indicator_snapshots (key, value, unit, reference_date, fetched_at, source)
+    env = await makeEnv(stubs);
+    await env.db.execute({
+      sql: `INSERT INTO indicator_snapshots (key, value, unit, reference_date, fetched_at, source)
          VALUES (?, ?, ?, ?, ?, ?)`,
-      )
-      .run('usd-blue', 1350.5, 'ARS/USD', '2026-08-09', '2026-08-09T23:00:00.000Z', 'fx');
+      args: ['usd-blue', 1350.5, 'ARS/USD', '2026-08-09', '2026-08-09T23:00:00.000Z', 'fx'],
+    });
 
     const res = await request(env.app).get('/api/v1/indicators');
 
@@ -131,7 +130,7 @@ describe('GET /api/v1/indicators (EI-1, EI-4, EI-5)', () => {
 describe('POST /api/v1/indicators/refresh (EI-2, EI-3)', () => {
   it('reports updated per class and then cached within TTL', async () => {
     const stubs = makeSources();
-    env = makeEnv(stubs);
+    env = await makeEnv(stubs);
 
     const first = await request(env.app).post('/api/v1/indicators/refresh');
     expect(first.status).toBe(200);
@@ -151,7 +150,7 @@ describe('POST /api/v1/indicators/refresh (EI-2, EI-3)', () => {
 
   it('force=true bypasses TTL and refetches every class', async () => {
     const stubs = makeSources();
-    env = makeEnv(stubs);
+    env = await makeEnv(stubs);
     await request(env.app).post('/api/v1/indicators/refresh');
 
     const res = await request(env.app).post('/api/v1/indicators/refresh?force=true');
@@ -162,7 +161,7 @@ describe('POST /api/v1/indicators/refresh (EI-2, EI-3)', () => {
 
   it('isolates a failing source: failed class keeps its prior cache (EI-2)', async () => {
     const stubs = makeSources();
-    env = makeEnv(stubs);
+    env = await makeEnv(stubs);
     await request(env.app).post('/api/v1/indicators/refresh');
     stubs.bcra.fetch = async () => Promise.reject(new Error('bcra down'));
 
@@ -179,7 +178,7 @@ describe('POST /api/v1/indicators/refresh (EI-2, EI-3)', () => {
 
   it('all sources down: 200 with all classes failed, GET keeps serving (EI-4)', async () => {
     const stubs = makeSources();
-    env = makeEnv(stubs);
+    env = await makeEnv(stubs);
     await request(env.app).post('/api/v1/indicators/refresh');
     for (const s of Object.values(stubs)) {
       s.fetch = async () => Promise.reject(new Error('down'));
@@ -196,7 +195,7 @@ describe('POST /api/v1/indicators/refresh (EI-2, EI-3)', () => {
 
   it('wrong method on the refresh path yields the error envelope', async () => {
     const stubs = makeSources();
-    env = makeEnv(stubs);
+    env = await makeEnv(stubs);
     const res = await request(env.app).get('/api/v1/indicators/refresh');
     expect(res.status).toBe(404);
     expect(res.body).toEqual({ error: { code: 'NOT_FOUND', message: 'Route not found', details: [] } });

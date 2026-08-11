@@ -1,4 +1,4 @@
-import type { DatabaseSync, SQLInputValue } from 'node:sqlite';
+import type { Client, Row } from '@libsql/client';
 import { arDateString } from '@finanzas/domain';
 import type {
   Budget,
@@ -26,6 +26,15 @@ interface CategoryRow {
   name: string;
   parent_id: number | null;
   deleted_at: string | null;
+}
+
+/** Map a positional result row to an object keyed by the result columns. */
+function toObject(row: Row, columns: string[]): Record<string, unknown> {
+  const obj: Record<string, unknown> = {};
+  for (let i = 0; i < columns.length; i++) {
+    obj[columns[i]] = row[i];
+  }
+  return obj;
 }
 
 function toTransaction(row: TransactionRow): Transaction {
@@ -56,26 +65,26 @@ function toCategory(row: CategoryRow): Category {
  * is exact for AR-midnight bounds (as produced by PeriodKey.bounds()).
  */
 export class SqliteTransactionRepository implements TransactionRepository {
-  constructor(private db: DatabaseSync) {}
+  constructor(private db: Client) {}
 
   async create(tx: Transaction): Promise<Transaction> {
-    const result = this.db
-      .prepare(
-        `INSERT INTO transactions (direction, amount_minor, currency, rate, tx_date, category_id, note)
+    const result = await this.db.execute({
+      sql: `INSERT INTO transactions (direction, amount_minor, currency, rate, tx_date, category_id, note)
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      )
-      .run(tx.direction, tx.amountMinor, tx.currency, tx.rate, tx.txDate, tx.categoryId, tx.note || null);
+      args: [tx.direction, tx.amountMinor, tx.currency, tx.rate, tx.txDate, tx.categoryId, tx.note || null],
+    });
     return { ...tx, id: Number(result.lastInsertRowid) };
   }
 
   async findById(id: number): Promise<Transaction | null> {
-    const row = this.db.prepare('SELECT * FROM transactions WHERE id = ?').get(id) as TransactionRow | undefined;
-    return row ? toTransaction(row) : null;
+    const result = await this.db.execute({ sql: 'SELECT * FROM transactions WHERE id = ?', args: [id] });
+    const row = result.rows[0] ? toObject(result.rows[0], result.columns) : undefined;
+    return row ? toTransaction(row as unknown as TransactionRow) : null;
   }
 
   async list(filters: TransactionFilters): Promise<Transaction[]> {
     const clauses: string[] = [];
-    const params: SQLInputValue[] = [];
+    const params: Array<number | string> = [];
     if (filters.categoryId !== undefined) {
       clauses.push('category_id = ?');
       params.push(filters.categoryId);
@@ -93,79 +102,87 @@ export class SqliteTransactionRepository implements TransactionRepository {
       params.push(arDateString(filters.to));
     }
     const where = clauses.length > 0 ? `WHERE ${clauses.join(' AND ')}` : '';
-    const rows = this.db.prepare(`SELECT * FROM transactions ${where} ORDER BY tx_date, id`).all(...params) as unknown as TransactionRow[];
-    return rows.map(toTransaction);
+    const result = await this.db.execute({
+      sql: `SELECT * FROM transactions ${where} ORDER BY tx_date, id`,
+      args: params,
+    });
+    return result.rows.map((row) => toTransaction(toObject(row, result.columns) as unknown as TransactionRow));
   }
 
   async update(id: number, tx: Transaction): Promise<Transaction | null> {
-    const result = this.db
-      .prepare(
-        `UPDATE transactions
+    const result = await this.db.execute({
+      sql: `UPDATE transactions
          SET direction = ?, amount_minor = ?, currency = ?, rate = ?, tx_date = ?, category_id = ?, note = ?
          WHERE id = ?`,
-      )
-      .run(tx.direction, tx.amountMinor, tx.currency, tx.rate, tx.txDate, tx.categoryId, tx.note || null, id);
-    if (result.changes === 0) return null;
+      args: [tx.direction, tx.amountMinor, tx.currency, tx.rate, tx.txDate, tx.categoryId, tx.note || null, id],
+    });
+    if (result.rowsAffected === 0) return null;
     return { ...tx, id };
   }
 
   async delete(id: number): Promise<boolean> {
-    return this.db.prepare('DELETE FROM transactions WHERE id = ?').run(id).changes > 0;
+    const result = await this.db.execute({ sql: 'DELETE FROM transactions WHERE id = ?', args: [id] });
+    return result.rowsAffected > 0;
   }
 }
 
 /** SQLite category repository; rows are soft-deleted via deleted_at (CM-4). */
 export class SqliteCategoryRepository implements CategoryRepository {
-  constructor(private db: DatabaseSync) {}
+  constructor(private db: Client) {}
 
   async create(cat: Category): Promise<Category> {
-    const result = this.db
-      .prepare('INSERT INTO categories (name, parent_id, deleted_at) VALUES (?, ?, ?)')
-      .run(cat.name, cat.parentId, cat.deletedAt);
+    const result = await this.db.execute({
+      sql: 'INSERT INTO categories (name, parent_id, deleted_at) VALUES (?, ?, ?)',
+      args: [cat.name, cat.parentId, cat.deletedAt],
+    });
     return { ...cat, id: Number(result.lastInsertRowid) };
   }
 
   async update(id: number, cat: Category): Promise<Category | null> {
-    const result = this.db
-      .prepare('UPDATE categories SET name = ?, parent_id = ?, deleted_at = ? WHERE id = ?')
-      .run(cat.name, cat.parentId, cat.deletedAt, id);
-    if (result.changes === 0) return null;
+    const result = await this.db.execute({
+      sql: 'UPDATE categories SET name = ?, parent_id = ?, deleted_at = ? WHERE id = ?',
+      args: [cat.name, cat.parentId, cat.deletedAt, id],
+    });
+    if (result.rowsAffected === 0) return null;
     return { ...cat, id };
   }
 
   async findById(id: number): Promise<Category | null> {
-    const row = this.db.prepare('SELECT * FROM categories WHERE id = ?').get(id) as CategoryRow | undefined;
-    return row ? toCategory(row) : null;
+    const result = await this.db.execute({ sql: 'SELECT * FROM categories WHERE id = ?', args: [id] });
+    const row = result.rows[0] ? toObject(result.rows[0], result.columns) : undefined;
+    return row ? toCategory(row as unknown as CategoryRow) : null;
   }
 
   async listAll(): Promise<Category[]> {
-    const rows = this.db.prepare('SELECT * FROM categories ORDER BY id').all() as unknown as CategoryRow[];
-    return rows.map(toCategory);
+    const result = await this.db.execute('SELECT * FROM categories ORDER BY id');
+    return result.rows.map((row) => toCategory(toObject(row, result.columns) as unknown as CategoryRow));
   }
 
   async hasChildren(id: number): Promise<boolean> {
-    const row = this.db
-      .prepare('SELECT EXISTS(SELECT 1 FROM categories WHERE parent_id = ? AND deleted_at IS NULL) AS found')
-      .get(id) as { found: number };
-    return row.found === 1;
+    const result = await this.db.execute({
+      sql: 'SELECT EXISTS(SELECT 1 FROM categories WHERE parent_id = ? AND deleted_at IS NULL) AS found',
+      args: [id],
+    });
+    return result.rows[0][0] === 1;
   }
 }
 
 /** SQLite budget repository: the budgets table maps category_id -> cap_minor. */
 export class SqliteBudgetRepository implements BudgetRepository {
-  constructor(private db: DatabaseSync) {}
+  constructor(private db: Client) {}
 
   async replaceAll(budgets: Budget[]): Promise<void> {
-    this.db.exec('DELETE FROM budgets');
-    const insert = this.db.prepare('INSERT INTO budgets (category_id, cap_minor) VALUES (?, ?)');
-    for (const b of budgets) insert.run(b.categoryId, b.capMinor);
+    await this.db.execute('DELETE FROM budgets');
+    for (const b of budgets) {
+      await this.db.execute({
+        sql: 'INSERT INTO budgets (category_id, cap_minor) VALUES (?, ?)',
+        args: [b.categoryId, b.capMinor],
+      });
+    }
   }
 
   async listAll(): Promise<Budget[]> {
-    const rows = this.db.prepare('SELECT category_id, cap_minor FROM budgets ORDER BY category_id').all() as unknown as Array<{
-      category_id: number;
-      cap_minor: number;
-    }>;
-    return rows.map((r) => ({ categoryId: r.category_id, capMinor: r.cap_minor }));
+    const result = await this.db.execute('SELECT category_id, cap_minor FROM budgets ORDER BY category_id');
+    return result.rows.map((row) => ({ categoryId: Number(row[0]), capMinor: Number(row[1]) }));
   }
 }

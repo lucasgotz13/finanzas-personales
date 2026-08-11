@@ -8,7 +8,7 @@ afterEach(() => env?.cleanup());
 
 describe('GET/PUT /api/v1/budgets (BM-3)', () => {
   it('returns an empty map initially and stores the map on PUT', async () => {
-    env = createTestApp();
+    env = await createTestApp();
     const app = env.app;
     const empty = await request(app).get('/api/v1/budgets');
     expect(empty.status).toBe(200);
@@ -21,7 +21,7 @@ describe('GET/PUT /api/v1/budgets (BM-3)', () => {
   });
 
   it('PUT replaces the whole map (BM-3)', async () => {
-    env = createTestApp();
+    env = await createTestApp();
     const app = env.app;
     await request(app).put('/api/v1/budgets').send({ 1: 100000, 2: 50000 });
     await request(app).put('/api/v1/budgets').send({ 1: 70000 });
@@ -30,19 +30,19 @@ describe('GET/PUT /api/v1/budgets (BM-3)', () => {
   });
 
   it('rejects a non-positive cap with 422', async () => {
-    env = createTestApp();
+    env = await createTestApp();
     const res = await request(env.app).put('/api/v1/budgets').send({ 1: 0 });
     expect(res.status).toBe(422);
   });
 
   it('rejects an unknown category with 404', async () => {
-    env = createTestApp();
+    env = await createTestApp();
     const res = await request(env.app).put('/api/v1/budgets').send({ 99: 10000 });
     expect(res.status).toBe(404);
   });
 
   it('rejects a deleted category with 422', async () => {
-    env = createTestApp();
+    env = await createTestApp();
     const app = env.app;
     await request(app).delete('/api/v1/categories/5');
     const res = await request(app).put('/api/v1/budgets').send({ 5: 10000 });
@@ -52,7 +52,7 @@ describe('GET/PUT /api/v1/budgets (BM-3)', () => {
 
 describe('GET /api/v1/budgets/status (BM-1, BM-2, BM-4)', () => {
   it('computes consumption converting foreign expenses at entry rate (BM-1)', async () => {
-    env = createTestApp();
+    env = await createTestApp();
     const app = env.app;
     await request(app).put('/api/v1/budgets').send({ 1: 100000 });
     await request(app)
@@ -64,7 +64,7 @@ describe('GET /api/v1/budgets/status (BM-1, BM-2, BM-4)', () => {
   });
 
   it('attributes expenses to their transaction-date month (BM-1)', async () => {
-    env = createTestApp();
+    env = await createTestApp();
     const app = env.app;
     await request(app).put('/api/v1/budgets').send({ 1: 100000 });
     await request(app)
@@ -77,7 +77,7 @@ describe('GET /api/v1/budgets/status (BM-1, BM-2, BM-4)', () => {
   });
 
   it('reports global over-budget when budgeted consumption exceeds the sum of caps (BM-4)', async () => {
-    env = createTestApp();
+    env = await createTestApp();
     const app = env.app;
     await request(app).put('/api/v1/budgets').send({ 1: 100000, 2: 50000 });
     await request(app)
@@ -92,7 +92,7 @@ describe('GET /api/v1/budgets/status (BM-1, BM-2, BM-4)', () => {
   });
 
   it('excludes uncapped categories from status and global (BM-2)', async () => {
-    env = createTestApp();
+    env = await createTestApp();
     const app = env.app;
     await request(app).put('/api/v1/budgets').send({ 1: 100000 });
     await request(app)
@@ -104,13 +104,13 @@ describe('GET /api/v1/budgets/status (BM-1, BM-2, BM-4)', () => {
   });
 
   it('rejects a malformed month with 422', async () => {
-    env = createTestApp();
+    env = await createTestApp();
     const res = await request(env.app).get('/api/v1/budgets/status?month=2026-13');
     expect(res.status).toBe(422);
   });
 
   it('requires the month parameter', async () => {
-    env = createTestApp();
+    env = await createTestApp();
     const res = await request(env.app).get('/api/v1/budgets/status');
     expect(res.status).toBe(422);
   });
@@ -118,7 +118,7 @@ describe('GET /api/v1/budgets/status (BM-1, BM-2, BM-4)', () => {
 
 describe('GET /api/v1/summaries (PS-1..5, IT-3)', () => {
   it('returns per-currency totals, net flow and savings rate (PS-2, PS-3, PS-4)', async () => {
-    env = createTestApp();
+    env = await createTestApp();
     const app = env.app;
     await request(app)
       .post('/api/v1/transactions')
@@ -139,7 +139,7 @@ describe('GET /api/v1/summaries (PS-1..5, IT-3)', () => {
   });
 
   it('returns zeroed totals for an empty period (PS-1)', async () => {
-    env = createTestApp();
+    env = await createTestApp();
     const res = await request(env.app).get('/api/v1/summaries?period=month&date=2026-06-15');
     expect(res.status).toBe(200);
     expect(res.body.categories).toEqual([]);
@@ -150,7 +150,7 @@ describe('GET /api/v1/summaries (PS-1..5, IT-3)', () => {
   });
 
   it('attributes a backdated entry to its transaction-date period (PS-1, ET-3)', async () => {
-    env = createTestApp();
+    env = await createTestApp();
     const app = env.app;
     await request(app)
       .post('/api/v1/transactions')
@@ -162,7 +162,7 @@ describe('GET /api/v1/summaries (PS-1..5, IT-3)', () => {
   });
 
   it('supports quarter and year periods', async () => {
-    env = createTestApp();
+    env = await createTestApp();
     const app = env.app;
     await request(app)
       .post('/api/v1/transactions')
@@ -175,7 +175,7 @@ describe('GET /api/v1/summaries (PS-1..5, IT-3)', () => {
   });
 
   it('groups deleted-category expenses under the current name (PS-5)', async () => {
-    env = createTestApp();
+    env = await createTestApp();
     const app = env.app;
     await request(app)
       .post('/api/v1/transactions')
@@ -189,13 +189,13 @@ describe('GET /api/v1/summaries (PS-1..5, IT-3)', () => {
   });
 
   it('rejects an invalid period with 422', async () => {
-    env = createTestApp();
+    env = await createTestApp();
     const res = await request(env.app).get('/api/v1/summaries?period=week&date=2026-07-15');
     expect(res.status).toBe(422);
   });
 
   it('defaults the date to today when omitted', async () => {
-    env = createTestApp(new Date('2026-08-08T12:00:00.000Z'));
+    env = await createTestApp(new Date('2026-08-08T12:00:00.000Z'));
     const res = await request(env.app).get('/api/v1/summaries?period=month');
     expect(res.status).toBe(200);
     expect(res.body.period).toBe('2026-08');

@@ -10,15 +10,15 @@ month/quarter/year summaries per category and currency.
 - **Monorepo**: npm workspaces, TypeScript (strict), Vitest
 - **Domain core**: pure TS package (`packages/domain`) — entities, value
   objects, use cases, ports; no framework imports
-- **API**: Express + SQLite (`apps/api`) — REST under `/api/v1`, `node:sqlite`
-  adapter, hand-rolled SQL migrations
+- **API**: Express + SQLite (`apps/api`) — REST under `/api/v1`, `@libsql/client`
+  adapter (local file or Turso remote), hand-rolled SQL migrations
 - **Web**: React + Vite SPA (`apps/web`) — plain hooks, no state library
 - **Money**: integer minor units; ARS is the base currency (rate 1);
   summaries never convert across currencies; budgets convert via stored rates
 
 ## Prerequisites
 
-- Node.js >= 20 (uses the built-in `node:sqlite` module)
+- Node.js >= 20 (SQLite access via `@libsql/client`)
 - npm
 
 ## Commands
@@ -36,6 +36,28 @@ npm run dev:web             # Vite dev server on http://localhost:5173
 
 `FINANZAS_DB=/path/to/db.sqlite npm run migrate` overrides the database file
 location (default: `finanzas.db` in the repo root).
+
+## Production (Turso)
+
+The API and the migration runner talk to SQLite through `@libsql/client`,
+which supports both local files and remote Turso databases.
+
+- **Local file** (default): `finanzas.db` in the repo root, or the file given
+  by `FINANZAS_DB`. No extra configuration needed.
+- **Turso remote**: set `TURSO_DATABASE_URL` (the database URL, e.g.
+  `libsql://my-db.turso.io`) and `TURSO_AUTH_TOKEN` (the database auth token).
+  When these are set, the API and the migration runner target the remote
+  database and ignore `FINANZAS_DB`.
+
+```bash
+# migrate the local database (idempotent)
+npm run migrate
+
+# migrate a Turso database
+TURSO_DATABASE_URL=libsql://my-db.turso.io TURSO_AUTH_TOKEN=<token> npm run migrate
+```
+
+The API runs migrations on boot against the same target it serves.
 
 ## Quick start
 
