@@ -38,6 +38,22 @@ export function categoriesRouter(deps: CategoriesRouterDeps): Router {
     }),
   );
 
+  router.get(
+    '/categories/deleted',
+    wrap(async (_req, res) => {
+      const all = await categoryService.listAll();
+      res.json(all.filter((c) => c.deletedAt !== null).map(toApiCategory));
+    }),
+  );
+
+  router.post(
+    '/categories/:id/restore',
+    wrap(async (req, res) => {
+      const id = parseId(req.params.id);
+      res.json(toApiCategory(await categoryService.restore(id)));
+    }),
+  );
+
   router.post(
     '/categories',
     wrap(async (req, res) => {

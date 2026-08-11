@@ -83,6 +83,36 @@ describe('IndicatorsPage (EI-6)', () => {
     expect(screen.getByText('Loading…')).toBeInTheDocument();
   });
 
+  it('shows an empty state when the API returns no indicators', async () => {
+    vi.spyOn(api, 'getIndicators').mockResolvedValue([]);
+
+    render(<IndicatorsPage />);
+
+    expect(await screen.findByText('No indicators yet — press Refresh.')).toBeInTheDocument();
+    expect(screen.queryByTestId('indicators-grid')).not.toBeInTheDocument();
+  });
+
+  it('keeps the grid visible during auto-refresh (no Loading… collapse)', async () => {
+    vi.spyOn(api, 'getIndicators').mockResolvedValue(freshViews());
+    vi.spyOn(api, 'refreshIndicators').mockResolvedValue({ results: [] });
+
+    vi.useFakeTimers();
+    render(<IndicatorsPage />);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(screen.getByTestId('indicators-grid')).toBeInTheDocument();
+
+    // Reload keeps loading=true briefly; the stale grid must stay put.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(FIVE_MINUTES);
+    });
+
+    expect(screen.getByTestId('indicators-grid')).toBeInTheDocument();
+    expect(screen.queryByText('Loading…')).not.toBeInTheDocument();
+    expect(api.refreshIndicators).toHaveBeenCalledWith(false);
+  });
+
   it('keeps rendering stale values with the badge when auto-refresh fails', async () => {
     const views = freshViews();
     views[0] = {

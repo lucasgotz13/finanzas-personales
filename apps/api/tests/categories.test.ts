@@ -122,6 +122,72 @@ describe('DELETE /api/v1/categories/:id (CM-4)', () => {
   });
 });
 
+describe('GET /api/v1/categories/deleted', () => {
+  it('returns only soft-deleted categories', async () => {
+    env = await createTestApp();
+    const app = env.app;
+    await request(app).delete('/api/v1/categories/5');
+    await request(app).delete('/api/v1/categories/8');
+    const res = await request(app).get('/api/v1/categories/deleted');
+    expect(res.status).toBe(200);
+    expect(res.body.map((c: { id: number }) => c.id).sort()).toEqual([5, 8]);
+    expect(res.body.every((c: { deletedAt: string }) => c.deletedAt !== null)).toBe(true);
+  });
+
+  it('returns an empty list when nothing is deleted', async () => {
+    env = await createTestApp();
+    const res = await request(env.app).get('/api/v1/categories/deleted');
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual([]);
+  });
+});
+
+describe('POST /api/v1/categories/:id/restore', () => {
+  it('restores a deleted category and brings it back into the tree (200)', async () => {
+    env = await createTestApp();
+    const app = env.app;
+    await request(app).delete('/api/v1/categories/5');
+    const res = await request(app).post('/api/v1/categories/5/restore');
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ id: 5, name: 'Health', parentId: null });
+    expect(res.body.deletedAt).toBeNull();
+    const tree = await request(app).get('/api/v1/categories/tree');
+    expect(tree.body.find((n: { id: number }) => n.id === 5)).toBeDefined();
+    expect(tree.body).toHaveLength(10);
+    const deleted = await request(app).get('/api/v1/categories/deleted');
+    expect(deleted.body).toEqual([]);
+  });
+
+  it('detaches from a deleted parent when restoring', async () => {
+    env = await createTestApp();
+    const app = env.app;
+    await request(app).post('/api/v1/categories').send({ name: 'Rent', parentId: 3 });
+    await request(app).delete('/api/v1/categories/11');
+    await request(app).delete('/api/v1/categories/3');
+    const res = await request(app).post('/api/v1/categories/11/restore');
+    expect(res.status).toBe(200);
+    expect(res.body.parentId).toBeNull();
+  });
+
+  it('rejects restoring an active category with 404', async () => {
+    env = await createTestApp();
+    const res = await request(env.app).post('/api/v1/categories/5/restore');
+    expect(res.status).toBe(404);
+  });
+
+  it('rejects restoring a missing category with 404', async () => {
+    env = await createTestApp();
+    const res = await request(env.app).post('/api/v1/categories/99/restore');
+    expect(res.status).toBe(404);
+  });
+
+  it('rejects an invalid id with 422', async () => {
+    env = await createTestApp();
+    const res = await request(env.app).post('/api/v1/categories/abc/restore');
+    expect(res.status).toBe(422);
+  });
+});
+
 describe('Deleted categories are not assignable (ET-2, CM-4)', () => {
   it('rejects a new expense referencing a deleted category with 422', async () => {
     env = await createTestApp();
