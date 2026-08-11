@@ -1,8 +1,14 @@
+import { useState } from 'react';
 import type { ApiTransaction } from '../types';
 
 export interface TransactionListProps {
   transactions: ApiTransaction[];
   categoryNames: Map<number, string>;
+  onEdit: (tx: ApiTransaction) => void;
+  onDelete: (tx: ApiTransaction) => void;
+  confirmingId: number | null;
+  onConfirmDelete: () => void;
+  onCancelDelete: () => void;
 }
 
 function formatAmount(tx: ApiTransaction): string {
@@ -10,8 +16,27 @@ function formatAmount(tx: ApiTransaction): string {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: tx.currency }).format(value);
 }
 
-/** Read-only expense/income table for the current period. */
-export default function TransactionList({ transactions, categoryNames }: TransactionListProps): JSX.Element {
+/** Expense/income table for the current period with per-row edit/delete actions. */
+export default function TransactionList({
+  transactions,
+  categoryNames,
+  onEdit,
+  onDelete,
+  confirmingId,
+  onConfirmDelete,
+  onCancelDelete,
+}: TransactionListProps): JSX.Element {
+  const [busy, setBusy] = useState(false);
+
+  async function handleConfirm(): Promise<void> {
+    setBusy(true);
+    try {
+      await onConfirmDelete();
+    } finally {
+      setBusy(false);
+    }
+  }
+
   if (transactions.length === 0) {
     return <div className="empty">No transactions yet for this period.</div>;
   }
@@ -23,6 +48,7 @@ export default function TransactionList({ transactions, categoryNames }: Transac
           <th>Category</th>
           <th>Note</th>
           <th>Amount</th>
+          <th>Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -36,6 +62,27 @@ export default function TransactionList({ transactions, categoryNames }: Transac
                 {tx.direction === 'income' ? '+' : '−'}
                 {formatAmount(tx)}
               </span>
+            </td>
+            <td className="row-actions">
+              <button type="button" className="link" onClick={() => onEdit(tx)} disabled={busy}>
+                Edit
+              </button>
+              {confirmingId === tx.id ? (
+                <span className="confirm-prompt">
+                  <span className="confirm-question">Delete permanently?</span>
+                  <span className="confirm-note">Removes it from budgets and summaries.</span>
+                  <button type="button" className="danger" onClick={handleConfirm} disabled={busy}>
+                    Yes
+                  </button>
+                  <button type="button" className="link" onClick={onCancelDelete} disabled={busy}>
+                    No
+                  </button>
+                </span>
+              ) : (
+                <button type="button" className="danger" onClick={() => onDelete(tx)} disabled={busy}>
+                  Delete
+                </button>
+              )}
             </td>
           </tr>
         ))}

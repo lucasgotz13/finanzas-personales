@@ -92,4 +92,84 @@ describe('TransactionForm', () => {
 
     await waitFor(() => expect(spy).toHaveBeenCalledWith(expect.objectContaining({ amountMinor: 120050, currency: 'ARS' })));
   });
+
+  describe('edit mode', () => {
+    const existing: ApiTransaction = {
+      id: 7,
+      direction: 'income',
+      amountMinor: 250000,
+      currency: 'USD',
+      rate: 950,
+      date: '2026-07-20',
+      categoryId: 10,
+      note: 'Freelance',
+    };
+
+    it('prefills every field with the initial transaction (amount in decimal units)', () => {
+      render(<TransactionForm categories={categories} initial={existing} onCreated={vi.fn()} onUpdate={vi.fn()} onCancel={vi.fn()} />);
+
+      expect(screen.getByTestId('amount')).toHaveValue(2500);
+      expect(screen.getByLabelText('Type')).toHaveValue('income');
+      expect(screen.getByTestId('currency')).toHaveValue('USD');
+      expect(screen.getByTestId('rate')).toHaveValue(950);
+      expect(screen.getByTestId('date')).toHaveValue('2026-07-20');
+      expect(screen.getByTestId('category')).toHaveValue('10');
+      expect(screen.getByTestId('note')).toHaveValue('Freelance');
+    });
+
+    it('submits a PATCH with the converted amount and resets to create mode', async () => {
+      const user = userEvent.setup();
+      const updated: ApiTransaction = { ...existing, amountMinor: 300000, note: 'Freelance retainer' };
+      const spy = vi.spyOn(api, 'updateTransaction').mockResolvedValue(updated);
+      const onUpdate = vi.fn();
+
+      render(<TransactionForm categories={categories} initial={existing} onCreated={vi.fn()} onUpdate={onUpdate} onCancel={vi.fn()} />);
+
+      await user.clear(screen.getByTestId('amount'));
+      await user.type(screen.getByTestId('amount'), '3000');
+      await user.clear(screen.getByTestId('note'));
+      await user.type(screen.getByTestId('note'), 'Freelance retainer');
+      await user.click(screen.getByTestId('submit'));
+
+      await waitFor(() =>
+        expect(spy).toHaveBeenCalledWith(7, {
+          direction: 'income',
+          amountMinor: 300000,
+          currency: 'USD',
+          rate: 950,
+          date: '2026-07-20',
+          categoryId: 10,
+          note: 'Freelance retainer',
+        }),
+      );
+      expect(onUpdate).toHaveBeenCalledWith(updated);
+      await waitFor(() => expect(screen.getByTestId('amount')).toHaveValue(null));
+      expect(screen.getByTestId('submit')).toHaveTextContent('Save');
+    });
+
+    it('cancels edit mode and resets the form', async () => {
+      const user = userEvent.setup();
+      const onCancel = vi.fn();
+      render(<TransactionForm categories={categories} initial={existing} onCreated={vi.fn()} onUpdate={vi.fn()} onCancel={onCancel} />);
+
+      await user.click(screen.getByTestId('cancel'));
+      expect(onCancel).toHaveBeenCalledTimes(1);
+      expect(screen.getByTestId('amount')).toHaveValue(null);
+      expect(screen.getByTestId('currency')).toHaveValue('ARS');
+      expect(screen.getByTestId('category')).toHaveValue('');
+    });
+
+    it('still requires an FX rate when switching to USD in edit mode (W1)', async () => {
+      const user = userEvent.setup();
+      const spy = vi.spyOn(api, 'updateTransaction').mockResolvedValue({} as never);
+      const ars: ApiTransaction = { ...existing, currency: 'ARS', rate: 1, amountMinor: 120000 };
+      render(<TransactionForm categories={categories} initial={ars} onCreated={vi.fn()} onUpdate={vi.fn()} onCancel={vi.fn()} />);
+
+      await user.selectOptions(screen.getByTestId('currency'), 'USD');
+      await user.click(screen.getByTestId('submit'));
+
+      expect(await screen.findByText('FX rate is required for USD.')).toBeInTheDocument();
+      expect(spy).not.toHaveBeenCalled();
+    });
+  });
 });

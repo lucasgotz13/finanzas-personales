@@ -6,23 +6,40 @@ import type { ApiTransaction, CategoryNode, CreateTransactionInput } from '../ty
 export interface TransactionFormProps {
   categories: CategoryNode[];
   onCreated: (tx: ApiTransaction) => void;
+  /** Edit mode: prefill every field from this transaction and PATCH on submit. */
+  initial?: ApiTransaction;
+  onUpdate?: (tx: ApiTransaction) => void;
+  onCancel?: () => void;
 }
 
 const DIRECTION_LABELS: Record<string, string> = { expense: 'Expense', income: 'Income' };
 
 /** Manual expense/income form (ET-1..6, IT-1/2): rate is required iff USD. */
-export default function TransactionForm({ categories, onCreated }: TransactionFormProps): JSX.Element {
-  const [direction, setDirection] = useState<'expense' | 'income'>('expense');
-  const [amount, setAmount] = useState('');
-  const [currency, setCurrency] = useState<'ARS' | 'USD'>('ARS');
-  const [rate, setRate] = useState('');
-  const [date, setDate] = useState(arDateString(new Date()));
-  const [categoryId, setCategoryId] = useState('');
-  const [note, setNote] = useState('');
+export default function TransactionForm({ categories, onCreated, initial, onUpdate, onCancel }: TransactionFormProps): JSX.Element {
+  // State seeds from `initial` on mount; the parent remounts (key) to switch
+  // between create mode and editing a different row, so no sync effect is needed.
+  const [direction, setDirection] = useState<'expense' | 'income'>(initial?.direction ?? 'expense');
+  const [amount, setAmount] = useState(initial ? String(initial.amountMinor / 100) : '');
+  const [currency, setCurrency] = useState<'ARS' | 'USD'>(initial?.currency ?? 'ARS');
+  const [rate, setRate] = useState(initial && initial.currency === 'USD' ? String(initial.rate) : '');
+  const [date, setDate] = useState(initial?.date ?? arDateString(new Date()));
+  const [categoryId, setCategoryId] = useState(initial ? String(initial.categoryId) : '');
+  const [note, setNote] = useState(initial?.note ?? '');
   const [errors, setErrors] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
   const options = flattenTree(categories);
+
+  function resetForm(): void {
+    setDirection('expense');
+    setAmount('');
+    setCurrency('ARS');
+    setRate('');
+    setDate(arDateString(new Date()));
+    setCategoryId('');
+    setNote('');
+    setErrors([]);
+  }
 
   async function handleSubmit(e: React.FormEvent): Promise<void> {
     e.preventDefault();
@@ -48,16 +65,28 @@ export default function TransactionForm({ categories, onCreated }: TransactionFo
         categoryId: Number(categoryId),
         note: note.trim() === '' ? undefined : note.trim(),
       };
-      const created = await api.createTransaction(input);
-      onCreated(created);
-      setAmount('');
-      setRate('');
-      setNote('');
+      if (initial) {
+        const updated = await api.updateTransaction(initial.id, input);
+        onUpdate?.(updated);
+        resetForm();
+      } else {
+        const created = await api.createTransaction(input);
+        onCreated(created);
+        // Field memory: keep direction/currency/date/category, clear amount/rate/note (ET-1)
+        setAmount('');
+        setRate('');
+        setNote('');
+      }
     } catch (err) {
       setErrors([err instanceof Error ? err.message : 'Could not save the transaction.']);
     } finally {
       setSubmitting(false);
     }
+  }
+
+  function handleCancel(): void {
+    onCancel?.();
+    resetForm();
   }
 
   return (
@@ -121,6 +150,11 @@ export default function TransactionForm({ categories, onCreated }: TransactionFo
         <button type="submit" className="primary" disabled={submitting} data-testid="submit">
           {submitting ? 'Saving…' : 'Save'}
         </button>
+        {initial && (
+          <button type="button" className="link" onClick={handleCancel} disabled={submitting} data-testid="cancel">
+            Cancel
+          </button>
+        )}
       </div>
       {errors.length > 0 && (
         <div className="error-box" role="alert">
