@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { translateApiMessage } from '../api';
 import type { CategoryNode } from '../types';
 
@@ -28,6 +28,23 @@ export default function CategoryTree({
   const [renaming, setRenaming] = useState<RenameState | null>(null);
   const [busyId, setBusyId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const confirmRef = useRef<HTMLButtonElement | null>(null);
+  // Rows' Borrar buttons by id: the prompt replaces the button while open, so
+  // cancel restores focus to the re-mounted button via the map (P2/P3 #1).
+  const deleteButtonRefs = useRef(new Map<number, HTMLButtonElement | null>());
+
+  // Focus the confirm action when the prompt opens (two-tap stays: focus
+  // moves to Borrar, Enter confirms).
+  useEffect(() => {
+    if (confirmingId !== null) confirmRef.current?.focus();
+  }, [confirmingId]);
+
+  function handleCancelDelete(): void {
+    const id = confirmingId ?? 0;
+    onCancelDelete();
+    // The row's Borrar button remounts once the prompt closes; focus it then.
+    window.setTimeout(() => deleteButtonRefs.current.get(id)?.focus(), 0);
+  }
 
   async function run(action: () => Promise<void>, id: number): Promise<void> {
     setError(null);
@@ -77,18 +94,24 @@ export default function CategoryTree({
             </>
           )}
           {confirmingId === node.id ? (
-            <span className="confirm-prompt">
+            <span className="confirm-prompt" role="alert">
               <span className="confirm-question">¿Borrar la categoría?</span>
               <span className="confirm-note">Se puede restaurar más tarde.</span>
               <button
                 className="danger"
                 data-testid={`confirm-delete-${node.id}`}
+                ref={confirmRef}
                 disabled={busyId === node.id}
                 onClick={() => void handleConfirmDelete()}
               >
                 Borrar
               </button>
-              <button className="link" data-testid={`cancel-delete-${node.id}`} disabled={busyId === node.id} onClick={onCancelDelete}>
+              <button
+                className="link muted"
+                data-testid={`cancel-delete-${node.id}`}
+                disabled={busyId === node.id}
+                onClick={handleCancelDelete}
+              >
                 Cancelar
               </button>
             </span>
@@ -96,7 +119,11 @@ export default function CategoryTree({
             <button
               className="danger"
               data-testid={`delete-${node.id}`}
-              disabled={busyId === node.id}
+              ref={(el) => {
+                deleteButtonRefs.current.set(node.id, el);
+              }}
+              disabled={busyId === node.id || node.children.length > 0}
+              title={node.children.length > 0 ? 'Primero borre sus subcategorías' : undefined}
               onClick={() => onDelete(node.id)}
             >
               Borrar

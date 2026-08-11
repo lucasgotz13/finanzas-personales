@@ -21,10 +21,18 @@ export default function BudgetsPage(): JSX.Element {
     <>
       <section className="card">
         <h2>Topes mensuales (ARS)</h2>
-        {categories.error && <div className="error-box">{categories.error}</div>}
+        {categories.error && (
+          <div className="error-box" role="alert">
+            {categories.error}{' '}
+            <button type="button" className="link" data-testid="retry-categories" onClick={() => categories.reload()}>
+              Reintentar
+            </button>
+          </div>
+        )}
         <BudgetEditor
           categories={flattenTree(categories.data ?? [])}
           initialCaps={budgets.data ?? {}}
+          loading={categories.loading || budgets.loading}
           onSave={async (map) => {
             await api.putBudgets(map);
             budgets.reload();
@@ -34,7 +42,14 @@ export default function BudgetsPage(): JSX.Element {
       <section className="card">
         <h2>Estado — {formatMonth(month)}</h2>
         <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} aria-label="Mes del estado" />
-        {status.error && <div className="error-box">{status.error}</div>}
+        {status.error && (
+          <div className="error-box" role="alert">
+            {status.error}{' '}
+            <button type="button" className="link" data-testid="retry-status" onClick={() => status.reload()}>
+              Reintentar
+            </button>
+          </div>
+        )}
         {status.loading ? <div className="empty">Cargando…</div> : status.data && (
           <BudgetStatusView
             status={status.data}

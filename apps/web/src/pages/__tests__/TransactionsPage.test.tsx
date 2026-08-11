@@ -124,6 +124,10 @@ describe('TransactionsPage', () => {
     await user.click(screen.getByRole('button', { name: 'Borrar' }));
     expect(screen.getByText('¿Borrar la transacción?')).toBeInTheDocument();
     expect(screen.getByText('Se eliminará de presupuestos y resúmenes.')).toBeInTheDocument();
+    // Focus moves to the confirm action (the only Borrar while confirming).
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Borrar' }));
+    // The prompt announces itself as an alert.
+    expect(screen.getByRole('alert')).toHaveTextContent('¿Borrar la transacción?');
 
     await user.click(screen.getByRole('button', { name: 'Borrar' }));
     await waitFor(() => expect(deleteSpy).toHaveBeenCalledWith(1));
@@ -148,5 +152,37 @@ describe('TransactionsPage', () => {
     expect(deleteSpy).not.toHaveBeenCalled();
     expect(within(await listTable()).getByText(/\$\s*150,00/)).toBeInTheDocument();
     expect(screen.queryByText('¿Borrar la transacción?')).not.toBeInTheDocument();
+    // Cancel restores focus to the row's Editar button (P3 #1).
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Editar' }));
+  });
+
+  it('shows the fetch error with role=alert and Reintentar reloads the list (P3 #4, #9)', async () => {
+    vi.spyOn(api, 'getCategoryTree').mockResolvedValue(categories);
+    const listSpy = vi.spyOn(api, 'listTransactions').mockRejectedValue(new Error('red caída'));
+
+    const user = userEvent.setup();
+    render(<TransactionsPage />);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('red caída');
+    await user.click(screen.getByTestId('retry-transactions'));
+    // Mount fetches twice (list + month card); the retry adds a third.
+    await waitFor(() => expect(listSpy).toHaveBeenCalledTimes(3));
+  });
+
+  it('marks the direction filter buttons with aria-pressed (P3 #14)', async () => {
+    vi.spyOn(api, 'getCategoryTree').mockResolvedValue(categories);
+    vi.spyOn(api, 'listTransactions').mockResolvedValue(transactions);
+
+    const user = userEvent.setup();
+    render(<TransactionsPage />);
+    await within(await listTable()).findByText(/\$\s*150,00/);
+
+    const todas = screen.getByRole('button', { name: 'Todas' });
+    expect(todas).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'Gasto' })).toHaveAttribute('aria-pressed', 'false');
+
+    await user.click(screen.getByRole('button', { name: 'Gasto' }));
+    expect(screen.getByRole('button', { name: 'Gasto' })).toHaveAttribute('aria-pressed', 'true');
+    expect(todas).toHaveAttribute('aria-pressed', 'false');
   });
 });

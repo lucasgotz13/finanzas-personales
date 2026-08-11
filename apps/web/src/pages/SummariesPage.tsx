@@ -21,8 +21,21 @@ export default function SummariesPage(): JSX.Element {
         </select>
         <input type="date" value={date} onChange={(e) => setDate(e.target.value)} aria-label="Fecha de referencia" />
       </div>
-      {summary.error && <div className="error-box">{summary.error}</div>}
-      {summary.loading ? <div className="empty">Cargando…</div> : summary.data && <SummaryView summary={summary.data} />}
+      {summary.error && (
+        <div className="error-box" role="alert">
+          {summary.error}{' '}
+          <button type="button" className="link" data-testid="retry-summary" onClick={() => summary.reload()}>
+            Reintentar
+          </button>
+        </div>
+      )}
+      {summary.loading ? (
+        <div className="empty">Cargando…</div>
+      ) : summary.data ? (
+        <SummaryView summary={summary.data} />
+      ) : (
+        !summary.error && <div className="empty">Aún no hay resúmenes para este período.</div>
+      )}
     </section>
   );
 }

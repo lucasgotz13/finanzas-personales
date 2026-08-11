@@ -1,4 +1,5 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { api } from '../../api';
 import type { PeriodSummary } from '../../types';
@@ -26,5 +27,26 @@ describe('SummariesPage', () => {
     expect(screen.getByText('33.3%')).toBeInTheDocument(); // savings rate
     expect(screen.getByText('Food')).toBeInTheDocument();
     expect(screen.getByText('—')).toBeInTheDocument(); // USD savings rate undefined
+  });
+
+  it('renders the empty state when the summary is null, loaded and error-free (P3 #11)', async () => {
+    vi.spyOn(api, 'getSummary').mockResolvedValue(null as never);
+    render(<SummariesPage />);
+
+    expect(await screen.findByText('Aún no hay resúmenes para este período.')).toBeInTheDocument();
+    expect(screen.queryByText('Cargando…')).not.toBeInTheDocument();
+  });
+
+  it('shows the fetch error with role=alert, no empty state, and Reintentar reloads (P3 #4, #9, #11)', async () => {
+    const getSummary = vi.spyOn(api, 'getSummary').mockRejectedValue(new Error('resumen caído'));
+
+    const user = userEvent.setup();
+    render(<SummariesPage />);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('resumen caído');
+    expect(screen.queryByText('Aún no hay resúmenes para este período.')).not.toBeInTheDocument();
+
+    await user.click(screen.getByTestId('retry-summary'));
+    await waitFor(() => expect(getSummary).toHaveBeenCalledTimes(2));
   });
 });

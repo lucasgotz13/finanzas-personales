@@ -126,4 +126,43 @@ describe('BudgetsPage', () => {
     // Minor units (120000/100000) rendered as currency amounts ($ 1.200,00 / $ 1.000,00)
     expect(screen.getByText('Global: $ 1.200,00 / $ 1.000,00')).toBeInTheDocument();
   });
+
+  it('never shows "Aún no hay categorías para presupuestar." while categories or budgets load (P3 #12)', async () => {
+    vi.spyOn(api, 'getCategoryTree').mockReturnValue(new Promise(() => {}));
+    vi.spyOn(api, 'getBudgets').mockResolvedValue({});
+    vi.spyOn(api, 'getBudgetStatus').mockResolvedValue(status);
+
+    render(<BudgetsPage />);
+
+    expect(screen.getAllByText('Cargando…').length).toBeGreaterThan(0);
+    expect(screen.queryByText('Aún no hay categorías para presupuestar.')).not.toBeInTheDocument();
+  });
+
+  it('shows the categories fetch error with role=alert and Reintentar reloads (P3 #4, #9)', async () => {
+    const getTree = vi.spyOn(api, 'getCategoryTree').mockRejectedValue(new Error('árbol caído'));
+    vi.spyOn(api, 'getBudgets').mockResolvedValue({});
+    vi.spyOn(api, 'getBudgetStatus').mockResolvedValue(status);
+
+    const user = userEvent.setup();
+    render(<BudgetsPage />);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('árbol caído');
+    await user.click(screen.getByTestId('retry-categories'));
+    await waitFor(() => expect(getTree).toHaveBeenCalledTimes(2));
+  });
+
+  it('shows the status fetch error with role=alert and Reintentar reloads (P3 #4, #9)', async () => {
+    vi.spyOn(api, 'getCategoryTree').mockResolvedValue(categories);
+    vi.spyOn(api, 'getBudgets').mockResolvedValue({});
+    const getStatus = vi.spyOn(api, 'getBudgetStatus').mockRejectedValue(new Error('estado caído'));
+
+    const user = userEvent.setup();
+    render(<BudgetsPage />);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('estado caído');
+    await user.click(screen.getByTestId('retry-status'));
+    // Mount fetches once, a second time when budgets.data settles (status
+    // depends on it), and the retry adds the third.
+    await waitFor(() => expect(getStatus).toHaveBeenCalledTimes(3));
+  });
 });

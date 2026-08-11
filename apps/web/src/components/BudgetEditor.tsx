@@ -7,6 +7,8 @@ export interface BudgetEditorProps {
   categories: Array<{ id: number; name: string }>;
   initialCaps: Record<string, number>;
   onSave: (caps: Record<string, number>) => Promise<void>;
+  /** While the page fetches categories/budgets, never render the empty state. */
+  loading?: boolean;
 }
 
 /** ARS currency formatting for minor-unit amounts (same pattern as SummaryView). */
@@ -15,7 +17,7 @@ function formatMinor(minor: number): string {
 }
 
 /** Per-category monthly caps editor; saving PUTs the whole map in minor units (BM-3). */
-export default function BudgetEditor({ categories, initialCaps, onSave }: BudgetEditorProps): JSX.Element {
+export default function BudgetEditor({ categories, initialCaps, onSave, loading = false }: BudgetEditorProps): JSX.Element {
   const [caps, setCaps] = useState<Record<string, string>>(() =>
     Object.fromEntries(categories.map((c) => {
       const minor = initialCaps[String(c.id)];
@@ -66,7 +68,9 @@ export default function BudgetEditor({ categories, initialCaps, onSave }: Budget
         void handleSave();
       }}
     >
-      {categories.length === 0 ? (
+      {loading ? (
+        <div className="empty">Cargando…</div>
+      ) : categories.length === 0 ? (
         <div className="empty">Aún no hay categorías para presupuestar.</div>
       ) : (
         <table className="data">

@@ -68,20 +68,91 @@ describe('CategoriesPage', () => {
     expect(screen.queryByTestId('confirm-delete-11')).not.toBeInTheDocument();
   });
 
-  it('shows the API error in the error box when deleting a category with children (CM-4)', async () => {
+  it('disables Borrar for categories with children and hints to delete subcategories first (P3 #13)', async () => {
     vi.spyOn(api, 'getCategoryTree').mockResolvedValue(tree);
     vi.spyOn(api, 'getDeletedCategories').mockResolvedValue([]);
+
+    render(<CategoriesPage />);
+    await screen.findByTestId('delete-1');
+
+    const parentDelete = screen.getByTestId('delete-1');
+    expect(parentDelete).toBeDisabled();
+    expect(parentDelete).toHaveAttribute('title', 'Primero borre sus subcategorías');
+
+    // The leaf sibling stays actionable: no confirm can even open for a parent.
+    expect(screen.getByTestId('delete-11')).not.toBeDisabled();
+  });
+
+  it('keeps the two-tap confirm and shows the API error when the delete still fails (CM-4)', async () => {
+    vi.spyOn(api, 'getCategoryTree').mockResolvedValue(tree);
+    vi.spyOn(api, 'getDeletedCategories').mockResolvedValue([]);
+    // A leaf whose delete fails (e.g. a child was added by another tab
+    // between render and confirm) still surfaces the backend error.
     vi.spyOn(api, 'deleteCategory').mockRejectedValue(new Error('Cannot delete a category with children'));
 
     const user = userEvent.setup();
     render(<CategoriesPage />);
-    await screen.findByTestId('delete-1');
-    await user.click(screen.getByTestId('delete-1'));
-    await user.click(screen.getByTestId('confirm-delete-1'));
+    await screen.findByTestId('delete-11');
+    await user.click(screen.getByTestId('delete-11'));
+    await user.click(screen.getByTestId('confirm-delete-11'));
 
     expect(await screen.findByText('No se puede borrar una categoría con subcategorías.')).toBeInTheDocument();
     // The prompt stays open so the user can retry or cancel.
-    expect(screen.getByTestId('confirm-delete-1')).toBeInTheDocument();
+    expect(screen.getByTestId('confirm-delete-11')).toBeInTheDocument();
+  });
+
+  it('moves focus to the confirm Borrar and restores it to the row Borrar on cancel (P3 #1)', async () => {
+    vi.spyOn(api, 'getCategoryTree').mockResolvedValue(tree);
+    vi.spyOn(api, 'getDeletedCategories').mockResolvedValue([]);
+
+    const user = userEvent.setup();
+    render(<CategoriesPage />);
+    await screen.findByTestId('delete-11');
+
+    await user.click(screen.getByTestId('delete-11'));
+    expect(document.activeElement).toBe(screen.getByTestId('confirm-delete-11'));
+
+    await user.click(screen.getByTestId('cancel-delete-11'));
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByTestId('delete-11')));
+  });
+
+  it('marks the confirm prompt as an alert and the Cancelar link as muted (P3 #1, #2)', async () => {
+    vi.spyOn(api, 'getCategoryTree').mockResolvedValue(tree);
+    vi.spyOn(api, 'getDeletedCategories').mockResolvedValue([]);
+
+    const user = userEvent.setup();
+    render(<CategoriesPage />);
+    await screen.findByTestId('delete-11');
+
+    await user.click(screen.getByTestId('delete-11'));
+    expect(screen.getByRole('alert')).toHaveTextContent('¿Borrar la categoría?');
+    expect(screen.getByTestId('cancel-delete-11')).toHaveClass('link muted');
+  });
+
+  it('shows the add-category error with role=alert (P3 #4)', async () => {
+    vi.spyOn(api, 'getCategoryTree').mockResolvedValue(tree);
+    vi.spyOn(api, 'getDeletedCategories').mockResolvedValue([]);
+    vi.spyOn(api, 'createCategory').mockRejectedValue(new Error('Invalid name'));
+
+    const user = userEvent.setup();
+    render(<CategoriesPage />);
+    await screen.findByTestId('delete-1');
+
+    await user.click(screen.getByTestId('cat-add'));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Nombre inválido.');
+  });
+
+  it('shows the deleted-categories fetch error with role=alert and Reintentar reloads (P3 #4, #9)', async () => {
+    vi.spyOn(api, 'getCategoryTree').mockResolvedValue(tree);
+    const getDeleted = vi.spyOn(api, 'getDeletedCategories').mockRejectedValue(new Error('papelera caída'));
+
+    const user = userEvent.setup();
+    render(<CategoriesPage />);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('papelera caída');
+    await user.click(screen.getByTestId('retry-deleted'));
+    await waitFor(() => expect(getDeleted).toHaveBeenCalledTimes(2));
   });
 
   it('keeps the rename input open with the typed value and shows role=alert when the rename fails (P2)', async () => {

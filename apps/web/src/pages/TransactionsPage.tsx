@@ -131,7 +131,12 @@ export default function TransactionsPage(): JSX.Element {
           <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} aria-label="Mes" />
           <nav className="tabs">
             {(['all', 'expense', 'income'] as const).map((d) => (
-              <button key={d} className={direction === d ? 'active' : ''} onClick={() => setDirection(d)}>
+              <button
+                key={d}
+                className={direction === d ? 'active' : ''}
+                aria-pressed={direction === d}
+                onClick={() => setDirection(d)}
+              >
                 {d === 'all' ? 'Todas' : d === 'expense' ? 'Gasto' : 'Ingreso'}
               </button>
             ))}
@@ -142,7 +147,14 @@ export default function TransactionsPage(): JSX.Element {
             {deleteError}
           </div>
         )}
-        {transactions.error && !deleteError && <div className="error-box">{transactions.error}</div>}
+        {transactions.error && !deleteError && (
+          <div className="error-box" role="alert">
+            {transactions.error}{' '}
+            <button type="button" className="link" data-testid="retry-transactions" onClick={() => transactions.reload()}>
+              Reintentar
+            </button>
+          </div>
+        )}
         {listLoading ? (
           <div className="empty">Cargando…</div>
         ) : (
