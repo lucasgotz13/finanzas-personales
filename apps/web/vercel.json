@@ -1,0 +1,5 @@
+{
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "https://finanzas-api-vmgd.onrender.com/api/$1" }
+  ]
+}
