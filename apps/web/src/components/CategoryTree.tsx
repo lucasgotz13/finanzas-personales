@@ -4,7 +4,10 @@ import type { CategoryNode } from '../types';
 export interface CategoryTreeProps {
   categories: CategoryNode[];
   onRename: (id: number, name: string) => Promise<void>;
-  onDelete: (id: number) => Promise<void>;
+  onDelete: (id: number) => void;
+  confirmingId: number | null;
+  onConfirmDelete: () => Promise<void>;
+  onCancelDelete: () => void;
 }
 
 interface RenameState {
@@ -13,7 +16,14 @@ interface RenameState {
 }
 
 /** Nested category tree with rename and soft-delete actions (CM-3, CM-4). */
-export default function CategoryTree({ categories, onRename, onDelete }: CategoryTreeProps): JSX.Element {
+export default function CategoryTree({
+  categories,
+  onRename,
+  onDelete,
+  confirmingId,
+  onConfirmDelete,
+  onCancelDelete,
+}: CategoryTreeProps): JSX.Element {
   const [renaming, setRenaming] = useState<RenameState | null>(null);
   const [busyId, setBusyId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -28,6 +38,10 @@ export default function CategoryTree({ categories, onRename, onDelete }: Categor
     } finally {
       setBusyId(null);
     }
+  }
+
+  async function handleConfirmDelete(): Promise<void> {
+    await run(onConfirmDelete, confirmingId ?? 0);
   }
 
   function renderNodes(nodes: CategoryNode[], depth: number): JSX.Element[] {
@@ -55,14 +69,32 @@ export default function CategoryTree({ categories, onRename, onDelete }: Categor
               </button>
             </>
           )}
-          <button
-            className="danger"
-            data-testid={`delete-${node.id}`}
-            disabled={busyId === node.id}
-            onClick={() => run(() => onDelete(node.id), node.id)}
-          >
-            Delete
-          </button>
+          {confirmingId === node.id ? (
+            <span className="confirm-prompt">
+              <span className="confirm-question">Delete permanently?</span>
+              <span className="confirm-note">It can be restored later.</span>
+              <button
+                className="danger"
+                data-testid={`confirm-delete-${node.id}`}
+                disabled={busyId === node.id}
+                onClick={() => void handleConfirmDelete()}
+              >
+                Yes
+              </button>
+              <button className="link" data-testid={`cancel-delete-${node.id}`} disabled={busyId === node.id} onClick={onCancelDelete}>
+                No
+              </button>
+            </span>
+          ) : (
+            <button
+              className="danger"
+              data-testid={`delete-${node.id}`}
+              disabled={busyId === node.id}
+              onClick={() => onDelete(node.id)}
+            >
+              Delete
+            </button>
+          )}
         </span>
         {node.children.length > 0 && <ul>{renderNodes(node.children, depth + 1)}</ul>}
       </li>

@@ -52,6 +52,19 @@ export class CategoryService {
     return this.save(id, new Category({ ...existing, deletedAt }));
   }
 
+  /**
+   * Restore: clears deletedAt and re-enters the active tree. When the old
+   * parent is itself deleted (or gone), detach to root so the restored
+   * category is never orphaned under a hidden branch (CM-4).
+   */
+  async restore(id: number): Promise<Category> {
+    const existing = await this.deps.categories.findById(id);
+    if (!existing || existing.deletedAt === null) throw new NotFoundError(`Category ${id} not found`);
+    const parent = existing.parentId !== null ? await this.deps.categories.findById(existing.parentId) : null;
+    const parentId = parent === null || parent.deletedAt !== null ? null : existing.parentId;
+    return this.save(id, new Category({ ...existing, parentId, deletedAt: null }));
+  }
+
   listActive(): Promise<Category[]> {
     return this.deps.categories.listAll().then((all) => all.filter((c) => c.deletedAt === null));
   }

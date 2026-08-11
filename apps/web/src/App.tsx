@@ -30,11 +30,21 @@ export default function App(): JSX.Element {
         </nav>
       </header>
       <main>
-        {tab === 'transactions' && <TransactionsPage />}
-        {tab === 'categories' && <CategoriesPage />}
-        {tab === 'budgets' && <BudgetsPage />}
-        {tab === 'summaries' && <SummariesPage />}
-        {tab === 'indicators' && <IndicatorsPage />}
+        <div className={tab === 'transactions' ? 'tab-panel' : 'tab-panel hidden'}>
+          <TransactionsPage />
+        </div>
+        <div className={tab === 'categories' ? 'tab-panel' : 'tab-panel hidden'}>
+          <CategoriesPage />
+        </div>
+        <div className={tab === 'budgets' ? 'tab-panel' : 'tab-panel hidden'}>
+          <BudgetsPage />
+        </div>
+        <div className={tab === 'summaries' ? 'tab-panel' : 'tab-panel hidden'}>
+          <SummariesPage />
+        </div>
+        <div className={tab === 'indicators' ? 'tab-panel' : 'tab-panel hidden'}>
+          <IndicatorsPage />
+        </div>
       </main>
     </>
   );

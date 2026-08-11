@@ -16,6 +16,7 @@ describe('CategoriesPage', () => {
 
   it('adds a category and reloads the tree (CM-1)', async () => {
     vi.spyOn(api, 'getCategoryTree').mockResolvedValue(tree);
+    vi.spyOn(api, 'getDeletedCategories').mockResolvedValue([]);
     const createCategory = vi.spyOn(api, 'createCategory').mockResolvedValue({ id: 12, name: 'Restaurants', parentId: 1, children: [] });
     const getTree = vi.spyOn(api, 'getCategoryTree');
 
@@ -31,15 +32,84 @@ describe('CategoriesPage', () => {
     await waitFor(() => expect(getTree).toHaveBeenCalledTimes(2));
   });
 
-  it('rejects deleting a category with children through the API error (CM-4)', async () => {
+  it('requires a two-tap confirm before deleting; No cancels without calling the API', async () => {
+    const deleteCategory = vi.spyOn(api, 'deleteCategory').mockResolvedValue(undefined);
     vi.spyOn(api, 'getCategoryTree').mockResolvedValue(tree);
+    vi.spyOn(api, 'getDeletedCategories').mockResolvedValue([]);
+
+    const user = userEvent.setup();
+    render(<CategoriesPage />);
+    await screen.findByTestId('delete-11');
+
+    await user.click(screen.getByTestId('delete-11'));
+    expect(screen.getByTestId('confirm-delete-11')).toBeInTheDocument();
+    expect(deleteCategory).not.toHaveBeenCalled();
+
+    await user.click(screen.getByTestId('cancel-delete-11'));
+    expect(screen.queryByTestId('confirm-delete-11')).not.toBeInTheDocument();
+    expect(deleteCategory).not.toHaveBeenCalled();
+  });
+
+  it('deletes after confirm and refreshes the tree and the deleted list', async () => {
+    const deleteCategory = vi.spyOn(api, 'deleteCategory').mockResolvedValue(undefined);
+    const getTree = vi.spyOn(api, 'getCategoryTree').mockResolvedValue(tree);
+    const getDeleted = vi.spyOn(api, 'getDeletedCategories').mockResolvedValue([]);
+
+    const user = userEvent.setup();
+    render(<CategoriesPage />);
+    await screen.findByTestId('delete-11');
+
+    await user.click(screen.getByTestId('delete-11'));
+    await user.click(screen.getByTestId('confirm-delete-11'));
+
+    await waitFor(() => expect(deleteCategory).toHaveBeenCalledWith(11));
+    await waitFor(() => expect(getTree).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(getDeleted).toHaveBeenCalledTimes(2));
+    expect(screen.queryByTestId('confirm-delete-11')).not.toBeInTheDocument();
+  });
+
+  it('shows the API error in the error box when deleting a category with children (CM-4)', async () => {
+    vi.spyOn(api, 'getCategoryTree').mockResolvedValue(tree);
+    vi.spyOn(api, 'getDeletedCategories').mockResolvedValue([]);
     vi.spyOn(api, 'deleteCategory').mockRejectedValue(new Error('Cannot delete a category with children'));
 
     const user = userEvent.setup();
     render(<CategoriesPage />);
     await screen.findByTestId('delete-1');
     await user.click(screen.getByTestId('delete-1'));
+    await user.click(screen.getByTestId('confirm-delete-1'));
 
     expect(await screen.findByText('Cannot delete a category with children')).toBeInTheDocument();
+    // The prompt stays open so the user can retry or cancel.
+    expect(screen.getByTestId('confirm-delete-1')).toBeInTheDocument();
+  });
+
+  it('renders the deleted section with Restore and refreshes both lists on restore', async () => {
+    const deletedList: CategoryNode[] = [{ id: 5, name: 'Health', parentId: null, children: [] }];
+    vi.spyOn(api, 'getCategoryTree').mockResolvedValue(tree);
+    const getDeleted = vi.spyOn(api, 'getDeletedCategories').mockResolvedValue(deletedList);
+    const restore = vi.spyOn(api, 'restoreCategory').mockResolvedValue({ id: 5, name: 'Health', parentId: null, children: [] });
+
+    const user = userEvent.setup();
+    render(<CategoriesPage />);
+    await screen.findByTestId('restore-5');
+
+    expect(screen.getByTestId('deleted-section')).toBeInTheDocument();
+    expect(screen.getByText('Health')).toBeInTheDocument();
+
+    await user.click(screen.getByTestId('restore-5'));
+
+    await waitFor(() => expect(restore).toHaveBeenCalledWith(5));
+    await waitFor(() => expect(getDeleted).toHaveBeenCalledTimes(2));
+  });
+
+  it('hides the deleted section when nothing is deleted', async () => {
+    vi.spyOn(api, 'getCategoryTree').mockResolvedValue(tree);
+    vi.spyOn(api, 'getDeletedCategories').mockResolvedValue([]);
+
+    render(<CategoriesPage />);
+    await screen.findByTestId('delete-1');
+
+    expect(screen.queryByTestId('deleted-section')).not.toBeInTheDocument();
   });
 });

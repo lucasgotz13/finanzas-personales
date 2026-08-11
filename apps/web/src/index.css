@@ -157,6 +157,7 @@ ul.tree {
 ul.tree .tree-row {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 0.6rem;
   padding: 0.25rem 0;
 }
@@ -297,6 +298,11 @@ button:disabled {
   font-weight: 600;
   background: #fff4e5;
   color: #b45309;
+}
+
+/* Hidden tabs stay mounted but invisible at EVERY viewport width (P1 #5) */
+.tab-panel.hidden {
+  display: none;
 }
 
 /* --- Responsive: mobile-first adjustments (≤640px) --- */

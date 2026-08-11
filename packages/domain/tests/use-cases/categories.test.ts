@@ -159,3 +159,48 @@ describe('CategoryService.listActive', () => {
     expect(active.map((c) => c.id)).toEqual([1, 2, 3, 4]);
   });
 });
+
+describe('CategoryService.restore (CM-4)', () => {
+  it('restores a soft-deleted category and clears deletedAt', async () => {
+    const env = build();
+    await seed(env);
+    await env.service.remove(5, NOW.toISOString());
+    const restored = await env.service.restore(5);
+    expect(restored.deletedAt).toBeNull();
+    expect(restored.parentId).toBeNull();
+    const active = await env.service.listActive();
+    expect(active.find((c) => c.id === 5)).toBeDefined();
+  });
+
+  it('keeps the parent when the parent is active', async () => {
+    const env = build();
+    await seed(env);
+    await env.categories.create({ id: 6, name: 'Rent', parentId: 3, deletedAt: NOW.toISOString() });
+    const restored = await env.service.restore(6);
+    expect(restored.deletedAt).toBeNull();
+    expect(restored.parentId).toBe(3);
+  });
+
+  it('detaches from a deleted parent to avoid an orphan in the active tree', async () => {
+    const env = build();
+    await seed(env);
+    // Delete the child, then the parent; restoring the child must not hang
+    // under the still-deleted parent.
+    await env.service.remove(4, NOW.toISOString());
+    await env.service.remove(3, NOW.toISOString());
+    const restored = await env.service.restore(4);
+    expect(restored.deletedAt).toBeNull();
+    expect(restored.parentId).toBeNull();
+  });
+
+  it('rejects restoring an active category', async () => {
+    const env = build();
+    await seed(env);
+    await expect(env.service.restore(5)).rejects.toThrow(NotFoundError);
+  });
+
+  it('rejects restoring a missing category', async () => {
+    const env = build();
+    await expect(env.service.restore(99)).rejects.toThrow(NotFoundError);
+  });
+});

@@ -92,6 +92,16 @@ export const api = {
   deleteCategory(id: number): Promise<void> {
     return request(`/categories/${id}`, { method: 'DELETE' });
   },
+  getDeletedCategories(): Promise<CategoryNode[]> {
+    return request<Array<{ id: number; name: string; parentId: number | null }>>('/categories/deleted').then((list) =>
+      list.map((c) => ({ ...c, children: [] })),
+    );
+  },
+  restoreCategory(id: number): Promise<CategoryNode> {
+    return request<{ id: number; name: string; parentId: number | null }>(`/categories/${id}/restore`, { method: 'POST' }).then(
+      (c) => ({ ...c, children: [] }),
+    );
+  },
   getBudgets(): Promise<Record<string, number>> {
     return request('/budgets');
   },

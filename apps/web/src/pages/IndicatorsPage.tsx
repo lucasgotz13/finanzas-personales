@@ -63,8 +63,10 @@ export default function IndicatorsPage(): JSX.Element {
         </div>
       )}
       {indicators.error && <div className="error-box">{indicators.error}</div>}
-      {indicators.loading ? (
+      {indicators.loading && indicators.data === null ? (
         <div className="empty">Loading…</div>
+      ) : (indicators.data ?? []).length === 0 ? (
+        <div className="empty">No indicators yet — press Refresh.</div>
       ) : (
         <div className="indicators-grid" data-testid="indicators-grid">
           {(indicators.data ?? []).map((indicator) => (
