@@ -1,0 +1,215 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-11T00:00:00Z",
+  "title": "Design System: Finanzas Personales",
+  "extensions": {
+    "colorMeta": {
+      "action": {
+        "role": "primary",
+        "displayName": "Action Green",
+        "canonical": "#0e7a3d",
+        "tonalRamp": ["oklch(0.15 0.07 152)", "oklch(0.22 0.09 152)", "oklch(0.30 0.11 152)", "oklch(0.38 0.12 152)", "oklch(0.46 0.12 152)", "oklch(0.55 0.10 152)", "oklch(0.68 0.08 152)", "oklch(0.80 0.05 152)"]
+      },
+      "action-hover": {
+        "role": "primary",
+        "displayName": "Action Green Hover",
+        "canonical": "#0b6634",
+        "tonalRamp": ["oklch(0.12 0.07 152)", "oklch(0.18 0.09 152)", "oklch(0.26 0.11 152)", "oklch(0.34 0.12 152)", "oklch(0.42 0.12 152)", "oklch(0.50 0.10 152)", "oklch(0.62 0.08 152)", "oklch(0.76 0.05 152)"]
+      },
+      "danger": {
+        "role": "secondary",
+        "displayName": "Danger Red",
+        "canonical": "#b3261e",
+        "tonalRamp": ["oklch(0.15 0.11 24)", "oklch(0.22 0.13 24)", "oklch(0.30 0.14 24)", "oklch(0.38 0.15 24)", "oklch(0.46 0.15 24)", "oklch(0.55 0.13 24)", "oklch(0.67 0.10 24)", "oklch(0.80 0.06 24)"]
+      },
+      "danger-hover": {
+        "role": "secondary",
+        "displayName": "Danger Red Hover",
+        "canonical": "#8f1c16",
+        "tonalRamp": ["oklch(0.12 0.10 24)", "oklch(0.19 0.12 24)", "oklch(0.27 0.14 24)", "oklch(0.35 0.15 24)", "oklch(0.43 0.15 24)", "oklch(0.51 0.13 24)", "oklch(0.63 0.10 24)", "oklch(0.77 0.06 24)"]
+      },
+      "danger-bg": {
+        "role": "secondary",
+        "displayName": "Danger Tint",
+        "canonical": "#fdecea",
+        "tonalRamp": ["oklch(0.50 0.08 24)", "oklch(0.60 0.07 24)", "oklch(0.68 0.06 24)", "oklch(0.75 0.05 24)", "oklch(0.82 0.04 24)", "oklch(0.88 0.03 24)", "oklch(0.93 0.02 24)", "oklch(0.97 0.01 24)"]
+      },
+      "warn": {
+        "role": "secondary",
+        "displayName": "Warning Amber",
+        "canonical": "#b45309",
+        "tonalRamp": ["oklch(0.18 0.08 55)", "oklch(0.26 0.10 55)", "oklch(0.34 0.12 55)", "oklch(0.42 0.13 55)", "oklch(0.50 0.13 55)", "oklch(0.59 0.11 55)", "oklch(0.70 0.08 55)", "oklch(0.82 0.05 55)"]
+      },
+      "warn-bg": {
+        "role": "secondary",
+        "displayName": "Amber Tint",
+        "canonical": "#fff4e5",
+        "tonalRamp": ["oklch(0.50 0.08 75)", "oklch(0.60 0.07 75)", "oklch(0.68 0.06 75)", "oklch(0.76 0.05 75)", "oklch(0.83 0.04 75)", "oklch(0.89 0.03 75)", "oklch(0.94 0.02 75)", "oklch(0.98 0.01 75)"]
+      },
+      "ok-bg": {
+        "role": "secondary",
+        "displayName": "OK Gray-Green Tint",
+        "canonical": "#eef2ee",
+        "tonalRamp": ["oklch(0.45 0.03 150)", "oklch(0.55 0.03 150)", "oklch(0.63 0.03 150)", "oklch(0.70 0.03 150)", "oklch(0.78 0.02 150)", "oklch(0.85 0.02 150)", "oklch(0.92 0.01 150)", "oklch(0.97 0.01 150)"]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Warm Ink",
+        "canonical": "#1a1815",
+        "tonalRamp": ["oklch(0.15 0.01 70)", "oklch(0.22 0.01 70)", "oklch(0.30 0.01 70)", "oklch(0.38 0.01 70)", "oklch(0.46 0.01 70)", "oklch(0.55 0.01 70)", "oklch(0.68 0.01 70)", "oklch(0.82 0.01 70)"]
+      },
+      "muted-text": {
+        "role": "neutral",
+        "displayName": "Warm Muted Ink",
+        "canonical": "#595959",
+        "tonalRamp": ["oklch(0.18 0.01 60)", "oklch(0.26 0.01 60)", "oklch(0.34 0.01 60)", "oklch(0.42 0.01 60)", "oklch(0.50 0.01 60)", "oklch(0.59 0.01 60)", "oklch(0.70 0.01 60)", "oklch(0.83 0.01 60)"]
+      },
+      "ground": {
+        "role": "neutral",
+        "displayName": "Warm Paper",
+        "canonical": "#f7f5f0",
+        "tonalRamp": ["oklch(0.20 0.02 85)", "oklch(0.30 0.02 85)", "oklch(0.42 0.02 85)", "oklch(0.55 0.02 85)", "oklch(0.68 0.02 85)", "oklch(0.78 0.02 85)", "oklch(0.88 0.01 85)", "oklch(0.96 0.01 85)"]
+      },
+      "card": {
+        "role": "neutral",
+        "displayName": "Card White",
+        "canonical": "#ffffff",
+        "tonalRamp": ["oklch(0.20 0 0)", "oklch(0.30 0 0)", "oklch(0.42 0 0)", "oklch(0.55 0 0)", "oklch(0.68 0 0)", "oklch(0.78 0 0)", "oklch(0.88 0 0)", "oklch(0.97 0 0)"]
+      },
+      "hairline": {
+        "role": "neutral",
+        "displayName": "Warm Hairline",
+        "canonical": "#e8e4dc",
+        "tonalRamp": ["oklch(0.25 0.02 85)", "oklch(0.35 0.02 85)", "oklch(0.46 0.02 85)", "oklch(0.58 0.02 85)", "oklch(0.68 0.01 85)", "oklch(0.78 0.01 85)", "oklch(0.87 0.01 85)", "oklch(0.94 0.01 85)"]
+      },
+      "disabled-bg": {
+        "role": "neutral",
+        "displayName": "Disabled Warm Gray",
+        "canonical": "#d9d5cc",
+        "tonalRamp": ["oklch(0.25 0.02 85)", "oklch(0.35 0.02 85)", "oklch(0.45 0.02 85)", "oklch(0.55 0.02 85)", "oklch(0.64 0.01 85)", "oklch(0.73 0.01 85)", "oklch(0.82 0.01 85)", "oklch(0.90 0.01 85)"]
+      },
+      "error-border": {
+        "role": "neutral",
+        "displayName": "Error Border Tint",
+        "canonical": "#f5c6c0",
+        "tonalRamp": ["oklch(0.40 0.09 24)", "oklch(0.50 0.09 24)", "oklch(0.58 0.08 24)", "oklch(0.66 0.07 24)", "oklch(0.74 0.06 24)", "oklch(0.81 0.05 24)", "oklch(0.88 0.03 24)", "oklch(0.94 0.02 24)"]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Money Totals", "purpose": "Per-currency month totals; the loudest text on screen." },
+      "headline": { "displayName": "Indicator Values", "purpose": "Big number on indicator cards." },
+      "title": { "displayName": "Title / Row Amounts", "purpose": "Bold list amounts and card section headings." },
+      "body": { "displayName": "Body", "purpose": "Table rows and general reading; form inputs at 0.95rem." },
+      "label": { "displayName": "Label", "purpose": "Table headers, form labels, currency labels, buttons (1rem), link-buttons (0.85rem)." }
+    },
+    "shadows": [
+      { "name": "whisper", "value": "0 1px 3px rgba(26, 24, 21, 0.06)", "purpose": "The only shadow token; separates cards from the paper ground." },
+      { "name": "whisper-reverse", "value": "0 -1px 3px rgba(26, 24, 21, 0.06)", "purpose": "The mobile bottom bar lifting off the ground." }
+    ],
+    "breakpoints": [
+      { "name": "mobile", "value": "640px", "purpose": "Navigation swaps to the fixed bottom bar, form goes single-column, tables scroll horizontally, all targets grow to 44px/16px." }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one actionable button: Guardar. Action green, white text, 8px radius.",
+      "html": "<button class=\"ds-btn-primary\">Guardar</button>",
+      "css": ".ds-btn-primary { background: var(--action, #0e7a3d); color: #fff; font-weight: 600; font-size: 1rem; padding: 0.5rem 1rem; border: none; border-radius: 8px; cursor: pointer; min-height: 44px; } .ds-btn-primary:hover:not(:disabled) { background: var(--action-hover, #0b6634); } .ds-btn-primary:focus-visible { outline: 2px solid var(--action, #0e7a3d); outline-offset: 2px; } .ds-btn-primary:disabled { background: #d9d5cc; color: #595959; cursor: default; }"
+    },
+    {
+      "name": "Danger Button",
+      "kind": "button",
+      "refersTo": "button-danger",
+      "description": "Destructive intent (Borrar). Compact, danger red, white text.",
+      "html": "<button class=\"ds-btn-danger\">Borrar</button>",
+      "css": ".ds-btn-danger { background: var(--danger, #b3261e); color: #fff; font-weight: 600; font-size: 0.9rem; padding: 0.35rem 0.8rem; border: none; border-radius: 8px; cursor: pointer; min-height: 44px; } .ds-btn-danger:hover:not(:disabled) { background: #8f1c16; } .ds-btn-danger:focus-visible { outline: 2px solid var(--action, #0e7a3d); outline-offset: 2px; } .ds-btn-danger:disabled { opacity: 0.45; cursor: default; }"
+    },
+    {
+      "name": "Action Link Button",
+      "kind": "button",
+      "refersTo": "button-link",
+      "description": "Underlined text button. Green when it performs an action (Renombrar, Restaurar); muted when it navigates or cancels.",
+      "html": "<button class=\"ds-btn-link\">Renombrar</button><button class=\"ds-btn-link ds-btn-link-muted\">Editar</button>",
+      "css": ".ds-btn-link { background: none; border: none; color: var(--action, #0e7a3d); text-decoration: underline; cursor: pointer; font-size: 0.85rem; padding: 0; min-height: 44px; } .ds-btn-link:hover { color: var(--action-hover, #0b6634); } .ds-btn-link-muted { color: var(--muted-text, #595959); } .ds-btn-link-muted:hover { color: var(--ink, #1a1815); } .ds-btn-link:focus-visible { outline: 2px solid var(--action, #0e7a3d); outline-offset: 2px; }"
+    },
+    {
+      "name": "Input Field",
+      "kind": "input",
+      "refersTo": "input-field",
+      "description": "Card-white field with hairline border, 8px radius; label stacked above at 0.8rem muted.",
+      "html": "<label class=\"ds-field-label\">Monto (ARS)</label><input class=\"ds-input\" type=\"text\" placeholder=\"1200\">",
+      "css": ".ds-field-label { display: block; font-size: 0.8rem; color: var(--muted-text, #595959); font-weight: 600; margin-bottom: 0.25rem; } .ds-input { padding: 0.45rem; border: 1px solid var(--hairline, #e8e4dc); border-radius: 8px; font-size: 0.95rem; background: var(--card, #ffffff); color: var(--ink, #1a1815); min-height: 44px; box-sizing: border-box; } .ds-input:focus-visible { outline: 2px solid var(--action, #0e7a3d); outline-offset: 2px; } .ds-input::placeholder { color: var(--muted-text, #595959); }"
+    },
+    {
+      "name": "Status Chip: OK",
+      "kind": "chip",
+      "refersTo": "chip-ok",
+      "description": "Positive state pill: ink on gray-green tint. Never the action green.",
+      "html": "<span class=\"ds-chip ds-chip-ok\">OK</span>",
+      "css": ".ds-chip { font-size: 0.75rem; border-radius: 999px; padding: 0.1rem 0.5rem; font-weight: 600; text-transform: uppercase; white-space: nowrap; } .ds-chip-ok { background: var(--ok-bg, #eef2ee); color: var(--ink, #1a1815); }"
+    },
+    {
+      "name": "Status Chip: Danger / Warn",
+      "kind": "chip",
+      "refersTo": "chip-danger",
+      "description": "Status pills: over-budget/VENCIDO in danger red on danger tint; REFERENCIA ANTIGUA in amber on amber tint.",
+      "html": "<span class=\"ds-chip ds-chip-danger\">Vencido</span><span class=\"ds-chip ds-chip-warn\">Referencia antigua</span>",
+      "css": ".ds-chip { font-size: 0.75rem; border-radius: 999px; padding: 0.1rem 0.5rem; font-weight: 600; text-transform: uppercase; white-space: nowrap; } .ds-chip-danger { background: var(--danger-bg, #fdecea); color: var(--danger, #b3261e); } .ds-chip-warn { background: var(--warn-bg, #fff4e5); color: var(--warn, #b45309); }"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "White card on warm paper: 12px radius, hairline border, whisper shadow, 1rem padding.",
+      "html": "<div class=\"ds-card\"><div class=\"ds-card-title\">Total del mes</div><div class=\"ds-total\"><span class=\"ds-total-currency\">ARS</span><span class=\"ds-total-amount\">$ 1.234,50</span></div></div>",
+      "css": ".ds-card { background: var(--card, #ffffff); border: 1px solid var(--hairline, #e8e4dc); border-radius: 12px; padding: 1rem; box-shadow: 0 1px 3px rgba(26, 24, 21, 0.06); } .ds-card-title { font-size: 1rem; font-weight: 600; color: var(--muted-text, #595959); margin: 0 0 0.5rem; } .ds-total { display: flex; align-items: baseline; gap: 0.5rem; } .ds-total-currency { font-size: 0.8rem; color: var(--muted-text, #595959); } .ds-total-amount { font-size: 1.5rem; font-weight: 700; line-height: 1.2; font-variant-numeric: tabular-nums; color: var(--ink, #1a1815); }"
+    },
+    {
+      "name": "Navigation Tab",
+      "kind": "nav",
+      "refersTo": "nav-tab-active",
+      "description": "Underline tab: muted at rest, ink on hover; active = ink 700 with 2px ink underline (a state, never green).",
+      "html": "<nav class=\"ds-tabs\"><button class=\"ds-tab\">Transacciones</button><button class=\"ds-tab ds-tab-active\">Categorías</button><button class=\"ds-tab\">Presupuestos</button></nav>",
+      "css": ".ds-tabs { display: flex; gap: 0.25rem; } .ds-tab { border: none; border-bottom: 2px solid transparent; background: transparent; color: var(--muted-text, #595959); padding: 0.5rem 0.9rem; cursor: pointer; font-size: 0.95rem; min-height: 44px; } .ds-tab:hover { color: var(--ink, #1a1815); } .ds-tab-active { color: var(--ink, #1a1815); font-weight: 700; border-bottom-color: var(--ink, #1a1815); } .ds-tab:focus-visible { outline: 2px solid var(--action, #0e7a3d); outline-offset: 2px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "La Billetera",
+    "overview": "The world is a calm warm-paper workspace: a near-black warm ink on a light paper ground (#f7f5f0) with white cards floating on it, quiet hairlines instead of loud table grids, and a single saturated green that is reserved for the moment of action. The old navy/white dashboard look is the declared anti-reference — this world refuses the generic dashboard table sea.\n\nLoudness is managed, not flat: numbers scale up by role (month totals the largest, list amounts next, meta smallest) and every amount sits on tabular figures so columns of money align like a ledger. Status never borrows the action hue: freshness and budget health live in small uppercase pills on tinted grounds. On phones the navigation drops to a fixed bottom bar at thumb reach, and destructive choices confirm inline in the row rather than in a modal.",
+    "keyCharacteristics": [
+      "Money is the loudest thing: tabular figures on every amount, bold at list level, largest at totals.",
+      "ONE saturated green; it appears only where something can be done.",
+      "State lives in chips: pill badges carry over-budget, freshness, and reference-age status.",
+      "Warm paper ground, white cards, warm near-black ink; calm light theme for day and night scanning.",
+      "Flat depth: hairline borders plus a whisper shadow; nothing ever lifts on hover.",
+      "Bottom-bar navigation at thumb reach on phones (≤640px)."
+    ],
+    "rules": [
+      { "name": "The One Green Rule", "body": "The action green is the only saturated accent in the system, and it means one thing: something can be done here. It is never used for status (the OK chip is ink on gray-green), never for location (active nav is ink, not green), and never for disabled controls (gray-warm instead). On the first viewport it appears on Guardar only.", "section": "colors" },
+      { "name": "The State-in-Chips Rule", "body": "Status is never painted with the action hue. Budget health, freshness, and reference age live in small uppercase pills on tinted grounds: red for over-budget or VENCIDO, amber for REFERENCIA ANTIGUA, ink-on-gray-green for OK.", "section": "colors" },
+      { "name": "The Active-Is-Ink Rule", "body": "The current navigation location is bold ink with a 2px ink underline (bottom-border on desktop tabs, top-border on the mobile bar) — a state, not an action. Green marks what you CAN do, ink marks where you ARE.", "section": "colors" },
+      { "name": "The Tabular Money Rule", "body": "Every rendered amount — totals, row amounts, indicator values, the live conversion preview — is set with font-variant-numeric: tabular-nums. Columns of money must align; digits never wobble.", "section": "typography" },
+      { "name": "The Loudness Ladder Rule", "body": "Money loudness is fixed by role, not by context: totals (1.5rem/700) > indicator values (1.35rem/600) > row amounts (1rem/600) > quiet meta (0.8rem muted). Supporting text never outshouts the number it supports.", "section": "typography" },
+      { "name": "The Whisper-Only Rule", "body": "One shadow token, one depth step. Elevation never grows on hover, and a surface is never more than one hairlined step off the paper.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do set every amount in tabular figures, bold at list level (1rem/600) and largest at totals (1.5rem/700).",
+      "Do reserve the action green for actionable elements only — on the first viewport, Guardar is its only home.",
+      "Do express status in pills: tinted grounds, uppercase 600 text, ink for OK.",
+      "Do mark the active navigation location in bold ink with a 2px ink underline.",
+      "Do keep cards flat: hairline border, Whisper shadow, 12px radius, 1rem padding.",
+      "Do keep touch targets at 44px and mobile inputs at 16px.",
+      "Do keep the warm light ground (#f7f5f0); the old navy/white look is the anti-reference."
+    ],
+    "donts": [
+      "Don't use the action green for status, location, or disabled controls — it means \"something can be done\" and nothing else.",
+      "Don't introduce a second saturated accent; the palette is one green, one red, one amber on warm paper.",
+      "Don't let money lose its tabular alignment, and don't let supporting text outshout the number it supports.",
+      "Don't darken or elevate surfaces for depth — paper and card are the only two steps.",
+      "Don't drop the calm light theme for a dark or navy treatment; the world is paper, ink, and one green."
+    ]
+  }
+}

@@ -50,7 +50,7 @@ export default function IndicatorsPage(): JSX.Element {
   };
 
   return (
-    <section className="card">
+    <section className="indicators-page">
       <div className="indicators-header">
         <h2>Argentina — Indicadores económicos</h2>
         <button type="button" className="primary" onClick={() => void manualRefresh()} disabled={refreshing} data-testid="indicators-refresh">

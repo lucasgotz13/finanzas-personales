@@ -118,7 +118,7 @@ export function BudgetStatusView({ status, categoryNames }: { status: BudgetStat
     <div>
       <p data-testid="global-status" className="money">
         Global: {formatMinor(status.global.consumed)} / {formatMinor(status.global.cap)}{' '}
-        <span className={`badge ${status.global.overBudget ? 'over' : 'ok'}`}>{status.global.overBudget ? 'SOBRE EL PRESUPUESTO' : 'OK'}</span>
+        <span className={`badge ${status.global.overBudget ? 'over' : 'ok'}`}>{status.global.overBudget ? 'Sobre el presupuesto' : 'OK'}</span>
       </p>
       {status.categories.length === 0 ? (
         <div className="empty">Aún no hay presupuestos configurados para este mes.</div>
@@ -139,7 +139,7 @@ export function BudgetStatusView({ status, categoryNames }: { status: BudgetStat
                 <td className="money">{formatMinor(c.cap)}</td>
                 <td className="money">{formatMinor(c.consumed)}</td>
                 <td>
-                  <span className={`badge ${c.overBudget ? 'over' : 'ok'}`}>{c.overBudget ? 'SOBRE EL PRESUPUESTO' : 'OK'}</span>
+                  <span className={`badge ${c.overBudget ? 'over' : 'ok'}`}>{c.overBudget ? 'Sobre el presupuesto' : 'OK'}</span>
                 </td>
               </tr>
             ))}
