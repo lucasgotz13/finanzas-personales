@@ -6,7 +6,6 @@ import { SqliteBudgetRepository, SqliteCategoryRepository, SqliteTransactionRepo
 import { SqliteIndicatorCache } from '../sqlite/indicator-cache';
 import { ArgentinadatosSource } from '../sources/argentinadatos';
 import { BcraSource } from '../sources/bcra';
-import { DatosGobArSource } from '../sources/datos-gob-ar';
 import { DolarApiSource } from '../sources/dolar-api';
 import { errorHandler, notFoundHandler } from './errors';
 import { budgetsRouter } from './routes/budgets';
@@ -23,7 +22,14 @@ export interface AppDeps {
 }
 
 function defaultIndicatorSources(): IndicatorSource[] {
-  return [new DolarApiSource(), new BcraSource(), new DatosGobArSource(), new ArgentinadatosSource()];
+  // One ArgentinaDatos client per class: the domain resolves sources by class
+  // (issue #33). The IPC class reuses the riesgo país adapter's API family.
+  return [
+    new DolarApiSource(),
+    new BcraSource(),
+    new ArgentinadatosSource(undefined, undefined, 'ipc'),
+    new ArgentinadatosSource(),
+  ];
 }
 
 /** Builds the Express app with the SQLite adapters wired to the domain services. */
