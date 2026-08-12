@@ -18,6 +18,8 @@ export type { IndicatorServiceDeps } from './indicators/service';
 export type { IndicatorSource, IndicatorCache } from './indicators/ports';
 
 export { PRICE_TTL_MS, normalizeTicker } from './investments/catalog';
+export { PortfolioService } from './investments/service';
+export type { PortfolioServiceDeps } from './investments/service';
 export type { PriceSource, PriceCache, PositionRepository, PortfolioFxPort } from './investments/ports';
 export type {
   PriceStatus,
