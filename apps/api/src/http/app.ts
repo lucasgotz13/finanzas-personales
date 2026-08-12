@@ -1,8 +1,9 @@
 import type { Client } from '@libsql/client';
-import type { Clock, IndicatorSource, PortfolioFxPort, PriceSource } from '@finanzas/domain';
+import type { CclSeriesSource, Clock, IndicatorSource, PortfolioFxPort, PriceSeriesSource, PriceSource } from '@finanzas/domain';
 import {
   BudgetService,
   CategoryService,
+  ChartService,
   IndicatorService,
   PortfolioService,
   SummaryService,
@@ -13,10 +14,13 @@ import { SqliteBudgetRepository, SqliteCategoryRepository, SqliteTransactionRepo
 import { SqliteIndicatorCache } from '../sqlite/indicator-cache';
 import { SqlitePositionRepository } from '../sqlite/positions-repo';
 import { SqlitePriceCache } from '../sqlite/price-cache';
+import { SqliteSeriesCache } from '../sqlite/series-cache';
 import { ArgentinadatosSource } from '../sources/argentinadatos';
+import { ArgentinadatosCclSeriesSource } from '../sources/argentinadatos-ccl';
 import { BcraSource } from '../sources/bcra';
 import { DolarApiSource } from '../sources/dolar-api';
 import { YahooSource } from '../sources/yahoo';
+import { YahooSeriesSource } from '../sources/yahoo-series';
 import { errorHandler, notFoundHandler } from './errors';
 import { budgetsRouter } from './routes/budgets';
 import { categoriesRouter } from './routes/categories';
@@ -32,6 +36,9 @@ export interface AppDeps {
   indicatorSources?: IndicatorSource[];
   /** Optional portfolio price source; tests inject a stub (PI-7). Defaults to Yahoo. */
   portfolioSource?: PriceSource;
+  /** Optional chart series sources; tests inject stubs (PC-1). Defaults to Yahoo + argentinadatos. */
+  seriesSource?: PriceSeriesSource;
+  cclSource?: CclSeriesSource;
 }
 
 /** Read-only CCL access: wraps the SAME indicator cache the IndicatorService writes (PI-4). */
@@ -80,6 +87,13 @@ export function buildApp(deps: AppDeps): express.Express {
     fx: cclAccessor,
     clock,
   });
+  const chartService = new ChartService({
+    positions: positionsRepo,
+    cache: new SqliteSeriesCache(db),
+    seriesSource: deps.seriesSource ?? new YahooSeriesSource(),
+    cclSource: deps.cclSource ?? new ArgentinadatosCclSeriesSource(),
+    clock,
+  });
 
   const app = express();
   app.use(express.json());
@@ -94,7 +108,7 @@ export function buildApp(deps: AppDeps): express.Express {
   app.use('/api/v1', budgetsRouter({ budgetService, clock }));
   app.use('/api/v1', summariesRouter({ summaryService, clock }));
   app.use('/api/v1', indicatorsRouter({ indicatorService }));
-  app.use('/api/v1', portfolioRouter({ portfolioService, positions: positionsRepo, clock }));
+  app.use('/api/v1', portfolioRouter({ portfolioService, chartService, positions: positionsRepo, clock }));
   app.use(notFoundHandler);
   app.use(errorHandler);
   return app;
