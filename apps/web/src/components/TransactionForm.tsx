@@ -38,9 +38,10 @@ export default function TransactionForm({ categories, onCreated, initial, onUpda
   // Live ARS conversion preview (USD only): parsed amount × FX at entry.
   // es-AR amount parsing: dot = thousands separator, comma = decimal (issue #45).
   const parsedAmount = parseEsArAmount(amount);
-  const rateValue = Number(rate);
-  const showConversion = currency === 'USD' && parsedAmount !== null && parsedAmount > 0 && Number.isFinite(rateValue) && rateValue > 0;
-  const convertedArs = showConversion ? parsedAmount * rateValue : null;
+  const rateValue = parseEsArAmount(rate);
+  const showConversion =
+    currency === 'USD' && parsedAmount !== null && parsedAmount > 0 && rateValue !== null && rateValue > 0;
+  const convertedArs = showConversion && rateValue !== null ? parsedAmount * rateValue : null;
 
   function resetForm(): void {
     setDirection('expense');
@@ -60,7 +61,8 @@ export default function TransactionForm({ categories, onCreated, initial, onUpda
     const parsed = parseEsArAmount(amount);
     if (parsed === null || parsed <= 0) details.push('El monto debe ser un número positivo.');
     const amountMinor = parsed === null ? 0 : Math.round(parsed * 100);
-    if (currency === 'USD' && (!rate || Number(rate) <= 0)) details.push('El tipo de cambio es obligatorio para monedas que no son ARS.');
+    if (currency === 'USD' && (parseEsArAmount(rate) === null || (parseEsArAmount(rate) ?? 0) <= 0))
+      details.push('El tipo de cambio es obligatorio para monedas que no son ARS.');
     if (categoryId === '') details.push('Seleccionar categoría.');
     if (details.length > 0) {
       setErrors(details);
@@ -73,7 +75,7 @@ export default function TransactionForm({ categories, onCreated, initial, onUpda
         direction,
         amountMinor,
         currency,
-        rate: currency === 'USD' ? Number(rate) : undefined,
+        rate: currency === 'USD' ? parseEsArAmount(rate) ?? undefined : undefined,
         date,
         categoryId: Number(categoryId),
         note: note.trim() === '' ? undefined : note.trim(),
@@ -90,7 +92,7 @@ export default function TransactionForm({ categories, onCreated, initial, onUpda
         setNote('');
         if (currency === 'USD') {
           // Rate reuse: remember the rate and prefill the next entry with it.
-          lastUsdRate = String(Number(rate));
+          lastUsdRate = String(parseEsArAmount(rate));
           setRate(lastUsdRate);
         } else {
           setRate('');
@@ -131,7 +133,7 @@ export default function TransactionForm({ categories, onCreated, initial, onUpda
           onChange={(e) => setAmount(e.target.value)}
           data-testid="amount"
         />
-        {convertedArs !== null && (
+        {convertedArs !== null && rateValue !== null && (
           <span className="conversion-line" data-testid="conversion-line">
             ≈ {new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(convertedArs)} al tipo{' '}
             {new Intl.NumberFormat('es-AR').format(rateValue)}
@@ -165,7 +167,13 @@ export default function TransactionForm({ categories, onCreated, initial, onUpda
       {currency === 'USD' && (
         <label>
           Tipo de cambio al momento
-          <input type="number" min="0.0001" step="any" value={rate} onChange={(e) => setRate(e.target.value)} data-testid="rate" />
+          <input
+            type="text"
+            inputMode="decimal"
+            value={rate}
+            onChange={(e) => setRate(e.target.value)}
+            data-testid="rate"
+          />
         </label>
       )}
       <label>
