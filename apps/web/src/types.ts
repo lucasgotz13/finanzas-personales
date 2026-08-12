@@ -136,3 +136,21 @@ export interface PortfolioRefreshResult {
   status: 'updated' | 'cached' | 'failed';
   error?: string;
 }
+
+/** Price chart types mirroring the REST contract under /api/v1/portfolio/history. */
+export type SeriesRange = '3m' | '6m' | '1y';
+export type SeriesCurrency = 'ARS' | 'USD';
+export type SeriesStatus = 'fresh' | 'stale' | 'absent';
+
+export interface PricePoint {
+  date: string;
+  valueMinor: number;
+}
+
+export interface HistoryResponse {
+  points: PricePoint[];
+  currency: SeriesCurrency;
+  range: SeriesRange;
+  status: SeriesStatus;
+  degraded?: boolean;
+}
