@@ -1,16 +1,27 @@
 import type { Client } from '@libsql/client';
-import type { Clock, IndicatorSource } from '@finanzas/domain';
-import { BudgetService, CategoryService, IndicatorService, SummaryService, TransactionService } from '@finanzas/domain';
+import type { Clock, IndicatorSource, PortfolioFxPort, PriceSource } from '@finanzas/domain';
+import {
+  BudgetService,
+  CategoryService,
+  IndicatorService,
+  PortfolioService,
+  SummaryService,
+  TransactionService,
+} from '@finanzas/domain';
 import express from 'express';
 import { SqliteBudgetRepository, SqliteCategoryRepository, SqliteTransactionRepository } from '../sqlite/repositories';
 import { SqliteIndicatorCache } from '../sqlite/indicator-cache';
+import { SqlitePositionRepository } from '../sqlite/positions-repo';
+import { SqlitePriceCache } from '../sqlite/price-cache';
 import { ArgentinadatosSource } from '../sources/argentinadatos';
 import { BcraSource } from '../sources/bcra';
 import { DolarApiSource } from '../sources/dolar-api';
+import { YahooSource } from '../sources/yahoo';
 import { errorHandler, notFoundHandler } from './errors';
 import { budgetsRouter } from './routes/budgets';
 import { categoriesRouter } from './routes/categories';
 import { indicatorsRouter } from './routes/indicators';
+import { portfolioRouter } from './routes/portfolio';
 import { summariesRouter } from './routes/summaries';
 import { transactionsRouter } from './routes/transactions';
 
@@ -19,6 +30,18 @@ export interface AppDeps {
   clock: Clock;
   /** Optional indicator sources; tests inject stubs (EI-7). Defaults to the real adapters. */
   indicatorSources?: IndicatorSource[];
+  /** Optional portfolio price source; tests inject a stub (PI-7). Defaults to Yahoo. */
+  portfolioSource?: PriceSource;
+}
+
+/** Read-only CCL access: wraps the SAME indicator cache the IndicatorService writes (PI-4). */
+class CclAccessor implements PortfolioFxPort {
+  constructor(private cache: SqliteIndicatorCache) {}
+
+  async getCcl(): Promise<{ value: number; fetchedAt: string } | null> {
+    const snapshot = await this.cache.get('usd-ccl');
+    return snapshot === null ? null : { value: snapshot.value, fetchedAt: snapshot.fetchedAt };
+  }
 }
 
 function defaultIndicatorSources(): IndicatorSource[] {
@@ -42,9 +65,19 @@ export function buildApp(deps: AppDeps): express.Express {
   const categoryService = new CategoryService({ categories: categoriesRepo, clock });
   const budgetService = new BudgetService({ budgets: budgetsRepo, categories: categoriesRepo, transactions: transactionsRepo });
   const summaryService = new SummaryService({ transactions: transactionsRepo, categories: categoriesRepo });
+  const indicatorCache = new SqliteIndicatorCache(db);
   const indicatorService = new IndicatorService({
     sources: deps.indicatorSources ?? defaultIndicatorSources(),
-    cache: new SqliteIndicatorCache(db),
+    cache: indicatorCache,
+    clock,
+  });
+  const positionsRepo = new SqlitePositionRepository(db);
+  const cclAccessor = new CclAccessor(indicatorCache);
+  const portfolioService = new PortfolioService({
+    repo: positionsRepo,
+    cache: new SqlitePriceCache(db),
+    source: deps.portfolioSource ?? new YahooSource(() => cclAccessor.getCcl()),
+    fx: cclAccessor,
     clock,
   });
 
@@ -55,6 +88,7 @@ export function buildApp(deps: AppDeps): express.Express {
   app.use('/api/v1', budgetsRouter({ budgetService, clock }));
   app.use('/api/v1', summariesRouter({ summaryService, clock }));
   app.use('/api/v1', indicatorsRouter({ indicatorService }));
+  app.use('/api/v1', portfolioRouter({ portfolioService, positions: positionsRepo, clock }));
   app.use(notFoundHandler);
   app.use(errorHandler);
   return app;

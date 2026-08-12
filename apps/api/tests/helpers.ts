@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { Client } from '@libsql/client';
 import type { Express } from 'express';
-import type { Clock, IndicatorSource } from '@finanzas/domain';
+import type { Clock, IndicatorSource, PriceSource } from '@finanzas/domain';
 import { createDbClient, MIGRATIONS_DIR, migrate } from '../../../scripts/migrate';
 import { buildApp } from '../src/http/app';
 
@@ -23,13 +23,18 @@ export interface TestEnv {
 /** Builds the app against a fresh temp SQLite database (migrated + seeded). */
 export async function createTestApp(
   now = new Date('2026-08-08T12:00:00.000Z'),
-  deps: { indicatorSources?: IndicatorSource[] } = {},
+  deps: { indicatorSources?: IndicatorSource[]; portfolioSource?: PriceSource } = {},
 ): Promise<TestEnv> {
   const dir = mkdtempSync(join(tmpdir(), 'finanzas-test-'));
   const dbPath = join(dir, 'test.db');
   await migrate(dbPath, MIGRATIONS_DIR);
   const db = await createDbClient(dbPath);
-  const app = buildApp({ db, clock: new FakeClock(now), indicatorSources: deps.indicatorSources });
+  const app = buildApp({
+    db,
+    clock: new FakeClock(now),
+    indicatorSources: deps.indicatorSources,
+    portfolioSource: deps.portfolioSource,
+  });
   return {
     app,
     db,
