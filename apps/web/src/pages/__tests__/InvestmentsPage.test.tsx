@@ -10,9 +10,9 @@ const FIVE_MINUTES = 5 * 60_000;
 function summary(): PortfolioSummary {
   return {
     ccStatus: 'fresh',
-    totals: { valueUsdMinor: 200000, valueArsMinor: 2690000, pnlUsdMinor: 20000, pnlPct: 0.1111, pnlArsMinor: 269000 },
+    totals: { valueUsdMinor: 200000, valueArsMinor: 269000000, pnlUsdMinor: 20000, pnlPct: 0.1111, pnlArsMinor: 26900000 },
     positions: [
-      { id: 1, ticker: 'AAPL.BA', name: 'Apple', quantity: 10, avgCostMinor: 18000, priceMinor: 20000, status: 'fresh', valueUsdMinor: 200000, valueArsMinor: 2690000, pnlUsdMinor: 20000, pnlPct: 0.1111, pnlArsMinor: 269000 },
+      { id: 1, ticker: 'AAPL.BA', name: 'Apple', quantity: 10, avgCostMinor: 18000, priceMinor: 20000, status: 'fresh', valueUsdMinor: 200000, valueArsMinor: 269000000, pnlUsdMinor: 20000, pnlPct: 0.1111, pnlArsMinor: 26900000 },
       { id: 2, ticker: 'GGAL.BA', name: 'Galicia', quantity: 5, avgCostMinor: 6000, priceMinor: null, status: 'absent', valueUsdMinor: null, valueArsMinor: null, pnlUsdMinor: null, pnlPct: null, pnlArsMinor: null },
     ],
   };
@@ -36,7 +36,7 @@ describe('InvestmentsPage (PI-6)', () => {
     expect(screen.getByTestId('position-1')).toHaveTextContent('Al día');
     expect(screen.getByTestId('position-2')).toHaveTextContent('Sin precio');
     expect(screen.getByTestId('portfolio-summary')).toHaveTextContent('ARS (CCL)');
-    expect(screen.getByTestId('portfolio-summary')).toHaveTextContent('26.900,00');
+    expect(screen.getByTestId('portfolio-summary')).toHaveTextContent('2.690.000,00');
     expect(screen.getByTestId('portfolio-summary')).toHaveTextContent('2.000,00');
     expect(screen.getByTestId('portfolio-summary')).toHaveTextContent('+11,11%');
   });

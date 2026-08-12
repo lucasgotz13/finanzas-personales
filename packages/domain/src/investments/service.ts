@@ -109,10 +109,10 @@ export class PortfolioService {
       priceMinor: snapshot.priceMinor,
       status,
       valueUsdMinor,
-      valueArsMinor: fx === null ? null : Math.round((valueUsdMinor / 100) * fx.value),
+      valueArsMinor: fx === null ? null : Math.round(valueUsdMinor * fx.value),
       pnlUsdMinor,
       pnlPct: (snapshot.priceMinor - position.avgCostMinor) / position.avgCostMinor,
-      pnlArsMinor: fx === null ? null : Math.round((pnlUsdMinor / 100) * fx.value),
+      pnlArsMinor: fx === null ? null : Math.round(pnlUsdMinor * fx.value),
     };
   }
 
@@ -123,10 +123,10 @@ export class PortfolioService {
     const costMinor = views.reduce((sum, v) => (v.priceMinor === null ? sum : sum + v.avgCostMinor * v.quantity), 0);
     return {
       valueUsdMinor,
-      valueArsMinor: fx === null ? null : Math.round((valueUsdMinor / 100) * fx.value),
+      valueArsMinor: fx === null ? null : Math.round(valueUsdMinor * fx.value),
       pnlUsdMinor,
       pnlPct: costMinor > 0 ? pnlUsdMinor / costMinor : null,
-      pnlArsMinor: fx === null ? null : Math.round((pnlUsdMinor / 100) * fx.value),
+      pnlArsMinor: fx === null ? null : Math.round(pnlUsdMinor * fx.value),
     };
   }
 }
