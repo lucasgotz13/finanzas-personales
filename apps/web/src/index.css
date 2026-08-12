@@ -464,6 +464,94 @@ ul.tree .tree-row input {
   display: none;
 }
 
+/* Price charts (PC-5): world tokens only — ink data line, hairline grid and
+   axes, muted ticks; the action green never appears in a data line. */
+.chart-card h2,
+.asset-chart h2 {
+  font-size: 1rem;
+  margin: 0;
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.chart-header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+/* Honesty note (PC-6): permanently visible on the portfolio chart card. */
+.honesty-note {
+  font-size: 0.75rem;
+  color: var(--muted-text);
+}
+
+.chart-controls {
+  display: flex;
+  gap: 0.75rem;
+  margin: 0.5rem 0;
+  flex-wrap: wrap;
+}
+
+.chip-group {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.chip {
+  border: 1px solid var(--hairline);
+  background: var(--card);
+  color: var(--ink);
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 999px;
+  padding: 0.2rem 0.7rem;
+  cursor: pointer;
+}
+
+.chip.active {
+  background: var(--ink);
+  color: var(--card);
+  border-color: var(--ink);
+}
+
+.chart-container {
+  width: 100%;
+}
+
+/* Tabular es-AR tooltip on the paper card (PC-5). */
+.chart-tooltip {
+  background: var(--card);
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  padding: 0.4rem 0.6rem;
+  box-shadow: var(--shadow);
+  font-size: 0.75rem;
+  color: var(--muted-text);
+}
+
+.chart-tooltip-value {
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+/* Row-tap expansion for the inline asset chart (PC-5). */
+tr.positions-row {
+  cursor: pointer;
+}
+
+tr.positions-row:hover td {
+  background: var(--ground);
+}
+
+tr.asset-chart-row td {
+  border-bottom: 1px solid var(--hairline);
+  padding: 0.25rem 0.6rem 1rem;
+  background: var(--ground);
+}
+
 /* --- Mobile: bottom bar at thumb reach (≤640px) --- */
 .bottom-bar {
   display: none;
