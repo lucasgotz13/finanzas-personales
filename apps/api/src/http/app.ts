@@ -83,6 +83,12 @@ export function buildApp(deps: AppDeps): express.Express {
 
   const app = express();
   app.use(express.json());
+  // API responses are per-user dynamic data — never let browsers or edges
+  // serve stale JSON after a redeploy (the deployment fix for stale portfolios).
+  app.use('/api/v1', (_req, res, next) => {
+    res.set('Cache-Control', 'no-store');
+    next();
+  });
   app.use('/api/v1', transactionsRouter({ transactionService }));
   app.use('/api/v1', categoriesRouter({ categoryService, clock }));
   app.use('/api/v1', budgetsRouter({ budgetService, clock }));
