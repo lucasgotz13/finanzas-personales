@@ -117,6 +117,24 @@ describe('TransactionForm', () => {
     await waitFor(() => expect(spy).toHaveBeenCalledWith(expect.objectContaining({ amountMinor: 2500, currency: 'USD', rate: 950 })));
   });
 
+  it('accepts a decimal-comma FX rate (es-AR, issue #65)', async () => {
+    const user = userEvent.setup();
+    const spy = vi.spyOn(api, 'createTransaction').mockResolvedValue({} as never);
+    render(<TransactionForm categories={categories} onCreated={vi.fn()} />);
+
+    await user.selectOptions(screen.getByTestId('currency'), 'USD');
+    await user.type(screen.getByTestId('amount'), '100');
+    // lastUsdRate is module-level and may be prefilled by earlier tests — clear it.
+    await user.clear(screen.getByTestId('rate'));
+    await user.type(screen.getByTestId('rate'), '1.345,5');
+    await user.selectOptions(screen.getByTestId('category'), '1');
+    await user.click(screen.getByTestId('submit'));
+
+    await waitFor(() =>
+      expect(spy).toHaveBeenCalledWith(expect.objectContaining({ currency: 'USD', rate: 1345.5 })),
+    );
+  });
+
   it('prefills the rate with the last USD rate on the next entry, still editable (P3 #6)', async () => {
     const user = userEvent.setup();
     const spy = vi.spyOn(api, 'createTransaction').mockResolvedValue({} as never);
@@ -131,11 +149,11 @@ describe('TransactionForm', () => {
 
     await waitFor(() => expect(spy).toHaveBeenCalledWith(expect.objectContaining({ currency: 'USD', rate: 968.5 })));
     // Next entry: currency memory keeps USD and the rate comes back prefilled.
-    expect(screen.getByTestId('rate')).toHaveValue(968.5);
+    expect(screen.getByTestId('rate')).toHaveValue('968.5');
     // Still editable: the user can overwrite the remembered rate.
     await user.clear(screen.getByTestId('rate'));
     await user.type(screen.getByTestId('rate'), '970');
-    expect(screen.getByTestId('rate')).toHaveValue(970);
+    expect(screen.getByTestId('rate')).toHaveValue('970');
   });
 
   it('keeps the remembered rate across ARS saves (P3 #6)', async () => {
@@ -160,7 +178,7 @@ describe('TransactionForm', () => {
 
     // The next USD entry starts prefilled with the last USD rate.
     await user.selectOptions(screen.getByTestId('currency'), 'USD');
-    expect(screen.getByTestId('rate')).toHaveValue(900);
+    expect(screen.getByTestId('rate')).toHaveValue('900');
   });
 
   it('clears the stale rate-required error when the currency changes (P3 #10)', async () => {
@@ -259,7 +277,7 @@ describe('TransactionForm', () => {
       expect(screen.getByTestId('amount')).toHaveValue('2500');
       expect(screen.getByLabelText('Tipo')).toHaveValue('income');
       expect(screen.getByTestId('currency')).toHaveValue('USD');
-      expect(screen.getByTestId('rate')).toHaveValue(950);
+      expect(screen.getByTestId('rate')).toHaveValue('950');
       expect(screen.getByTestId('date')).toHaveValue('2026-07-20');
       expect(screen.getByTestId('category')).toHaveValue('10');
       expect(screen.getByTestId('note')).toHaveValue('Freelance');
