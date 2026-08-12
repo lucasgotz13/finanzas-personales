@@ -16,6 +16,20 @@ export { KEYS, UNIT_BY_KEY, CLASS_BY_KEY, TTL_BY_CLASS } from './indicators/cata
 export { IndicatorService } from './indicators/service';
 export type { IndicatorServiceDeps } from './indicators/service';
 export type { IndicatorSource, IndicatorCache } from './indicators/ports';
+
+export { PRICE_TTL_MS, normalizeTicker } from './investments/catalog';
+export type { PriceSource, PriceCache, PositionRepository, PortfolioFxPort } from './investments/ports';
+export type {
+  PriceStatus,
+  CcStatus,
+  PositionCurrency,
+  Position,
+  PriceSnapshot,
+  PriceQuote,
+  PositionView,
+  PortfolioSummary,
+  PortfolioRefreshResult,
+} from './investments/types';
 export type {
   IndicatorClass,
   IndicatorKey,
