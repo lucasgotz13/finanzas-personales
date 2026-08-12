@@ -81,3 +81,58 @@ export interface IndicatorRefreshResult {
   status: 'updated' | 'cached' | 'failed';
   error?: string;
 }
+
+/** Portfolio types mirroring the REST contract under /api/v1/portfolio. */
+export type PriceStatus = 'fresh' | 'stale' | 'absent';
+export type CcStatus = 'fresh' | 'stale' | 'absent';
+
+export interface Position {
+  id: number;
+  ticker: string;
+  name: string;
+  quantity: number;
+  avgCostMinor: number;
+  currency: 'USD';
+  createdAt: string;
+}
+
+/** Editable subset of a position (the form; ticker is immutable on edits). */
+export interface PositionEdit {
+  id: number;
+  ticker: string;
+  quantity: number;
+  avgCostMinor: number;
+}
+
+export interface PositionView {
+  id: number;
+  ticker: string;
+  name: string;
+  quantity: number;
+  avgCostMinor: number;
+  priceMinor: number | null;
+  status: PriceStatus;
+  valueUsdMinor: number | null;
+  valueArsMinor: number | null;
+  pnlUsdMinor: number | null;
+  pnlPct: number | null;
+  pnlArsMinor: number | null;
+}
+
+export interface PortfolioSummary {
+  ccStatus: CcStatus;
+  totals: {
+    valueUsdMinor: number;
+    valueArsMinor: number | null;
+    pnlUsdMinor: number;
+    pnlPct: number | null;
+    pnlArsMinor: number | null;
+  };
+  positions: PositionView[];
+}
+
+export interface PortfolioRefreshResult {
+  ticker: string;
+  status: 'updated' | 'cached' | 'failed';
+  error?: string;
+}

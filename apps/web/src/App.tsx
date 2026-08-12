@@ -2,10 +2,11 @@ import { useState } from 'react';
 import BudgetsPage from './pages/BudgetsPage';
 import CategoriesPage from './pages/CategoriesPage';
 import IndicatorsPage from './pages/IndicatorsPage';
+import InvestmentsPage from './pages/InvestmentsPage';
 import SummariesPage from './pages/SummariesPage';
 import TransactionsPage from './pages/TransactionsPage';
 
-export type Tab = 'transactions' | 'categories' | 'budgets' | 'summaries' | 'indicators';
+export type Tab = 'transactions' | 'categories' | 'budgets' | 'summaries' | 'indicators' | 'inversiones';
 
 const TABS: Array<{ id: Tab; label: string }> = [
   { id: 'transactions', label: 'Transacciones' },
@@ -13,6 +14,7 @@ const TABS: Array<{ id: Tab; label: string }> = [
   { id: 'budgets', label: 'Presupuestos' },
   { id: 'summaries', label: 'Resúmenes' },
   { id: 'indicators', label: 'Indicadores' },
+  { id: 'inversiones', label: 'Inversiones' },
 ];
 
 export default function App(): JSX.Element {
@@ -52,6 +54,9 @@ export default function App(): JSX.Element {
         </div>
         <div className={tab === 'indicators' ? 'tab-panel' : 'tab-panel hidden'}>
           <IndicatorsPage />
+        </div>
+        <div className={tab === 'inversiones' ? 'tab-panel' : 'tab-panel hidden'}>
+          <InvestmentsPage />
         </div>
       </main>
       {/* Mobile-first navigation: thumb-reachable, same buttons and state as

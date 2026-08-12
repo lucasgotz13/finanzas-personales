@@ -5,6 +5,9 @@ import type {
   IndicatorRefreshResult,
   IndicatorView,
   PeriodSummary,
+  PortfolioRefreshResult,
+  PortfolioSummary,
+  Position,
 } from './types';
 
 export const API_BASE = '/api/v1';
@@ -141,6 +144,21 @@ export const api = {
   },
   refreshIndicators(force: boolean): Promise<{ results: IndicatorRefreshResult[] }> {
     return request(`/indicators/refresh${force ? '?force=true' : ''}`, { method: 'POST' });
+  },
+  getPortfolio(): Promise<PortfolioSummary> {
+    return request('/portfolio');
+  },
+  createPosition(input: { ticker: string; quantity: number; avgCostMinor: number }): Promise<Position> {
+    return request('/portfolio/positions', { method: 'POST', body: JSON.stringify(input) });
+  },
+  updatePosition(id: number, input: { quantity: number; avgCostMinor: number }): Promise<Position> {
+    return request(`/portfolio/positions/${id}`, { method: 'PATCH', body: JSON.stringify(input) });
+  },
+  deletePosition(id: number): Promise<void> {
+    return request(`/portfolio/positions/${id}`, { method: 'DELETE' });
+  },
+  refreshPortfolio(force: boolean): Promise<{ results: PortfolioRefreshResult[] }> {
+    return request(`/portfolio/refresh${force ? '?force=true' : ''}`, { method: 'POST' });
   },
 };
 
