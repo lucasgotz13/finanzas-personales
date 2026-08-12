@@ -21,6 +21,7 @@ function mockAllApis(): void {
   vi.spyOn(api, 'getBudgetStatus').mockResolvedValue(budgetStatus);
   vi.spyOn(api, 'getSummary').mockResolvedValue(emptySummary);
   vi.spyOn(api, 'getIndicators').mockResolvedValue([]);
+  vi.spyOn(api, 'getPortfolio').mockResolvedValue({ ccStatus: 'absent', totals: { valueUsdMinor: 0, valueArsMinor: null, pnlUsdMinor: 0, pnlPct: null, pnlArsMinor: null }, positions: [] });
 }
 
 describe('App tab switching', () => {
