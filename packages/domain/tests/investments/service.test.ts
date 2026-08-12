@@ -99,9 +99,9 @@ describe('PortfolioService.getPortfolio (PI-4)', () => {
       priceMinor: 20000,
       status: 'fresh',
       valueUsdMinor: 200000,
-      valueArsMinor: Math.round((200000 / 100) * 1345),
+      valueArsMinor: Math.round(200000 * 1345),
       pnlUsdMinor: 20000,
-      pnlArsMinor: Math.round((20000 / 100) * 1345),
+      pnlArsMinor: Math.round(20000 * 1345),
     });
     expect(aapl?.pnlPct).toBeCloseTo((20000 - 18000) / 18000);
     const ggal = summary.positions.find((v) => v.ticker === 'GGAL.BA');
@@ -109,10 +109,10 @@ describe('PortfolioService.getPortfolio (PI-4)', () => {
     expect(ggal?.pnlUsdMinor).toBe(10000); // (8000 - 6000) * 5
     expect(summary.totals).toEqual({
       valueUsdMinor: 240000,
-      valueArsMinor: Math.round((240000 / 100) * 1345),
+      valueArsMinor: Math.round(240000 * 1345),
       pnlUsdMinor: 30000,
       pnlPct: (240000 - (18000 * 10 + 6000 * 5)) / (18000 * 10 + 6000 * 5),
-      pnlArsMinor: Math.round((30000 / 100) * 1345),
+      pnlArsMinor: Math.round(30000 * 1345),
     });
     expect(h.source.calls).toBe(0);
   });
@@ -158,7 +158,7 @@ describe('PortfolioService.getPortfolio (PI-4)', () => {
     const summary = await h.service.getPortfolio();
 
     expect(summary.ccStatus).toBe('stale');
-    expect(summary.positions.find((v) => v.ticker === 'AAPL.BA')?.valueArsMinor).toBe(Math.round(2000 * 1345));
+    expect(summary.positions.find((v) => v.ticker === 'AAPL.BA')?.valueArsMinor).toBe(Math.round(200000 * 1345));
   });
 
   it('degrades to USD-only when no CCL is available — never blank (PI-4)', async () => {

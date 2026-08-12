@@ -99,15 +99,15 @@ describe('GET /api/v1/portfolio (PI-3, PI-4)', () => {
       priceMinor: 20000,
       status: 'fresh',
       valueUsdMinor: 200000,
-      valueArsMinor: Math.round(2000 * 1345),
+      valueArsMinor: Math.round(200000 * 1345),
       pnlUsdMinor: 20000,
     });
     expect(res.body.totals).toEqual({
       valueUsdMinor: 200000,
-      valueArsMinor: Math.round(2000 * 1345),
+      valueArsMinor: Math.round(200000 * 1345),
       pnlUsdMinor: 20000,
       pnlPct: 20000 / 180000,
-      pnlArsMinor: Math.round((20000 / 100) * 1345),
+      pnlArsMinor: Math.round(20000 * 1345),
     });
     expect(source.count('AAPL.BA')).toBe(0);
   });
@@ -136,7 +136,7 @@ describe('GET /api/v1/portfolio (PI-3, PI-4)', () => {
 
     const stale = await request(env.app).get('/api/v1/portfolio');
     expect(stale.body.ccStatus).toBe('stale');
-    expect(stale.body.positions[0].valueArsMinor).toBe(Math.round(2000 * 1345));
+    expect(stale.body.positions[0].valueArsMinor).toBe(Math.round(200000 * 1345));
 
     await env.db.execute("DELETE FROM indicator_snapshots WHERE key = 'usd-ccl'");
     const absent = await request(env.app).get('/api/v1/portfolio');
