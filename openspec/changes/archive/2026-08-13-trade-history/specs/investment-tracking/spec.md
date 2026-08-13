@@ -1,19 +1,22 @@
-# Investment Tracking Specification
+# Delta for investment-tracking
 
-## Purpose
+## RENAMED Requirements
 
-Portfolio valuation for CEDEARs and BYMA stocks: positions derived from the trade ledger, Yahoo v8 price fetch with snapshot cache and TTL, USD-native valuation via CCL, avg-cost P&L, Inversiones tab.
+### Requirement: PI-1 — Positions CRUD → PI-1 — Positions (derived from trades)
 
-## Requirements
+(Reason: positions are no longer a manually edited entity; they are derived from the trade ledger.)
+(Migration: tests and clients that create/update/delete positions directly must move to trade endpoints (TH-1); position read endpoints keep their response shape.)
+
+## MODIFIED Requirements
 
 ### Requirement: PI-1 — Positions (derived from trades)
 
-A position SHALL be derived from trades: `quantity = Σbuys − Σsells`, `avgCostMinor` = moving-average cost (TH-3). `GET /portfolio` SHALL serve derived data, ordered by ticker, each with `id`, `ticker`, `name`, `quantity`, `avgCostMinor` — the baseline response shape is preserved (no `currency` field). Direct position create/update/delete SHALL be removed — mutations happen exclusively through trades (TH-1, TH-2); the positions table SHALL be kept only as rollback net. `id` SHALL be preserved from the legacy position record so existing chart endpoints (PC-1) keep working; tickers without a legacy record get a derived id. `name` SHALL be preserved from the legacy record; otherwise SHALL default to the ticker.
+A position SHALL be derived from trades: `quantity = Σbuys − Σsells`, `avgCostMinor` = moving-average cost (TH-3). `GET /api/v1/portfolio/positions` SHALL serve derived data, ordered by ticker, each with `id`, `ticker`, `name`, `quantity`, `avgCostMinor`, `currency:USD`. Direct position create/update/delete SHALL be removed — mutations happen exclusively through trades (TH-1, TH-2); the positions table SHALL be kept only as rollback net. `id` SHALL be preserved from the legacy position record so existing chart endpoints (PC-1) keep working; tickers without a legacy record get a derived id. `name` SHALL be preserved from the legacy record; otherwise SHALL default to the ticker.
 (Previously: positions were manually created/updated/deleted with direct `quantity` and `avgCostMinor`, and hard-deleted with confirmation.)
 
 #### Scenario: Derived read
 
-- GIVEN trades buy 10 @ 18000 and sell 3, WHEN `GET /portfolio`, THEN `AAPL.BA` has quantity 7, `avgCostMinor` 18000, ordered by ticker
+- GIVEN trades buy 10 @ 18000 and sell 3, WHEN `GET /api/v1/portfolio/positions`, THEN `AAPL.BA` has quantity 7, `avgCostMinor` 18000, ordered by ticker
 
 #### Scenario: Mutation via trades only
 
@@ -26,30 +29,6 @@ A position SHALL be derived from trades: `quantity = Σbuys − Σsells`, `avgCo
 #### Scenario: Id and name preservation
 
 - GIVEN legacy position `{id:5, name:"Apple"}` for `AAPL.BA`, WHEN derived, THEN id 5 and name "Apple" exposed; a new ticker without legacy record uses a derived id and name = ticker
-
-### Requirement: PI-2 — Yahoo price fetch
-
-The adapter SHALL GET `https://query1.finance.yahoo.com/v8/finance/chart/{TICKER}?interval=1d&range=1d`, one symbol per request, parsing `meta.regularMarketPrice`. Quotes SHALL normalize to USD: `meta.currency:"ARS"` (BYMA locals) via cached CCL; no CCL → `failed`. One failing symbol MUST NOT abort the batch. 429, 404, NaN/null, malformed → `failed`; prior price kept.
-
-#### Scenario: Happy fetch
-
-- GIVEN Yahoo reachable, WHEN refresh `AAPL.BA`, THEN `regularMarketPrice` cached.
-
-#### Scenario: Failure modes
-
-- GIVEN 404/null price, bad JSON, or 429, WHEN refresh, THEN `failed` (cooldown on 429); cache kept, others proceed.
-
-### Requirement: PI-3 — Snapshot cache and degradation
-
-Prices persist in `price_snapshots`, TTL ≈ 5 min (equities). GET SHALL be cache-first, MUST NOT fetch on read. `status` ∈ `fresh|stale|absent`: stale = beyond TTL; absent = never fetched. Non-forced refresh MUST NOT refetch age ≤ TTL (`cached`); `force=true` bypasses.
-
-#### Scenario: Cache-first read
-
-- GIVEN cached snapshot or none, WHEN GET, THEN price with `fresh` or `stale` (beyond TTL) or `absent` (`price:null`); no external request.
-
-#### Scenario: TTL-respecting refresh
-
-- GIVEN age 2 min, WHEN refresh non-forced, THEN `cached`; with `force=true`, refetched (`updated`).
 
 ### Requirement: PI-4 — Valuation and summary
 
@@ -67,18 +46,6 @@ Per position: price USD, value USD (`price × quantity`), value ARS via CCL, P&L
 #### Scenario: Derived avg-cost P&L
 
 - GIVEN trades buy 10 @ 18000 and buy 10 @ 22000 (avg 20000) with cached price 25000, WHEN GET, THEN P&L = (25000 − 20000) × 20
-
-### Requirement: PI-5 — Refresh
-
-`POST /api/v1/portfolio/refresh` SHALL fetch per-symbol sequentially (one in-flight), TTL-respecting; per-symbol `{status: updated|cached|failed, error?}`; `force` bypasses TTL. Auto-refresh ≈ 5 min ONLY while tab visible; manual button forces.
-
-#### Scenario: Mixed batch
-
-- GIVEN one symbol down, WHEN refresh, THEN `failed` (cache kept), others `updated`; 200.
-
-#### Scenario: Visibility-gated refresh
-
-- GIVEN tab hidden, WHEN 5 min elapse, THEN no refresh fires; when visible, refresh resumes.
 
 ### Requirement: PI-6 — Web tab
 
