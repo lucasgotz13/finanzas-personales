@@ -1,10 +1,11 @@
-import type { Clock, Position, PositionRepository, PortfolioService } from '@finanzas/domain';
-import { ConflictError, NotFoundError, normalizeTicker, ValidationError } from '@finanzas/domain';
+import type { ChartService, Clock, Position, PositionRepository, PortfolioService } from '@finanzas/domain';
+import { ConflictError, isSeriesCurrency, isSeriesRange, NotFoundError, normalizeTicker, ValidationError } from '@finanzas/domain';
 import { Router } from 'express';
 import { wrap } from '../errors';
 
 export interface PortfolioRouterDeps {
   portfolioService: PortfolioService;
+  chartService: ChartService;
   positions: PositionRepository;
   clock: Clock;
 }
@@ -62,10 +63,20 @@ function parseCurrency(raw: unknown): void {
   if (raw !== undefined && raw !== 'USD') throw new ValidationError('Unsupported currency', ['currency must be USD in v1']);
 }
 
-/** Portfolio routes (PI-1..PI-5): CRUD + cache-first GET + per-symbol refresh. */
+function parseRange(raw: unknown): '3m' | '6m' | '1y' {
+  if (typeof raw !== 'string' || !isSeriesRange(raw)) throw new ValidationError('Invalid range', ['range must be 3m, 6m or 1y']);
+  return raw;
+}
+
+function parseSeriesCurrency(raw: unknown): 'ARS' | 'USD' {
+  if (typeof raw !== 'string' || !isSeriesCurrency(raw)) throw new ValidationError('Invalid currency', ['currency must be ARS or USD']);
+  return raw;
+}
+
+/** Portfolio routes (PI-1..PI-5, PC-1): CRUD + cache-first GET + per-symbol refresh + history. */
 export function portfolioRouter(deps: PortfolioRouterDeps): Router {
   const router = Router();
-  const { portfolioService, positions, clock } = deps;
+  const { portfolioService, chartService, positions, clock } = deps;
 
   router.get(
     '/portfolio',
@@ -133,6 +144,28 @@ export function portfolioRouter(deps: PortfolioRouterDeps): Router {
       const force = req.query.force === 'true';
       const results = await portfolioService.refresh(force);
       res.json({ results });
+    }),
+  );
+
+  // PC-1: cache-first history reads; force=true is the ONLY fetch trigger.
+  router.get(
+    '/portfolio/history',
+    wrap(async (req, res) => {
+      const range = parseRange(req.query.range);
+      const currency = parseSeriesCurrency(req.query.currency);
+      const force = req.query.force === 'true';
+      res.json(await chartService.getPortfolioHistory(range, currency, force));
+    }),
+  );
+
+  router.get(
+    '/portfolio/positions/:id/history',
+    wrap(async (req, res) => {
+      const id = parseId(req.params.id);
+      const range = parseRange(req.query.range);
+      const currency = parseSeriesCurrency(req.query.currency);
+      const force = req.query.force === 'true';
+      res.json(await chartService.getPositionHistory(id, range, currency, force));
     }),
   );
 
