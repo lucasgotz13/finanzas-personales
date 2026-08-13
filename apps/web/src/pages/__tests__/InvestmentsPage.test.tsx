@@ -1,11 +1,16 @@
-import { act, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { api } from '../../api';
-import type { PortfolioSummary } from '../../types';
+import { formatChartMoney } from '../../components/SeriesChart';
+import type { HistoryResponse, PortfolioSummary } from '../../types';
 import InvestmentsPage from '../InvestmentsPage';
 
 const FIVE_MINUTES = 5 * 60_000;
+
+function history(points: Array<{ date: string; valueMinor: number }> = []): HistoryResponse {
+  return { points, currency: 'ARS', range: '3m', status: 'fresh' };
+}
 
 function summary(): PortfolioSummary {
   return {
@@ -130,5 +135,187 @@ describe('InvestmentsPage (PI-6)', () => {
     expect(prompt).toHaveTextContent('¿Borrar la posición?');
     await user.click(within(prompt).getByRole('button', { name: 'Borrar' }));
     await vi.waitFor(() => expect(del).toHaveBeenCalledWith(1));
+  });
+});
+
+describe('Price charts (PC-5, PC-6)', () => {
+  const points = [
+    { date: '2026-08-06', valueMinor: 158493 },
+    { date: '2026-08-07', valueMinor: 160000 },
+  ];
+
+  it('renders the portfolio chart with an ink data line and the always-visible honesty note', async () => {
+    vi.spyOn(api, 'getPortfolio').mockResolvedValue(summary());
+    vi.spyOn(api, 'getPortfolioHistory').mockResolvedValue(history(points));
+
+    render(<InvestmentsPage />);
+
+    expect(await screen.findByTestId('portfolio-chart')).toBeInTheDocument();
+    expect(screen.getByTestId('chart-honesty-note')).toHaveTextContent('Valores con cantidades actuales');
+    await vi.waitFor(() => {
+      const line = document.querySelector('.recharts-line path');
+      expect(line).not.toBeNull();
+      expect(line).toHaveAttribute('stroke', '#1a1815');
+    });
+  });
+
+  it('shows es-AR tabular values in the chart tooltip', async () => {
+    vi.spyOn(api, 'getPortfolio').mockResolvedValue(summary());
+    vi.spyOn(api, 'getPortfolioHistory').mockResolvedValue(history(points));
+
+    render(<InvestmentsPage />);
+    await screen.findByTestId('portfolio-chart');
+    await vi.waitFor(() => expect(document.querySelector('.recharts-surface')).not.toBeNull());
+
+    fireEvent.mouseMove(document.querySelector('.recharts-surface') as Element, { clientX: 300, clientY: 60 });
+
+    const tooltip = await screen.findByTestId('chart-tooltip-value');
+    expect(tooltip.textContent).toMatch(/\d{1,3}(\.\d{3})*(,\d+)?/);
+  });
+
+  it('formats es-AR currency figures with thousands separators', () => {
+    // Intl separates the symbol and the figure with a non-breaking space.
+    expect(formatChartMoney(158493, 'ARS')).toBe('$\u00A01.584,93');
+    expect(formatChartMoney(158493, 'USD')).toBe('US$\u00A01.584,93');
+  });
+
+  it('re-fetches when a range chip or the currency toggle changes', async () => {
+    vi.spyOn(api, 'getPortfolio').mockResolvedValue(summary());
+    const getHistory = vi.spyOn(api, 'getPortfolioHistory').mockResolvedValue(history(points));
+    const user = userEvent.setup();
+
+    render(<InvestmentsPage />);
+    await screen.findByTestId('portfolio-chart');
+
+    await user.click(screen.getByTestId('chip-6m'));
+    expect(getHistory).toHaveBeenCalledWith('6m', 'ARS');
+    expect(screen.getByTestId('chip-6m')).toHaveClass('active');
+
+    await user.click(screen.getByTestId('currency-usd'));
+    expect(getHistory).toHaveBeenCalledWith('6m', 'USD');
+    expect(screen.getByTestId('currency-usd')).toHaveClass('active');
+  });
+
+  it('forces one fetch for the newly selected pair the first time the currency toggle lands on it', async () => {
+    vi.spyOn(api, 'getPortfolio').mockResolvedValue(summary());
+    const getHistory = vi.spyOn(api, 'getPortfolioHistory').mockResolvedValue(history(points));
+    const user = userEvent.setup();
+
+    render(<InvestmentsPage />);
+    await screen.findByTestId('portfolio-chart');
+
+    const usdForceCalls = (): number =>
+      getHistory.mock.calls.filter(([r, c, force]) => r === '3m' && c === 'USD' && force === true).length;
+    expect(usdForceCalls()).toBe(1); // warm-up
+
+    await user.click(screen.getByTestId('currency-usd'));
+    expect(getHistory).toHaveBeenCalledWith('3m', 'USD', true);
+    expect(usdForceCalls()).toBe(2); // warm-up + first toggle
+
+    await user.click(screen.getByTestId('currency-ars'));
+    await user.click(screen.getByTestId('currency-usd'));
+    expect(usdForceCalls()).toBe(2); // same pair: never re-forced
+  });
+
+  it('shows the degradation note when history degrades to another currency', async () => {
+    vi.spyOn(api, 'getPortfolio').mockResolvedValue(summary());
+    vi.spyOn(api, 'getPortfolioHistory').mockResolvedValue({ ...history(points), degraded: true, currency: 'ARS' });
+
+    render(<InvestmentsPage />);
+
+    expect(await screen.findByTestId('chart-degraded-note')).toHaveTextContent(
+      'Cotización CCL no disponible — mostrando ARS.',
+    );
+  });
+
+  it('shows the degradation note on the per-asset chart too', async () => {
+    vi.spyOn(api, 'getPortfolio').mockResolvedValue(summary());
+    vi.spyOn(api, 'getPortfolioHistory').mockResolvedValue(history(points));
+    vi.spyOn(api, 'getPositionHistory').mockResolvedValue({ ...history(points), degraded: true, currency: 'ARS' });
+    const user = userEvent.setup();
+
+    render(<InvestmentsPage />);
+    await screen.findByTestId('positions-table');
+
+    await user.click(screen.getByTestId('position-1'));
+    expect(await screen.findByTestId('asset-chart-degraded-note-1')).toHaveTextContent(
+      'Cotización CCL no disponible — mostrando ARS.',
+    );
+  });
+
+  it('shows the empty state when there are no points', async () => {
+    vi.spyOn(api, 'getPortfolio').mockResolvedValue(summary());
+    vi.spyOn(api, 'getPortfolioHistory').mockResolvedValue(history([]));
+
+    render(<InvestmentsPage />);
+
+    expect(await screen.findByTestId('chart-empty')).toBeInTheDocument();
+  });
+
+  it('shows a chart error with Reintentar that reloads', async () => {
+    vi.spyOn(api, 'getPortfolio').mockResolvedValue(summary());
+    const getHistory = vi.spyOn(api, 'getPortfolioHistory').mockRejectedValue(new Error('sin datos'));
+    const user = userEvent.setup();
+
+    render(<InvestmentsPage />);
+
+    expect(await screen.findByTestId('chart-error')).toBeInTheDocument();
+    await user.click(screen.getByTestId('retry-chart'));
+    await vi.waitFor(() => expect(getHistory).toHaveBeenCalledTimes(8)); // 6 warm-up + 1 mount + 1 retry
+  });
+
+  it('expands one inline asset chart per tapped row, swapping on the next tap', async () => {
+    vi.spyOn(api, 'getPortfolio').mockResolvedValue(summary());
+    vi.spyOn(api, 'getPortfolioHistory').mockResolvedValue(history(points));
+    vi.spyOn(api, 'getPositionHistory').mockResolvedValue(history(points));
+    const user = userEvent.setup();
+
+    render(<InvestmentsPage />);
+    await screen.findByTestId('positions-table');
+
+    await user.click(screen.getByTestId('position-1'));
+    expect(await screen.findByTestId('asset-chart-1')).toBeInTheDocument();
+    expect(screen.getByTestId('position-1')).toHaveAttribute('aria-expanded', 'true');
+
+    await user.click(screen.getByTestId('position-2'));
+    expect(await screen.findByTestId('asset-chart-2')).toBeInTheDocument();
+    expect(screen.queryByTestId('asset-chart-1')).not.toBeInTheDocument();
+    expect(screen.getByTestId('position-1')).toHaveAttribute('aria-expanded', 'false');
+
+    await user.click(screen.getByTestId('position-2'));
+    expect(screen.queryByTestId('asset-chart-2')).not.toBeInTheDocument();
+  });
+
+  it('warms the series cache once per range on open and on visibilitychange back to visible', async () => {
+    vi.spyOn(api, 'getPortfolio').mockResolvedValue(summary());
+    const getHistory = vi.spyOn(api, 'getPortfolioHistory').mockResolvedValue(history(points));
+    const visibility = { hidden: false };
+    Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => (visibility.hidden ? 'hidden' : 'visible') });
+    Object.defineProperty(document, 'hidden', { configurable: true, get: () => visibility.hidden });
+
+    render(<InvestmentsPage />);
+    await screen.findByTestId('portfolio-chart');
+
+    const forcedCalls = (): number =>
+      getHistory.mock.calls.filter(([, , force]) => force === true).length;
+    expect(getHistory).toHaveBeenCalledWith('3m', 'ARS', true);
+    expect(getHistory).toHaveBeenCalledWith('3m', 'USD', true);
+    expect(getHistory).toHaveBeenCalledWith('6m', 'ARS', true);
+    expect(getHistory).toHaveBeenCalledWith('6m', 'USD', true);
+    expect(getHistory).toHaveBeenCalledWith('1y', 'ARS', true);
+    expect(getHistory).toHaveBeenCalledWith('1y', 'USD', true);
+    expect(forcedCalls()).toBe(6);
+
+    visibility.hidden = true;
+    act(() => {
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    expect(forcedCalls()).toBe(6); // hidden: no warm-up
+
+    visibility.hidden = false;
+    await act(async () => {
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    expect(forcedCalls()).toBe(12); // visible again: one force per range and currency
   });
 });

@@ -2,12 +2,15 @@ import type {
   BudgetStatus,
   CategoryNode,
   CreateTransactionInput,
+  HistoryResponse,
   IndicatorRefreshResult,
   IndicatorView,
   PeriodSummary,
   PortfolioRefreshResult,
   PortfolioSummary,
   Position,
+  SeriesCurrency,
+  SeriesRange,
 } from './types';
 
 export const API_BASE = '/api/v1';
@@ -159,6 +162,12 @@ export const api = {
   },
   refreshPortfolio(force: boolean): Promise<{ results: PortfolioRefreshResult[] }> {
     return request(`/portfolio/refresh${force ? '?force=true' : ''}`, { method: 'POST' });
+  },
+  getPortfolioHistory(range: SeriesRange, currency: SeriesCurrency, force = false): Promise<HistoryResponse> {
+    return request(`/portfolio/history${qs({ range, currency, force: force ? 'true' : undefined })}`);
+  },
+  getPositionHistory(id: number, range: SeriesRange, currency: SeriesCurrency, force = false): Promise<HistoryResponse> {
+    return request(`/portfolio/positions/${id}/history${qs({ range, currency, force: force ? 'true' : undefined })}`);
   },
 };
 

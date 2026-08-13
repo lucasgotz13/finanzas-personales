@@ -1,11 +1,18 @@
-import { useEffect, useState } from 'react';
+import { Fragment, lazy, Suspense, useEffect, useState } from 'react';
 import { api, translateApiMessage } from '../api';
 import PositionForm from '../components/PositionForm';
 import { useApi } from '../hooks/useApi';
-import type { PositionEdit, PositionView } from '../types';
+import type { PositionEdit, PositionView, SeriesCurrency, SeriesRange } from '../types';
+
+const PortfolioChart = lazy(() => import('../components/PortfolioChart'));
+const AssetChart = lazy(() => import('../components/AssetChart'));
 
 /** PI-5: TTL-respecting auto-refresh cadence while the tab is active. */
 const AUTO_REFRESH_MS = 5 * 60_000;
+
+/** PC-4: cache warm-up ranges — one force=true fetch per range and currency per warm-up. */
+const WARM_UP_RANGES: SeriesRange[] = ['3m', '6m', '1y'];
+const WARM_UP_CURRENCIES: SeriesCurrency[] = ['ARS', 'USD'];
 
 function money(minor: number | null, currency: 'ARS' | 'USD'): string {
   return minor === null ? '—' : new Intl.NumberFormat('es-AR', { style: 'currency', currency }).format(minor / 100);
@@ -34,6 +41,27 @@ export default function InvestmentsPage(): JSX.Element {
   const [editing, setEditing] = useState<PositionEdit | null>(null);
   const [confirmingId, setConfirmingId] = useState<number | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
+
+  // PC-4 warm-up: on tab open and every visibilitychange→visible, force one
+  // fetch per range and currency so renders stay cache-first. Bounded by the
+  // visibility gating — no timers, no repeated fetches while the tab stays open.
+  useEffect(() => {
+    const warmUp = (): void => {
+      for (const range of WARM_UP_RANGES) {
+        for (const currency of WARM_UP_CURRENCIES) {
+          void api.getPortfolioHistory(range, currency, true).catch(() => undefined);
+        }
+      }
+    };
+    const onVisibilityChange = (): void => {
+      if (document.visibilityState === 'visible') warmUp();
+    };
+    if (!document.hidden) warmUp();
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', onVisibilityChange);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Auto-refresh every 5 min while the document is visible (PI-5): pauses in
   // hidden tabs and catches up once on visibilitychange back to visible.
@@ -101,7 +129,11 @@ export default function InvestmentsPage(): JSX.Element {
   const startEdit = (v: PositionView): void => {
     setConfirmingId(null);
     setDeleteError(null);
+    setExpandedId(null);
     setEditing({ id: v.id, ticker: v.ticker, quantity: v.quantity, avgCostMinor: v.avgCostMinor });
+  };
+  const toggleExpand = (id: number): void => {
+    setExpandedId((current) => (current === id ? null : id));
   };
 
   return (
@@ -121,6 +153,9 @@ export default function InvestmentsPage(): JSX.Element {
           </button>
         </div>
       )}
+      <Suspense fallback={<div className="empty">Cargando…</div>}>
+        <PortfolioChart />
+      </Suspense>
       {portfolio.loading && portfolio.data === null ? (
         <div className="empty">Cargando…</div>
       ) : (
@@ -169,31 +204,47 @@ export default function InvestmentsPage(): JSX.Element {
                 </thead>
                 <tbody>
                   {positions.map((v) => (
-                    <tr key={v.id} data-testid={`position-${v.id}`}>
-                      <td>{v.name}<div className="tx-direction">{v.ticker}</div></td>
-                      <td className="money">{v.quantity}</td>
-                      <td className="money">{money(v.priceMinor, 'USD')}</td>
-                      <td className="money">{money(v.valueUsdMinor, 'USD')}</td>
-                      <td className="money">{money(v.valueArsMinor, 'ARS')}</td>
-                      <td className="money">{money(v.pnlUsdMinor, 'USD')} <span className={badgeClass(v.pnlUsdMinor)}>{pct(v.pnlPct)}</span></td>
-                      <td>
-                        {v.status === 'fresh' && <span className="badge ok">Al día</span>}
-                        {v.status === 'stale' && <span className="stale-badge">Vencido</span>}
-                        {v.status === 'absent' && <span className="aged-badge">Sin precio</span>}
-                      </td>
-                      <td className="row-actions actions-cell">
-                        <button type="button" className="link muted" onClick={() => startEdit(v)}>Editar</button>
-                        {confirmingId === v.id ? (
-                          <span className="confirm-prompt" role="alert">
-                            <span className="confirm-question">¿Borrar la posición?</span>
-                            <button type="button" className="danger" onClick={() => void confirmDelete()}>Borrar</button>
-                            <button type="button" className="link muted" onClick={() => setConfirmingId(null)}>Cancelar</button>
-                          </span>
-                        ) : (
-                          <button type="button" className="danger" onClick={() => setConfirmingId(v.id)}>Borrar</button>
-                        )}
-                      </td>
-                    </tr>
+                    <Fragment key={v.id}>
+                      <tr
+                        className="positions-row"
+                        data-testid={`position-${v.id}`}
+                        aria-expanded={expandedId === v.id}
+                        onClick={() => toggleExpand(v.id)}
+                      >
+                        <td>{v.name}<div className="tx-direction">{v.ticker}</div></td>
+                        <td className="money">{v.quantity}</td>
+                        <td className="money">{money(v.priceMinor, 'USD')}</td>
+                        <td className="money">{money(v.valueUsdMinor, 'USD')}</td>
+                        <td className="money">{money(v.valueArsMinor, 'ARS')}</td>
+                        <td className="money">{money(v.pnlUsdMinor, 'USD')} <span className={badgeClass(v.pnlUsdMinor)}>{pct(v.pnlPct)}</span></td>
+                        <td>
+                          {v.status === 'fresh' && <span className="badge ok">Al día</span>}
+                          {v.status === 'stale' && <span className="stale-badge">Vencido</span>}
+                          {v.status === 'absent' && <span className="aged-badge">Sin precio</span>}
+                        </td>
+                        <td className="row-actions actions-cell" onClick={(e) => e.stopPropagation()}>
+                          <button type="button" className="link muted" onClick={() => startEdit(v)}>Editar</button>
+                          {confirmingId === v.id ? (
+                            <span className="confirm-prompt" role="alert">
+                              <span className="confirm-question">¿Borrar la posición?</span>
+                              <button type="button" className="danger" onClick={() => void confirmDelete()}>Borrar</button>
+                              <button type="button" className="link muted" onClick={() => setConfirmingId(null)}>Cancelar</button>
+                            </span>
+                          ) : (
+                            <button type="button" className="danger" onClick={() => setConfirmingId(v.id)}>Borrar</button>
+                          )}
+                        </td>
+                      </tr>
+                      {expandedId === v.id && (
+                        <tr className="asset-chart-row" data-testid={`asset-chart-row-${v.id}`}>
+                          <td colSpan={8}>
+                            <Suspense fallback={<div className="empty">Cargando…</div>}>
+                              <AssetChart positionId={v.id} ticker={v.ticker} />
+                            </Suspense>
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
                   ))}
                 </tbody>
               </table>
