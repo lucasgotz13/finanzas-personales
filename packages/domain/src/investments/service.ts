@@ -1,5 +1,5 @@
 import { PRICE_TTL_MS } from './catalog';
-import type { PositionRepository, PortfolioFxPort, PriceCache, PriceSource } from './ports';
+import type { PositionRepository, PortfolioFxPort, PriceCache, PriceSource, RealizedLedgerPort } from './ports';
 import type { CcStatus, PortfolioRefreshResult, PortfolioSummary, PositionView } from './types';
 import { TTL_BY_CLASS } from '../indicators/catalog';
 
@@ -8,6 +8,8 @@ export interface PortfolioServiceDeps {
   cache: PriceCache;
   source: PriceSource;
   fx: PortfolioFxPort;
+  /** Trade ledger feeding cumulative realized P&L (TH-4). */
+  ledger: RealizedLedgerPort;
   clock: { now(): Date };
 }
 
@@ -27,12 +29,13 @@ export class PortfolioService {
   async getPortfolio(): Promise<PortfolioSummary> {
     const positions = await this.deps.repo.list();
     const fx = await this.deps.fx.getCcl();
+    const realized = await this.deps.ledger.realizedTotals();
     const ccStatus = this.ccStatusOf(fx);
     const views: PositionView[] = [];
     for (const position of positions) {
-      views.push(await this.toView(position, fx));
+      views.push(await this.toView(position, fx, realized.perTicker[position.ticker] ?? 0));
     }
-    return { ccStatus, totals: this.totalsOf(views, fx), positions: views };
+    return { ccStatus, totals: this.totalsOf(views, fx, realized.total), positions: views };
   }
 
   /** Refresh every position sequentially; within-TTL positions are skipped
@@ -82,7 +85,7 @@ export class PortfolioService {
     name: string;
     quantity: number;
     avgCostMinor: number;
-  }, fx: { value: number; fetchedAt: string } | null): Promise<PositionView> {
+  }, fx: { value: number; fetchedAt: string } | null, realizedUsdMinor: number): Promise<PositionView> {
     const base: PositionView = {
       id: position.id as number,
       ticker: position.ticker,
@@ -96,6 +99,7 @@ export class PortfolioService {
       pnlUsdMinor: null,
       pnlPct: null,
       pnlArsMinor: null,
+      realizedUsdMinor,
     };
     const snapshot = await this.deps.cache.get(position.ticker);
     if (snapshot === null) return base;
@@ -117,7 +121,7 @@ export class PortfolioService {
   }
 
   /** Totals over priced positions only; ARS variants null without CCL (PI-4). */
-  private totalsOf(views: PositionView[], fx: { value: number } | null): PortfolioSummary['totals'] {
+  private totalsOf(views: PositionView[], fx: { value: number } | null, realizedUsdMinor: number): PortfolioSummary['totals'] {
     const valueUsdMinor = views.reduce((sum, v) => sum + (v.valueUsdMinor ?? 0), 0);
     const pnlUsdMinor = views.reduce((sum, v) => sum + (v.pnlUsdMinor ?? 0), 0);
     const costMinor = views.reduce((sum, v) => (v.priceMinor === null ? sum : sum + v.avgCostMinor * v.quantity), 0);
@@ -127,6 +131,7 @@ export class PortfolioService {
       pnlUsdMinor,
       pnlPct: costMinor > 0 ? pnlUsdMinor / costMinor : null,
       pnlArsMinor: fx === null ? null : Math.round(pnlUsdMinor * fx.value),
+      realizedUsdMinor,
     };
   }
 }

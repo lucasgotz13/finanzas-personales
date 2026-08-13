@@ -64,7 +64,14 @@ function harness(now = T0): Harness {
     throw new Error('source not configured');
   });
   const fx = new StubFx();
-  const service = new PortfolioService({ repo, cache, source, fx, clock: new FakeClock(now) });
+  const service = new PortfolioService({
+    repo,
+    cache,
+    source,
+    fx,
+    ledger: { realizedTotals: async () => ({ perTicker: {}, total: 0 }) },
+    clock: new FakeClock(now),
+  });
   return { repo, cache, source, fx, service };
 }
 
@@ -113,6 +120,7 @@ describe('PortfolioService.getPortfolio (PI-4)', () => {
       pnlUsdMinor: 30000,
       pnlPct: (240000 - (18000 * 10 + 6000 * 5)) / (18000 * 10 + 6000 * 5),
       pnlArsMinor: Math.round(30000 * 1345),
+      realizedUsdMinor: 0,
     });
     expect(h.source.calls).toBe(0);
   });

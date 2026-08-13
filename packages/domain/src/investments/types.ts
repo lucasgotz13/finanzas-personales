@@ -21,6 +21,37 @@ export interface Position {
   createdAt: string;
 }
 
+/** Ledger operation kind: buys add to the balance, sells subtract (TH-1). */
+export type TradeType = 'buy' | 'sell';
+
+/** One trade row of the operations ledger (TH-1). `date` is YYYY-MM-DD,
+ * `priceMinor` is the per-unit price in USD cents. */
+export interface Trade {
+  id: number;
+  ticker: string;
+  type: TradeType;
+  date: string;
+  quantity: number;
+  priceMinor: number;
+  currency: 'USD';
+}
+
+/** Payload for create/update; the service validates and normalizes (TH-1). */
+export interface TradeInput {
+  ticker: string;
+  type: TradeType;
+  date: string;
+  quantity: number;
+  priceMinor: number;
+  currency: 'USD';
+}
+
+/** Cumulative realized P&L in USD minor units; losses are negative (TH-4). */
+export interface RealizedTotals {
+  perTicker: Record<string, number>;
+  total: number;
+}
+
 /** Cached price row for one ticker. `priceMinor` is normalized to USD cents
  * by the source adapter; `fetchedAt` is a UTC ISO instant. */
 export interface PriceSnapshot {
@@ -52,6 +83,7 @@ export interface PositionView {
   pnlUsdMinor: number | null;
   pnlPct: number | null;
   pnlArsMinor: number | null;
+  realizedUsdMinor: number;
 }
 
 /** Portfolio read model: per-position views plus CCL-aware totals (PI-4).
@@ -64,6 +96,7 @@ export interface PortfolioSummary {
     pnlUsdMinor: number;
     pnlPct: number | null;
     pnlArsMinor: number | null;
+    realizedUsdMinor: number;
   };
   positions: PositionView[];
 }
