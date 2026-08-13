@@ -32,6 +32,25 @@ export type {
   PortfolioSummary,
   PortfolioRefreshResult,
 } from './investments/types';
+
+export { SERIES_TTL_MS, FF_MAX_DAYS, RANGE_WINDOW_DAYS, SERIES_RANGES, SERIES_CURRENCIES, isSeriesRange, isSeriesCurrency } from './priceCharts/catalog';
+export { alignToCalendar } from './priceCharts/align';
+export { CclLookup, convertSeries } from './priceCharts/ccl';
+export { ChartService } from './priceCharts/service';
+export type { ChartServiceDeps } from './priceCharts/service';
+export type { PriceSeriesSource, CclSeriesSource, SeriesCache } from './priceCharts/ports';
+export type {
+  SeriesRange,
+  SeriesCurrency,
+  SeriesStatus,
+  PricePoint,
+  CclPoint,
+  NativeSeries,
+  SeriesSnapshot,
+  CclSnapshot,
+  ChartCacheEntry,
+  HistoryResponse,
+} from './priceCharts/types';
 export type {
   IndicatorClass,
   IndicatorKey,
