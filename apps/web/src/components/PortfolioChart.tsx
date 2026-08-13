@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { api } from '../api';
 import { useApi } from '../hooks/useApi';
 import type { SeriesCurrency, SeriesRange } from '../types';
@@ -13,7 +13,20 @@ const CURRENCIES: SeriesCurrency[] = ['ARS', 'USD'];
 export default function PortfolioChart(): JSX.Element {
   const [range, setRange] = useState<SeriesRange>('3m');
   const [currency, setCurrency] = useState<SeriesCurrency>('ARS');
+  const forcedPairs = useRef(new Set<string>());
   const chart = useApi(() => api.getPortfolioHistory(range, currency), [range, currency]);
+
+  // PC-4: the first time the user lands on a (range, currency) pair, force one
+  // fetch so the CCL-dependent series gets cached even if the warm-up has not
+  // completed. The Set bounds it to a single force per pair per session.
+  const selectCurrency = (next: SeriesCurrency): void => {
+    setCurrency(next);
+    const key = `${range}:${next}`;
+    if (!forcedPairs.current.has(key)) {
+      forcedPairs.current.add(key);
+      void api.getPortfolioHistory(range, next, true).catch(() => undefined);
+    }
+  };
 
   return (
     <section className="card chart-card" data-testid="portfolio-chart">
@@ -44,7 +57,7 @@ export default function PortfolioChart(): JSX.Element {
               type="button"
               data-testid={`currency-${c.toLowerCase()}`}
               className={c === currency ? 'chip active' : 'chip'}
-              onClick={() => setCurrency(c)}
+              onClick={() => selectCurrency(c)}
             >
               {c}
             </button>
@@ -57,6 +70,11 @@ export default function PortfolioChart(): JSX.Element {
           <button type="button" className="link" data-testid="retry-chart" onClick={() => chart.reload()}>
             Reintentar
           </button>
+        </div>
+      )}
+      {chart.data !== null && chart.data.degraded === true && (
+        <div className="empty" data-testid="chart-degraded-note">
+          Cotización CCL no disponible — mostrando {chart.data.currency}.
         </div>
       )}
       {chart.loading && chart.data === null ? (

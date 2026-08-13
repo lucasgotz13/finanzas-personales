@@ -196,6 +196,53 @@ describe('Price charts (PC-5, PC-6)', () => {
     expect(screen.getByTestId('currency-usd')).toHaveClass('active');
   });
 
+  it('forces one fetch for the newly selected pair the first time the currency toggle lands on it', async () => {
+    vi.spyOn(api, 'getPortfolio').mockResolvedValue(summary());
+    const getHistory = vi.spyOn(api, 'getPortfolioHistory').mockResolvedValue(history(points));
+    const user = userEvent.setup();
+
+    render(<InvestmentsPage />);
+    await screen.findByTestId('portfolio-chart');
+
+    const usdForceCalls = (): number =>
+      getHistory.mock.calls.filter(([r, c, force]) => r === '3m' && c === 'USD' && force === true).length;
+    expect(usdForceCalls()).toBe(1); // warm-up
+
+    await user.click(screen.getByTestId('currency-usd'));
+    expect(getHistory).toHaveBeenCalledWith('3m', 'USD', true);
+    expect(usdForceCalls()).toBe(2); // warm-up + first toggle
+
+    await user.click(screen.getByTestId('currency-ars'));
+    await user.click(screen.getByTestId('currency-usd'));
+    expect(usdForceCalls()).toBe(2); // same pair: never re-forced
+  });
+
+  it('shows the degradation note when history degrades to another currency', async () => {
+    vi.spyOn(api, 'getPortfolio').mockResolvedValue(summary());
+    vi.spyOn(api, 'getPortfolioHistory').mockResolvedValue({ ...history(points), degraded: true, currency: 'ARS' });
+
+    render(<InvestmentsPage />);
+
+    expect(await screen.findByTestId('chart-degraded-note')).toHaveTextContent(
+      'Cotización CCL no disponible — mostrando ARS.',
+    );
+  });
+
+  it('shows the degradation note on the per-asset chart too', async () => {
+    vi.spyOn(api, 'getPortfolio').mockResolvedValue(summary());
+    vi.spyOn(api, 'getPortfolioHistory').mockResolvedValue(history(points));
+    vi.spyOn(api, 'getPositionHistory').mockResolvedValue({ ...history(points), degraded: true, currency: 'ARS' });
+    const user = userEvent.setup();
+
+    render(<InvestmentsPage />);
+    await screen.findByTestId('positions-table');
+
+    await user.click(screen.getByTestId('position-1'));
+    expect(await screen.findByTestId('asset-chart-degraded-note-1')).toHaveTextContent(
+      'Cotización CCL no disponible — mostrando ARS.',
+    );
+  });
+
   it('shows the empty state when there are no points', async () => {
     vi.spyOn(api, 'getPortfolio').mockResolvedValue(summary());
     vi.spyOn(api, 'getPortfolioHistory').mockResolvedValue(history([]));
@@ -214,7 +261,7 @@ describe('Price charts (PC-5, PC-6)', () => {
 
     expect(await screen.findByTestId('chart-error')).toBeInTheDocument();
     await user.click(screen.getByTestId('retry-chart'));
-    await vi.waitFor(() => expect(getHistory).toHaveBeenCalledTimes(5)); // 3 warm-up + 1 mount + 1 retry
+    await vi.waitFor(() => expect(getHistory).toHaveBeenCalledTimes(8)); // 6 warm-up + 1 mount + 1 retry
   });
 
   it('expands one inline asset chart per tapped row, swapping on the next tap', async () => {
@@ -252,20 +299,23 @@ describe('Price charts (PC-5, PC-6)', () => {
     const forcedCalls = (): number =>
       getHistory.mock.calls.filter(([, , force]) => force === true).length;
     expect(getHistory).toHaveBeenCalledWith('3m', 'ARS', true);
+    expect(getHistory).toHaveBeenCalledWith('3m', 'USD', true);
     expect(getHistory).toHaveBeenCalledWith('6m', 'ARS', true);
+    expect(getHistory).toHaveBeenCalledWith('6m', 'USD', true);
     expect(getHistory).toHaveBeenCalledWith('1y', 'ARS', true);
-    expect(forcedCalls()).toBe(3);
+    expect(getHistory).toHaveBeenCalledWith('1y', 'USD', true);
+    expect(forcedCalls()).toBe(6);
 
     visibility.hidden = true;
     act(() => {
       document.dispatchEvent(new Event('visibilitychange'));
     });
-    expect(forcedCalls()).toBe(3); // hidden: no warm-up
+    expect(forcedCalls()).toBe(6); // hidden: no warm-up
 
     visibility.hidden = false;
     await act(async () => {
       document.dispatchEvent(new Event('visibilitychange'));
     });
-    expect(forcedCalls()).toBe(6); // visible again: one force per range
+    expect(forcedCalls()).toBe(12); // visible again: one force per range and currency
   });
 });

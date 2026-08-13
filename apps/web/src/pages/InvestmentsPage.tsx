@@ -2,7 +2,7 @@ import { Fragment, lazy, Suspense, useEffect, useState } from 'react';
 import { api, translateApiMessage } from '../api';
 import PositionForm from '../components/PositionForm';
 import { useApi } from '../hooks/useApi';
-import type { PositionEdit, PositionView, SeriesRange } from '../types';
+import type { PositionEdit, PositionView, SeriesCurrency, SeriesRange } from '../types';
 
 const PortfolioChart = lazy(() => import('../components/PortfolioChart'));
 const AssetChart = lazy(() => import('../components/AssetChart'));
@@ -10,8 +10,9 @@ const AssetChart = lazy(() => import('../components/AssetChart'));
 /** PI-5: TTL-respecting auto-refresh cadence while the tab is active. */
 const AUTO_REFRESH_MS = 5 * 60_000;
 
-/** PC-4: cache warm-up ranges — one force=true fetch per range per warm-up. */
+/** PC-4: cache warm-up ranges — one force=true fetch per range and currency per warm-up. */
 const WARM_UP_RANGES: SeriesRange[] = ['3m', '6m', '1y'];
+const WARM_UP_CURRENCIES: SeriesCurrency[] = ['ARS', 'USD'];
 
 function money(minor: number | null, currency: 'ARS' | 'USD'): string {
   return minor === null ? '—' : new Intl.NumberFormat('es-AR', { style: 'currency', currency }).format(minor / 100);
@@ -43,12 +44,14 @@ export default function InvestmentsPage(): JSX.Element {
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
   // PC-4 warm-up: on tab open and every visibilitychange→visible, force one
-  // fetch per range so renders stay cache-first. Bounded by the visibility
-  // gating — no timers, no repeated fetches while the tab stays open.
+  // fetch per range and currency so renders stay cache-first. Bounded by the
+  // visibility gating — no timers, no repeated fetches while the tab stays open.
   useEffect(() => {
     const warmUp = (): void => {
       for (const range of WARM_UP_RANGES) {
-        void api.getPortfolioHistory(range, 'ARS', true).catch(() => undefined);
+        for (const currency of WARM_UP_CURRENCIES) {
+          void api.getPortfolioHistory(range, currency, true).catch(() => undefined);
+        }
       }
     };
     const onVisibilityChange = (): void => {

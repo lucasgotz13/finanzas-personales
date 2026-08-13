@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { api } from '../api';
 import { useApi } from '../hooks/useApi';
 import type { SeriesCurrency, SeriesRange } from '../types';
@@ -17,7 +17,19 @@ interface AssetChartProps {
 export default function AssetChart({ positionId, ticker }: AssetChartProps): JSX.Element {
   const [range, setRange] = useState<SeriesRange>('3m');
   const [currency, setCurrency] = useState<SeriesCurrency>('ARS');
+  const forcedPairs = useRef(new Set<string>());
   const chart = useApi(() => api.getPositionHistory(positionId, range, currency), [positionId, range, currency]);
+
+  // PC-4: same toggle-time force-once policy as the portfolio chart — one
+  // force per (range, currency) pair per session, covering the warm-up race.
+  const selectCurrency = (next: SeriesCurrency): void => {
+    setCurrency(next);
+    const key = `${range}:${next}`;
+    if (!forcedPairs.current.has(key)) {
+      forcedPairs.current.add(key);
+      void api.getPositionHistory(positionId, range, next, true).catch(() => undefined);
+    }
+  };
 
   return (
     <section className="card asset-chart" data-testid={`asset-chart-${positionId}`}>
@@ -45,7 +57,7 @@ export default function AssetChart({ positionId, ticker }: AssetChartProps): JSX
               type="button"
               data-testid={`asset-currency-${c.toLowerCase()}`}
               className={c === currency ? 'chip active' : 'chip'}
-              onClick={() => setCurrency(c)}
+              onClick={() => selectCurrency(c)}
             >
               {c}
             </button>
@@ -58,6 +70,11 @@ export default function AssetChart({ positionId, ticker }: AssetChartProps): JSX
           <button type="button" className="link" data-testid="retry-asset-chart" onClick={() => chart.reload()}>
             Reintentar
           </button>
+        </div>
+      )}
+      {chart.data !== null && chart.data.degraded === true && (
+        <div className="empty" data-testid={`asset-chart-degraded-note-${positionId}`}>
+          Cotización CCL no disponible — mostrando {chart.data.currency}.
         </div>
       )}
       {chart.loading && chart.data === null ? (
