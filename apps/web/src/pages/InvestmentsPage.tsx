@@ -1,8 +1,8 @@
 import { Fragment, lazy, Suspense, useEffect, useState } from 'react';
 import { api, translateApiMessage } from '../api';
-import PositionForm from '../components/PositionForm';
+import TradeForm from '../components/TradeForm';
 import { useApi } from '../hooks/useApi';
-import type { PositionEdit, PositionView, SeriesCurrency, SeriesRange } from '../types';
+import type { PositionView, SeriesCurrency, SeriesRange, Trade } from '../types';
 
 const PortfolioChart = lazy(() => import('../components/PortfolioChart'));
 const AssetChart = lazy(() => import('../components/AssetChart'));
@@ -27,18 +27,44 @@ function badgeClass(minor: number | null): string {
   return minor !== null && minor < 0 ? 'badge over' : 'badge ok';
 }
 
+function realizedLabel(minor: number | null): string {
+  return minor !== null && minor < 0 ? 'Pérdida' : 'Ganancia';
+}
+
 function errorText(err: unknown): string {
   return translateApiMessage(err instanceof Error ? err.message : 'No se pudo actualizar. Verifique su conexión e intente de nuevo.');
 }
 
-/** Portfolio tab (PI-6): money-first summary, positions table with freshness
- * chips, add/edit/delete form and a visibility-gated 5-min auto-refresh. */
+interface TradeGroup {
+  ticker: string;
+  rows: Trade[]; // date desc within the group
+}
+
+function groupTrades(trades: Trade[]): TradeGroup[] {
+  const byTicker = new Map<string, Trade[]>();
+  for (const trade of trades) {
+    const rows = byTicker.get(trade.ticker) ?? [];
+    rows.push(trade);
+    byTicker.set(trade.ticker, rows);
+  }
+  return [...byTicker.entries()]
+    .sort(([a], [b]) => (a < b ? -1 : 1))
+    .map(([ticker, rows]) => ({
+      ticker,
+      rows: [...rows].sort((a, b) => (a.date === b.date ? b.id - a.id : a.date < b.date ? 1 : -1)),
+    }));
+}
+
+/** Portfolio tab (PI-6, TH-6): money-first summary with realized P&L, trade
+ * ledger grouped per asset with inline confirms, read-only derived positions
+ * and a visibility-gated 5-min auto-refresh. */
 export default function InvestmentsPage(): JSX.Element {
   const [tick, setTick] = useState(0);
   const portfolio = useApi(() => api.getPortfolio(), [tick]);
+  const trades = useApi(() => api.listTrades(), [tick]);
   const [refreshing, setRefreshing] = useState(false);
   const [refreshError, setRefreshError] = useState<string | null>(null);
-  const [editing, setEditing] = useState<PositionEdit | null>(null);
+  const [editing, setEditing] = useState<Trade | null>(null);
   const [confirmingId, setConfirmingId] = useState<number | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<number | null>(null);
@@ -115,7 +141,7 @@ export default function InvestmentsPage(): JSX.Element {
   const confirmDelete = async (): Promise<void> => {
     if (confirmingId === null) return;
     try {
-      await api.deletePosition(confirmingId);
+      await api.deleteTrade(confirmingId);
       setConfirmingId(null);
       setDeleteError(null);
       setTick((t) => t + 1);
@@ -126,11 +152,11 @@ export default function InvestmentsPage(): JSX.Element {
 
   const totals = portfolio.data?.totals ?? null;
   const positions: PositionView[] = portfolio.data?.positions ?? [];
-  const startEdit = (v: PositionView): void => {
+  const groups = groupTrades(trades.data ?? []);
+  const startEdit = (trade: Trade): void => {
     setConfirmingId(null);
     setDeleteError(null);
-    setExpandedId(null);
-    setEditing({ id: v.id, ticker: v.ticker, quantity: v.quantity, avgCostMinor: v.avgCostMinor });
+    setEditing(trade);
   };
   const toggleExpand = (id: number): void => {
     setExpandedId((current) => (current === id ? null : id));
@@ -177,15 +203,21 @@ export default function InvestmentsPage(): JSX.Element {
                   {money(totals?.pnlUsdMinor ?? null, 'USD')} <span className={badgeClass(totals?.pnlUsdMinor ?? null)}>{pct(totals?.pnlPct ?? null)}</span>
                 </span>
               </div>
+              <div className="total">
+                <span className="total-currency">Realizado</span>
+                <span className="total-amount" data-testid="realized-total">
+                  {money(totals?.realizedUsdMinor ?? 0, 'USD')}{' '}
+                  <span className={badgeClass(totals?.realizedUsdMinor ?? 0)}>{realizedLabel(totals?.realizedUsdMinor ?? 0)}</span>
+                </span>
+              </div>
             </div>
           </section>
           <section className="card">
-            <h2>{editing ? 'Editar posición' : 'Agregar posición'}</h2>
-            <PositionForm
+            <h2>{editing ? 'Editar operación' : 'Registrar operación'}</h2>
+            <TradeForm
               key={editing?.id ?? 'create'}
               initial={editing ?? undefined}
-              onCreated={() => setTick((t) => t + 1)}
-              onUpdate={() => {
+              onSaved={() => {
                 setEditing(null);
                 setTick((t) => t + 1);
               }}
@@ -193,14 +225,71 @@ export default function InvestmentsPage(): JSX.Element {
             />
           </section>
           <section className="card">
-            <h2>Posiciones</h2>
+            <h2>Operaciones</h2>
+            {trades.error && (
+              <div className="error-box" role="alert">
+                {trades.error}{' '}
+                <button type="button" className="link" data-testid="retry-trades" onClick={() => trades.reload()}>
+                  Reintentar
+                </button>
+              </div>
+            )}
             {deleteError && <div className="error-box" role="alert">{deleteError}</div>}
+            {trades.loading && trades.data === null ? (
+              <div className="empty">Cargando…</div>
+            ) : groups.length === 0 ? (
+              <div className="empty" data-testid="trades-empty">Aún no hay operaciones — registrá la primera con el formulario.</div>
+            ) : (
+              groups.map((group) => {
+                const realized = positions.find((p) => p.ticker === group.ticker)?.realizedUsdMinor ?? 0;
+                return (
+                  <div key={group.ticker} className="trade-group" data-testid={`trade-group-${group.ticker}`}>
+                    <div className="trade-group-header">
+                      <span className="trade-group-ticker">{group.ticker}</span>
+                      <span className="money">
+                        Realizado: {money(realized, 'USD')} <span className={badgeClass(realized)}>{realizedLabel(realized)}</span>
+                      </span>
+                    </div>
+                    <table className="data">
+                      <thead>
+                        <tr><th>Tipo</th><th>Fecha</th><th>Cantidad</th><th>Precio</th><th>Acciones</th></tr>
+                      </thead>
+                      <tbody>
+                        {group.rows.map((trade) => (
+                          <tr key={trade.id} data-testid={`trade-${trade.id}`}>
+                            <td>{trade.type === 'buy' ? 'Compra' : 'Venta'}</td>
+                            <td>{trade.date}</td>
+                            <td className="money">{trade.quantity}</td>
+                            <td className="money">{money(trade.priceMinor, 'USD')}</td>
+                            <td className="row-actions actions-cell">
+                              <button type="button" className="link muted" onClick={() => startEdit(trade)}>Editar</button>
+                              {confirmingId === trade.id ? (
+                                <span className="confirm-prompt" role="alert">
+                                  <span className="confirm-question">¿Borrar la operación?</span>
+                                  <button type="button" className="danger" onClick={() => void confirmDelete()}>Borrar</button>
+                                  <button type="button" className="link muted" onClick={() => setConfirmingId(null)}>Cancelar</button>
+                                </span>
+                              ) : (
+                                <button type="button" className="danger" onClick={() => setConfirmingId(trade.id)}>Borrar</button>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                );
+              })
+            )}
+          </section>
+          <section className="card">
+            <h2>Posiciones</h2>
             {positions.length === 0 ? (
-              <div className="empty" data-testid="portfolio-empty">Aún no hay posiciones — agregá la primera con el formulario.</div>
+              <div className="empty" data-testid="portfolio-empty">Aún no hay posiciones — registrá tu primera operación.</div>
             ) : (
               <table className="data" data-testid="positions-table">
                 <thead>
-                  <tr><th>Ticker</th><th>Cantidad</th><th>Precio</th><th>Valor USD</th><th>Valor ARS</th><th>P&L</th><th>Estado</th><th>Acciones</th></tr>
+                  <tr><th>Ticker</th><th>Cantidad</th><th>Precio</th><th>Valor USD</th><th>Valor ARS</th><th>P&L</th><th>Estado</th></tr>
                 </thead>
                 <tbody>
                   {positions.map((v) => (
@@ -222,22 +311,10 @@ export default function InvestmentsPage(): JSX.Element {
                           {v.status === 'stale' && <span className="stale-badge">Vencido</span>}
                           {v.status === 'absent' && <span className="aged-badge">Sin precio</span>}
                         </td>
-                        <td className="row-actions actions-cell" onClick={(e) => e.stopPropagation()}>
-                          <button type="button" className="link muted" onClick={() => startEdit(v)}>Editar</button>
-                          {confirmingId === v.id ? (
-                            <span className="confirm-prompt" role="alert">
-                              <span className="confirm-question">¿Borrar la posición?</span>
-                              <button type="button" className="danger" onClick={() => void confirmDelete()}>Borrar</button>
-                              <button type="button" className="link muted" onClick={() => setConfirmingId(null)}>Cancelar</button>
-                            </span>
-                          ) : (
-                            <button type="button" className="danger" onClick={() => setConfirmingId(v.id)}>Borrar</button>
-                          )}
-                        </td>
                       </tr>
                       {expandedId === v.id && (
                         <tr className="asset-chart-row" data-testid={`asset-chart-row-${v.id}`}>
-                          <td colSpan={8}>
+                          <td colSpan={7}>
                             <Suspense fallback={<div className="empty">Cargando…</div>}>
                               <AssetChart positionId={v.id} ticker={v.ticker} />
                             </Suspense>

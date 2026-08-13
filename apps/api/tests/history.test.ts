@@ -1,7 +1,7 @@
 import request from 'supertest';
 import { afterEach, describe, expect, it } from 'vitest';
 import type { CclPoint, NativeSeries } from '@finanzas/domain';
-import { createTestApp, seedCclRow, seedSeriesRow, StubCclSource, StubSeriesSource } from './helpers';
+import { createTestApp, seedCclRow, seedLegacyPosition, seedSeriesRow, seedTrade, StubCclSource, StubSeriesSource } from './helpers';
 import type { TestEnv } from './helpers';
 
 const T0 = new Date('2026-08-09T23:58:00.000Z');
@@ -25,19 +25,17 @@ function makeEnv(seriesSource?: StubSeriesSource, cclSource?: StubCclSource): Pr
   return createTestApp(T0, { seriesSource, cclSource });
 }
 
+/** Positions now derive from trades; fixtures seed BUY trades through the API
+ * plus legacy rows for the id/name merge — production data model (TH-7, PI-1). */
 async function seedPositions(env: TestEnv): Promise<void> {
-  await env.db.execute({
-    sql: 'INSERT INTO positions (ticker, name, quantity, avg_cost_minor, created_at) VALUES (?, ?, ?, ?, ?)',
-    args: ['AAPL', 'Apple', 10, 18000, T0.toISOString()],
-  });
-  await env.db.execute({
-    sql: 'INSERT INTO positions (ticker, name, quantity, avg_cost_minor, created_at) VALUES (?, ?, ?, ?, ?)',
-    args: ['GGAL.BA', 'Galicia', 5, 6000, T0.toISOString()],
-  });
+  await seedLegacyPosition(env, 'AAPL.BA', 'Apple');
+  await seedLegacyPosition(env, 'GGAL.BA', 'Galicia');
+  await seedTrade(env, { ticker: 'AAPL.BA', date: '2026-08-06', quantity: 10, priceMinor: 18000 });
+  await seedTrade(env, { ticker: 'GGAL.BA', date: '2026-08-06', quantity: 5, priceMinor: 6000 });
 }
 
 async function seedFreshCache(env: TestEnv): Promise<void> {
-  await seedSeriesRow(env, 'series:AAPL:3m', 'USD', AAPL_POINTS, T0.toISOString());
+  await seedSeriesRow(env, 'series:AAPL.BA:3m', 'USD', AAPL_POINTS, T0.toISOString());
   await seedSeriesRow(env, 'series:GGAL.BA:3m', 'ARS', GGAL_POINTS, T0.toISOString());
   await seedCclRow(env, 'ccl:3m', CCL, T0.toISOString());
 }
@@ -67,7 +65,7 @@ describe('GET /api/v1/portfolio/history (PC-1..PC-4)', () => {
       { date: '2026-08-06', valueMinor: 200_300_000 },
       { date: '2026-08-07', valueMinor: 210_305_000 },
     ]);
-    expect(seriesSource.count('AAPL')).toBe(0);
+    expect(seriesSource.count('AAPL.BA')).toBe(0);
     expect(seriesSource.count('GGAL.BA')).toBe(0);
     expect(cclSource.calls).toBe(0);
   });
@@ -83,7 +81,7 @@ describe('GET /api/v1/portfolio/history (PC-1..PC-4)', () => {
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ points: [], currency: 'ARS', range: '3m', status: 'absent' });
-    expect(seriesSource.count('AAPL')).toBe(0);
+    expect(seriesSource.count('AAPL.BA')).toBe(0);
   });
 
   it('rejects invalid range and currency with 422', async () => {
@@ -101,7 +99,7 @@ describe('GET /api/v1/portfolio/history (PC-1..PC-4)', () => {
 
   it('force=true fetches sequentially through the stubs and serves fresh', async () => {
     const seriesSource = new StubSeriesSource(async (ticker) => {
-      return ticker === 'AAPL'
+      return ticker === 'AAPL.BA'
         ? { ticker, nativeCurrency: 'USD', points: AAPL_POINTS }
         : { ticker, nativeCurrency: 'ARS', points: GGAL_POINTS };
     });
@@ -113,7 +111,7 @@ describe('GET /api/v1/portfolio/history (PC-1..PC-4)', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('fresh');
-    expect(seriesSource.count('AAPL')).toBe(1);
+    expect(seriesSource.count('AAPL.BA')).toBe(1);
     expect(seriesSource.count('GGAL.BA')).toBe(1);
     expect(cclSource.calls).toBe(1);
     expect(res.body.points).toEqual([
@@ -145,7 +143,7 @@ describe('GET /api/v1/portfolio/history (PC-1..PC-4)', () => {
 
   it('degrades ARS to USD-only with degraded:true when CCL is unavailable (PC-3)', async () => {
     const seriesSource = new StubSeriesSource(async (ticker) => {
-      return ticker === 'AAPL'
+      return ticker === 'AAPL.BA'
         ? { ticker, nativeCurrency: 'USD', points: AAPL_POINTS }
         : { ticker, nativeCurrency: 'ARS', points: GGAL_POINTS };
     });

@@ -333,6 +333,25 @@ button:disabled {
   align-items: center;
 }
 
+/* Trade groups (trade-history): asset header + ledger table per ticker. */
+.trade-group {
+  margin-bottom: 1.25rem;
+}
+
+.trade-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.trade-group-ticker {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
 .confirm-prompt {
   display: flex;
   align-items: center;

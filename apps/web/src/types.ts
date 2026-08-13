@@ -86,24 +86,6 @@ export interface IndicatorRefreshResult {
 export type PriceStatus = 'fresh' | 'stale' | 'absent';
 export type CcStatus = 'fresh' | 'stale' | 'absent';
 
-export interface Position {
-  id: number;
-  ticker: string;
-  name: string;
-  quantity: number;
-  avgCostMinor: number;
-  currency: 'USD';
-  createdAt: string;
-}
-
-/** Editable subset of a position (the form; ticker is immutable on edits). */
-export interface PositionEdit {
-  id: number;
-  ticker: string;
-  quantity: number;
-  avgCostMinor: number;
-}
-
 export interface PositionView {
   id: number;
   ticker: string;
@@ -117,6 +99,7 @@ export interface PositionView {
   pnlUsdMinor: number | null;
   pnlPct: number | null;
   pnlArsMinor: number | null;
+  realizedUsdMinor: number;
 }
 
 export interface PortfolioSummary {
@@ -127,8 +110,29 @@ export interface PortfolioSummary {
     pnlUsdMinor: number;
     pnlPct: number | null;
     pnlArsMinor: number | null;
+    realizedUsdMinor: number;
   };
   positions: PositionView[];
+}
+
+/** Trade ledger types mirroring the REST contract under /api/v1/portfolio/trades. */
+export interface Trade {
+  id: number;
+  ticker: string;
+  type: 'buy' | 'sell';
+  date: string;
+  quantity: number;
+  priceMinor: number;
+  currency: 'USD';
+}
+
+export interface TradeInput {
+  ticker: string;
+  type: 'buy' | 'sell';
+  date: string;
+  quantity: number;
+  priceMinor: number;
+  currency: 'USD';
 }
 
 export interface PortfolioRefreshResult {
