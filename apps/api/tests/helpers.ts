@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import type { Client } from '@libsql/client';
 import type { Express } from 'express';
 import type { Clock, CclPoint, CclSeriesSource, IndicatorSource, NativeSeries, PriceSeriesSource, PriceSource, SeriesRange } from '@finanzas/domain';
+import request from 'supertest';
 import { createDbClient, MIGRATIONS_DIR, migrate } from '../../../scripts/migrate';
 import { buildApp } from '../src/http/app';
 
@@ -95,4 +96,29 @@ export async function seedCclRow(env: TestEnv, key: string, points: unknown, fet
     sql: 'INSERT INTO series_cache (key, kind, native_currency, points_json, fetched_at) VALUES (?, ?, ?, ?, ?)',
     args: [key, 'ccl', 'ARS', JSON.stringify(points), fetchedAt],
   });
+}
+
+/** Seeds one trade through the HTTP API so fixtures exercise the full
+ * TradeService path — fixtures follow the production data model (TH-7, PI-1). */
+export async function seedTrade(
+  env: TestEnv,
+  input: { ticker: string; type?: 'buy' | 'sell'; date?: string; quantity: number; priceMinor: number },
+): Promise<number> {
+  const res = await request(env.app)
+    .post('/api/v1/portfolio/trades')
+    .send({ type: 'buy', date: '2026-08-06', currency: 'USD', ...input });
+  if (res.status !== 201) {
+    throw new Error(`seedTrade failed with ${res.status}: ${JSON.stringify(res.body)}`);
+  }
+  return res.body.id as number;
+}
+
+/** Seeds a legacy positions row so derived positions can merge its id/name —
+ * mirrors the production state after migration (PI-1, D2). */
+export async function seedLegacyPosition(env: TestEnv, ticker: string, name: string): Promise<number> {
+  const result = await env.db.execute({
+    sql: 'INSERT INTO positions (ticker, name, quantity, avg_cost_minor, created_at) VALUES (?, ?, ?, ?, ?)',
+    args: [ticker, name, 1, 1, '2026-08-01T00:00:00.000Z'],
+  });
+  return Number(result.lastInsertRowid);
 }

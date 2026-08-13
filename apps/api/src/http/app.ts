@@ -4,17 +4,19 @@ import {
   BudgetService,
   CategoryService,
   ChartService,
+  DerivedPositionRepository,
   IndicatorService,
   PortfolioService,
   SummaryService,
   TransactionService,
+  TradeService,
 } from '@finanzas/domain';
 import express from 'express';
 import { SqliteBudgetRepository, SqliteCategoryRepository, SqliteTransactionRepository } from '../sqlite/repositories';
 import { SqliteIndicatorCache } from '../sqlite/indicator-cache';
-import { SqlitePositionRepository } from '../sqlite/positions-repo';
 import { SqlitePriceCache } from '../sqlite/price-cache';
 import { SqliteSeriesCache } from '../sqlite/series-cache';
+import { SqliteLegacyPositionRepository, SqliteTradeRepository } from '../sqlite/trades-repo';
 import { ArgentinadatosSource } from '../sources/argentinadatos';
 import { ArgentinadatosCclSeriesSource } from '../sources/argentinadatos-ccl';
 import { BcraSource } from '../sources/bcra';
@@ -78,17 +80,19 @@ export function buildApp(deps: AppDeps): express.Express {
     cache: indicatorCache,
     clock,
   });
-  const positionsRepo = new SqlitePositionRepository(db);
+  const tradeService = new TradeService({ trades: new SqliteTradeRepository(db) });
+  const derivedPositions = new DerivedPositionRepository(tradeService, new SqliteLegacyPositionRepository(db));
   const cclAccessor = new CclAccessor(indicatorCache);
   const portfolioService = new PortfolioService({
-    repo: positionsRepo,
+    repo: derivedPositions,
     cache: new SqlitePriceCache(db),
     source: deps.portfolioSource ?? new YahooSource(() => cclAccessor.getCcl()),
     fx: cclAccessor,
+    ledger: tradeService,
     clock,
   });
   const chartService = new ChartService({
-    positions: positionsRepo,
+    positions: derivedPositions,
     cache: new SqliteSeriesCache(db),
     seriesSource: deps.seriesSource ?? new YahooSeriesSource(),
     cclSource: deps.cclSource ?? new ArgentinadatosCclSeriesSource(),
@@ -108,7 +112,7 @@ export function buildApp(deps: AppDeps): express.Express {
   app.use('/api/v1', budgetsRouter({ budgetService, clock }));
   app.use('/api/v1', summariesRouter({ summaryService, clock }));
   app.use('/api/v1', indicatorsRouter({ indicatorService }));
-  app.use('/api/v1', portfolioRouter({ portfolioService, chartService, positions: positionsRepo, clock }));
+  app.use('/api/v1', portfolioRouter({ portfolioService, chartService, trades: tradeService }));
   app.use(notFoundHandler);
   app.use(errorHandler);
   return app;
