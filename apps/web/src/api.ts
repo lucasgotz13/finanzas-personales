@@ -11,6 +11,8 @@ import type {
   Position,
   SeriesCurrency,
   SeriesRange,
+  Trade,
+  TradeInput,
 } from './types';
 
 export const API_BASE = '/api/v1';
@@ -35,6 +37,19 @@ const API_MESSAGE_TRANSLATIONS: Record<string, string> = {
 /** Maps a known backend error message to es-AR; unknown messages pass through unchanged. */
 export function translateApiMessage(message: string): string {
   return API_MESSAGE_TRANSLATIONS[message] ?? message;
+}
+
+/** Dynamic timeline-rejection detail → es-AR (TH-6). The backend copy stays
+ * English ("sell of 10 AAPL.BA on 2026-08-10 exceeds balance 5; fix that sell
+ * first"); the UI renders the same meaning in the user's language. */
+export function translateTradeDetail(detail: string): string {
+  const match =
+    /^(buy|sell) of (\S+) (\S+) on (\d{4}-\d{2}-\d{2})(?: \(id \d+\))? exceeds balance (\S+); fix that (?:buy|sell) first$/.exec(detail);
+  if (match === null) return translateApiMessage(detail);
+  const [, type, quantity, ticker, date, balance] = match;
+  const noun = type === 'sell' ? 'venta' : 'compra';
+  const fix = type === 'sell' ? 'esa venta' : 'esa compra';
+  return `La ${noun} de ${quantity} ${ticker} del ${date} supera el saldo de ${balance}; corregí primero ${fix}.`;
 }
 
 interface ErrorEnvelope {
@@ -162,6 +177,18 @@ export const api = {
   },
   refreshPortfolio(force: boolean): Promise<{ results: PortfolioRefreshResult[] }> {
     return request(`/portfolio/refresh${force ? '?force=true' : ''}`, { method: 'POST' });
+  },
+  listTrades(): Promise<Trade[]> {
+    return request('/portfolio/trades');
+  },
+  createTrade(input: TradeInput): Promise<Trade> {
+    return request('/portfolio/trades', { method: 'POST', body: JSON.stringify(input) });
+  },
+  updateTrade(id: number, input: TradeInput): Promise<Trade> {
+    return request(`/portfolio/trades/${id}`, { method: 'PUT', body: JSON.stringify(input) });
+  },
+  deleteTrade(id: number): Promise<void> {
+    return request(`/portfolio/trades/${id}`, { method: 'DELETE' });
   },
   getPortfolioHistory(range: SeriesRange, currency: SeriesCurrency, force = false): Promise<HistoryResponse> {
     return request(`/portfolio/history${qs({ range, currency, force: force ? 'true' : undefined })}`);

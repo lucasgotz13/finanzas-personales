@@ -15,10 +15,10 @@ function history(points: Array<{ date: string; valueMinor: number }> = []): Hist
 function summary(): PortfolioSummary {
   return {
     ccStatus: 'fresh',
-    totals: { valueUsdMinor: 200000, valueArsMinor: 269000000, pnlUsdMinor: 20000, pnlPct: 0.1111, pnlArsMinor: 26900000 },
+    totals: { valueUsdMinor: 200000, valueArsMinor: 269000000, pnlUsdMinor: 20000, pnlPct: 0.1111, pnlArsMinor: 26900000, realizedUsdMinor: 21000 },
     positions: [
-      { id: 1, ticker: 'AAPL.BA', name: 'Apple', quantity: 10, avgCostMinor: 18000, priceMinor: 20000, status: 'fresh', valueUsdMinor: 200000, valueArsMinor: 269000000, pnlUsdMinor: 20000, pnlPct: 0.1111, pnlArsMinor: 26900000 },
-      { id: 2, ticker: 'GGAL.BA', name: 'Galicia', quantity: 5, avgCostMinor: 6000, priceMinor: null, status: 'absent', valueUsdMinor: null, valueArsMinor: null, pnlUsdMinor: null, pnlPct: null, pnlArsMinor: null },
+      { id: 1, ticker: 'AAPL.BA', name: 'Apple', quantity: 10, avgCostMinor: 18000, priceMinor: 20000, status: 'fresh', valueUsdMinor: 200000, valueArsMinor: 269000000, pnlUsdMinor: 20000, pnlPct: 0.1111, pnlArsMinor: 26900000, realizedUsdMinor: 21000 },
+      { id: 2, ticker: 'GGAL.BA', name: 'Galicia', quantity: 5, avgCostMinor: 6000, priceMinor: null, status: 'absent', valueUsdMinor: null, valueArsMinor: null, pnlUsdMinor: null, pnlPct: null, pnlArsMinor: null, realizedUsdMinor: 0 },
     ],
   };
 }
@@ -47,7 +47,7 @@ describe('InvestmentsPage (PI-6)', () => {
   });
 
   it('shows the empty state when there are no positions', async () => {
-    vi.spyOn(api, 'getPortfolio').mockResolvedValue({ ccStatus: 'absent', totals: { valueUsdMinor: 0, valueArsMinor: null, pnlUsdMinor: 0, pnlPct: null, pnlArsMinor: null }, positions: [] });
+    vi.spyOn(api, 'getPortfolio').mockResolvedValue({ ccStatus: 'absent', totals: { valueUsdMinor: 0, valueArsMinor: null, pnlUsdMinor: 0, pnlPct: null, pnlArsMinor: null, realizedUsdMinor: 0 }, positions: [] });
 
     render(<InvestmentsPage />);
 

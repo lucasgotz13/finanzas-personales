@@ -117,6 +117,7 @@ export interface PositionView {
   pnlUsdMinor: number | null;
   pnlPct: number | null;
   pnlArsMinor: number | null;
+  realizedUsdMinor: number;
 }
 
 export interface PortfolioSummary {
@@ -127,8 +128,29 @@ export interface PortfolioSummary {
     pnlUsdMinor: number;
     pnlPct: number | null;
     pnlArsMinor: number | null;
+    realizedUsdMinor: number;
   };
   positions: PositionView[];
+}
+
+/** Trade ledger types mirroring the REST contract under /api/v1/portfolio/trades. */
+export interface Trade {
+  id: number;
+  ticker: string;
+  type: 'buy' | 'sell';
+  date: string;
+  quantity: number;
+  priceMinor: number;
+  currency: 'USD';
+}
+
+export interface TradeInput {
+  ticker: string;
+  type: 'buy' | 'sell';
+  date: string;
+  quantity: number;
+  priceMinor: number;
+  currency: 'USD';
 }
 
 export interface PortfolioRefreshResult {
