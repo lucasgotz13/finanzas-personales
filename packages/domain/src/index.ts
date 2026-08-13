@@ -20,7 +20,10 @@ export type { IndicatorSource, IndicatorCache } from './indicators/ports';
 export { PRICE_TTL_MS, normalizeTicker } from './investments/catalog';
 export { PortfolioService } from './investments/service';
 export type { PortfolioServiceDeps } from './investments/service';
-export type { PriceSource, PriceCache, PositionRepository, PortfolioFxPort } from './investments/ports';
+export { TradeService, derivedPositionId } from './investments/trades';
+export type { TradeServiceDeps } from './investments/trades';
+export { DerivedPositionRepository } from './investments/derived-repo';
+export type { PriceSource, PriceCache, PositionRepository, PortfolioFxPort, TradeRepository, LegacyPositionPort, RealizedLedgerPort } from './investments/ports';
 export type {
   PriceStatus,
   CcStatus,
@@ -31,6 +34,10 @@ export type {
   PositionView,
   PortfolioSummary,
   PortfolioRefreshResult,
+  Trade,
+  TradeInput,
+  TradeType,
+  RealizedTotals,
 } from './investments/types';
 
 export { SERIES_TTL_MS, FF_MAX_DAYS, RANGE_WINDOW_DAYS, SERIES_RANGES, SERIES_CURRENCIES, isSeriesRange, isSeriesCurrency } from './priceCharts/catalog';
