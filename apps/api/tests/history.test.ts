@@ -1,6 +1,7 @@
 import request from 'supertest';
 import { afterEach, describe, expect, it } from 'vitest';
 import type { CclPoint, NativeSeries } from '@finanzas/domain';
+import { derivedPositionId } from '@finanzas/domain';
 import { createTestApp, seedCclRow, seedLegacyPosition, seedSeriesRow, seedTrade, StubCclSource, StubSeriesSource } from './helpers';
 import type { TestEnv } from './helpers';
 
@@ -197,5 +198,43 @@ describe('GET /api/v1/portfolio/positions/:id/history (PC-1)', () => {
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ points: [], currency: 'ARS', range: '3m', status: 'absent' });
+  });
+
+  it('serves history for a derived-only ticker with its stable negative id (Q1-A)', async () => {
+    env = await makeEnv();
+    await seedTrade(env, { ticker: 'NVDA.BA', date: '2026-08-06', quantity: 4, priceMinor: 90000 });
+    await seedSeriesRow(env, 'series:NVDA.BA:3m', 'USD', AAPL_POINTS, T0.toISOString());
+
+    const id = derivedPositionId('NVDA.BA');
+    expect(id).toBeLessThan(0);
+
+    const res = await request(env.app).get(`/api/v1/portfolio/positions/${id}/history?range=3m&currency=USD`);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ range: '3m', currency: 'USD', status: 'fresh' });
+    expect(res.body.points).toEqual([
+      { date: '2026-08-06', valueMinor: 20000 },
+      { date: '2026-08-07', valueMinor: 21000 },
+    ]);
+  });
+
+  it('returns 404 NOT_FOUND for an unknown negative id (Q1-A)', async () => {
+    env = await makeEnv();
+    await seedPositions(env);
+
+    const res = await request(env.app).get('/api/v1/portfolio/positions/-999999999/history?range=3m&currency=ARS');
+
+    expect(res.status).toBe(404);
+    expect(res.body.error.code).toBe('NOT_FOUND');
+  });
+
+  it('returns 404 NOT_FOUND for a non-numeric id (Q1-A)', async () => {
+    env = await makeEnv();
+    await seedPositions(env);
+
+    const res = await request(env.app).get('/api/v1/portfolio/positions/abc/history?range=3m&currency=ARS');
+
+    expect(res.status).toBe(404);
+    expect(res.body.error.code).toBe('NOT_FOUND');
   });
 });

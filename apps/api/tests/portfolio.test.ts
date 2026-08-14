@@ -1,6 +1,7 @@
 import request from 'supertest';
 import { afterEach, describe, expect, it } from 'vitest';
 import type { PriceQuote, PriceSource } from '@finanzas/domain';
+import { derivedPositionId } from '@finanzas/domain';
 import { createTestApp, seedLegacyPosition, seedTrade } from './helpers';
 import type { TestEnv } from './helpers';
 
@@ -58,7 +59,7 @@ describe('GET /api/v1/portfolio — derived positions (PI-1, TH-3, TH-4)', () =>
     const ggal = res.body.positions[1];
     expect(ggal).toMatchObject({ id: 2, name: 'Galicia', quantity: 5, avgCostMinor: 6000, realizedUsdMinor: 0 });
     const meli = res.body.positions[2];
-    expect(meli.id).toBeLessThan(0); // stable derived id (D3)
+    expect(meli.id).toBe(derivedPositionId('MELI.BA')); // stable negative derived id (D3)
     expect(meli.name).toBe('MELI.BA');
     expect(res.body.totals.realizedUsdMinor).toBe(21000);
   });
