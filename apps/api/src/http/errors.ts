@@ -5,14 +5,33 @@ const STATUS_BY_CODE = {
   VALIDATION_ERROR: 422,
   NOT_FOUND: 404,
   CONFLICT: 409,
+  UNAUTHORIZED: 401,
 } as const;
 
-/** Maps domain errors to the API error envelope (design: {error:{code,message,details[]}}). */
+/** HTTP-adapter error code: auth failures belong to the adapter, not the domain. */
+export type HttpErrorCode = 'UNAUTHORIZED';
+
+/** Adapter-level error shaped like a DomainError so it fits the same envelope. */
+export class HttpError extends Error {
+  readonly code: HttpErrorCode;
+  readonly details: string[];
+
+  constructor(code: HttpErrorCode, message: string, details: string[] = []) {
+    super(message);
+    this.name = 'HttpError';
+    this.code = code;
+    this.details = details;
+  }
+}
+
+/** Maps domain/adapter errors to the API error envelope (design: {error:{code,message,details[]}}). */
 export function errorHandler(err: unknown, _req: Request, res: Response, _next: NextFunction): void {
-  if (err instanceof DomainError) {
-    res.status(STATUS_BY_CODE[err.code]).json({
-      error: { code: err.code, message: err.message, details: err.details },
-    });
+  const apiError =
+    err instanceof DomainError || err instanceof HttpError
+      ? { code: err.code, message: err.message, details: err.details }
+      : undefined;
+  if (apiError) {
+    res.status(STATUS_BY_CODE[apiError.code]).json({ error: apiError });
     return;
   }
   console.error(err);

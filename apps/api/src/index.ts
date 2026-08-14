@@ -1,6 +1,7 @@
 import { resolve } from 'node:path';
 import type { Clock } from '@finanzas/domain';
 import { DEFAULT_DB_PATH, MIGRATIONS_DIR, createDbClient, migrate } from '../../../scripts/migrate';
+import { validateProductionConfig } from './http/auth';
 import { buildApp } from './http/app';
 
 class SystemClock implements Clock {
@@ -10,9 +11,10 @@ class SystemClock implements Clock {
 }
 
 const dbPath = process.env.FINANZAS_DB ? resolve(process.env.FINANZAS_DB) : DEFAULT_DB_PATH;
+validateProductionConfig(process.env.FINANZAS_AUTH_PASSPHRASE);
 await migrate(dbPath, MIGRATIONS_DIR);
 const db = await createDbClient(dbPath);
-const app = buildApp({ db, clock: new SystemClock() });
+const app = buildApp({ db, clock: new SystemClock(), authSecret: process.env.FINANZAS_AUTH_PASSPHRASE });
 
 const port = Number(process.env.PORT ?? 3000);
 const dbTarget = process.env.TURSO_DATABASE_URL ?? dbPath;
