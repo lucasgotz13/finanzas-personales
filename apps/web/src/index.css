@@ -50,6 +50,11 @@ header.app-header h1 {
   color: var(--ink);
 }
 
+/* Session logout (WU2): quiet link at the header's end, away from the tabs. */
+header.app-header .logout-button {
+  margin-left: auto;
+}
+
 nav.tabs {
   display: flex;
   gap: 0.25rem;
@@ -125,6 +130,65 @@ button.primary:disabled {
   border-radius: 8px;
   padding: 0.5rem;
   font-size: 0.85rem;
+}
+
+/* --- Login gate (WU2): centered card on the warm paper --- */
+main.login-gate {
+  max-width: 420px;
+  margin: 3rem auto;
+  padding: 0 1rem;
+}
+
+.login-gate h1 {
+  font-size: 1.25rem;
+  margin: 0 0 0.25rem;
+  color: var(--ink);
+}
+
+.login-gate .login-subtitle {
+  color: var(--muted-text);
+  font-size: 0.85rem;
+  margin: 0 0 1rem;
+}
+
+form.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+form.login-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.8rem;
+  color: var(--ink);
+}
+
+form.login-form input[type='password'] {
+  padding: 0.45rem;
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  font-size: 0.95rem;
+  background: var(--card);
+  color: var(--ink);
+}
+
+form.login-form .login-remember {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+form.login-form .login-remember input[type='checkbox'] {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+form.login-form button.primary {
+  align-self: flex-start;
 }
 
 .success-box {
@@ -694,6 +758,25 @@ tr.asset-chart-row td {
   .filters {
     flex-wrap: wrap;
     gap: 0.5rem;
+  }
+
+  /* Login gate: full-width button, 16px input, 44px targets (WU2). */
+  main.login-gate {
+    margin: 2rem auto;
+  }
+
+  form.login-form input[type='password'] {
+    font-size: 16px;
+    padding: 0.55rem;
+    min-height: 44px;
+  }
+
+  form.login-form .login-remember {
+    min-height: 44px;
+  }
+
+  form.login-form button.primary {
+    align-self: stretch;
   }
 
   .indicators-header {

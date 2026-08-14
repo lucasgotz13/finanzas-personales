@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import App from './App';
-import { api } from './api';
+import { ApiError, api, setUnauthorizedHandler } from './api';
 import type { BudgetStatus, PeriodSummary } from './types';
 
 const budgetStatus: BudgetStatus = {
@@ -14,6 +14,9 @@ const budgetStatus: BudgetStatus = {
 const emptySummary: PeriodSummary = { period: 'month', currencies: [], categories: [] };
 
 function mockAllApis(): void {
+  vi.spyOn(api, 'authStatus').mockResolvedValue(true);
+  vi.spyOn(api, 'login').mockResolvedValue(undefined);
+  vi.spyOn(api, 'logout').mockResolvedValue(undefined);
   vi.spyOn(api, 'listTransactions').mockResolvedValue([]);
   vi.spyOn(api, 'getCategoryTree').mockResolvedValue([]);
   vi.spyOn(api, 'getDeletedCategories').mockResolvedValue([]);
@@ -105,5 +108,103 @@ describe('App tab switching', () => {
     const desktopButton = Array.from(document.querySelectorAll('nav.tabs.desktop-tabs button')).find((b) => b.textContent === 'Indicadores');
     expect(desktopButton?.classList.contains('active')).toBe(true);
     expect(clickedIndicator.classList.contains('active')).toBe(true);
+  });
+});
+
+describe('App auth gate (WU2)', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
+  it('shows a minimal loading card while the session is being checked', () => {
+    vi.spyOn(api, 'authStatus').mockReturnValue(new Promise(() => {}));
+    render(<App />);
+    expect(screen.getByTestId('auth-loading')).toHaveTextContent('Cargando…');
+    expect(screen.queryByLabelText('Contraseña')).not.toBeInTheDocument();
+  });
+
+  it('shows the login gate when unauthenticated', async () => {
+    vi.spyOn(api, 'authStatus').mockResolvedValue(false);
+    render(<App />);
+    expect(await screen.findByRole('heading', { name: 'Ingresar' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Contraseña')).toBeInTheDocument();
+    expect(screen.queryByTestId('note')).not.toBeInTheDocument();
+  });
+
+  it('shows the app shell when authenticated', async () => {
+    mockAllApis();
+    render(<App />);
+    expect(await screen.findByTestId('note')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Ingresar' })).not.toBeInTheDocument();
+  });
+
+  it('flips to the app after a successful login', async () => {
+    mockAllApis();
+    vi.spyOn(api, 'authStatus').mockResolvedValue(false);
+    const login = vi.spyOn(api, 'login').mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.type(await screen.findByLabelText('Contraseña'), 'clave-secreta');
+    await user.click(screen.getByRole('button', { name: 'Ingresar' }));
+
+    expect(await screen.findByTestId('note')).toBeInTheDocument();
+    expect(login).toHaveBeenCalledWith('clave-secreta', false);
+  });
+
+  it('returns to the login gate after logout', async () => {
+    mockAllApis();
+    const logout = vi.spyOn(api, 'logout').mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    render(<App />);
+    await screen.findByTestId('note');
+
+    await user.click(screen.getByRole('button', { name: 'Salir' }));
+
+    expect(await screen.findByRole('heading', { name: 'Ingresar' })).toBeInTheDocument();
+    expect(logout).toHaveBeenCalledTimes(1);
+  });
+
+  it('drops back to the login gate when a page call receives 401 (session expired)', async () => {
+    vi.spyOn(api, 'authStatus').mockResolvedValue(true);
+    const unauthorized = {
+      ok: false,
+      status: 401,
+      json: async () => ({ error: { code: 'UNAUTHORIZED', message: 'Authentication required' } }),
+    } as unknown as Response;
+    const fetchMock = vi.fn(async () => unauthorized);
+    vi.stubGlobal('fetch', fetchMock);
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: 'Ingresar' })).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalled();
+  });
+});
+
+describe('unauthorized handler (WU2)', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+    setUnauthorizedHandler(null);
+  });
+
+  it('fires on a 401 UNAUTHORIZED data call but never on login or status', async () => {
+    const handler = vi.fn();
+    setUnauthorizedHandler(handler);
+    const unauthorized = {
+      ok: false,
+      status: 401,
+      json: async () => ({ error: { code: 'UNAUTHORIZED', message: 'Authentication required' } }),
+    } as unknown as Response;
+    vi.stubGlobal('fetch', vi.fn(async () => unauthorized));
+
+    await expect(api.listTransactions()).rejects.toBeInstanceOf(ApiError);
+    expect(handler).toHaveBeenCalledTimes(1);
+
+    // The auth flow itself must not bounce back to the gate.
+    await expect(api.login('clave', false)).rejects.toBeInstanceOf(ApiError);
+    await expect(api.authStatus()).rejects.toBeInstanceOf(ApiError);
+    expect(handler).toHaveBeenCalledTimes(1);
   });
 });

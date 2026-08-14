@@ -31,11 +31,25 @@ const API_MESSAGE_TRANSLATIONS: Record<string, string> = {
   'Invalid month': 'Mes inválido.',
   'Invalid budgets payload': 'Datos de presupuesto inválidos.',
   'Route not found': 'Ruta no encontrada.',
+  // Auth gate (WU2): backend copy stays English; the UI renders it in es-AR.
+  'Invalid passphrase': 'Contraseña incorrecta.',
+  'Too many failed attempts': 'Demasiados intentos fallidos; espere unos segundos.',
+  'too many failed attempts; try again in 60s': 'Demasiados intentos fallidos; espere 60 segundos.',
+  'Authentication is disabled': 'La autenticación está deshabilitada.',
 };
 
 /** Maps a known backend error message to es-AR; unknown messages pass through unchanged. */
 export function translateApiMessage(message: string): string {
   return API_MESSAGE_TRANSLATIONS[message] ?? message;
+}
+
+/** Dynamic lockout detail → es-AR (the remaining seconds vary per request).
+ * The backend copy stays English ("too many failed attempts; try again in
+ * 42s"); the UI renders the same meaning in the user's language. */
+export function translateAuthDetail(detail: string): string {
+  const match = /^too many failed attempts; try again in (\d+)s$/.exec(detail);
+  if (match === null) return translateApiMessage(detail);
+  return `Demasiados intentos fallidos; espere ${match[1]} segundos.`;
 }
 
 /** Dynamic timeline-rejection detail → es-AR (TH-6). The backend copy stays
@@ -67,6 +81,16 @@ export class ApiError extends Error {
   }
 }
 
+/** Registered by the App shell; invoked on unexpected 401 UNAUTHORIZED
+ * responses so the session can drop back to the login gate (WU2). */
+let unauthorizedHandler: (() => void) | null = null;
+
+/** Sets the 401 handler (pass null to unregister). Login/status calls never
+ * trigger it: they are the auth flow itself. */
+export function setUnauthorizedHandler(fn: (() => void) | null): void {
+  unauthorizedHandler = fn;
+}
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     headers: { 'Content-Type': 'application/json' },
@@ -78,6 +102,9 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
       body = (await res.json()) as ErrorEnvelope | null;
     } catch {
       // non-JSON error body
+    }
+    if (res.status === 401 && body?.error?.code === 'UNAUTHORIZED' && path !== '/auth/login' && path !== '/auth/status') {
+      unauthorizedHandler?.();
     }
     throw new ApiError(
       res.status,
@@ -110,6 +137,18 @@ export function flattenTree(nodes: CategoryNode[]): CategoryNode[] {
 }
 
 export const api = {
+  /** Logs in with the passphrase; `remember` extends the cookie to 30 days. */
+  login(passphrase: string, remember: boolean): Promise<void> {
+    return request('/auth/login', { method: 'POST', body: JSON.stringify({ passphrase, remember }) });
+  },
+  /** Clears the session cookie server-side. */
+  logout(): Promise<void> {
+    return request('/auth/logout', { method: 'POST' });
+  },
+  /** Whether the current session is authenticated (public endpoint). */
+  authStatus(): Promise<boolean> {
+    return request<{ authenticated: boolean }>('/auth/status').then((s) => s.authenticated);
+  },
   listTransactions(params: { month?: string; direction?: 'expense' | 'income' } = {}): Promise<import('./types').ApiTransaction[]> {
     return request(`/transactions${qs(params)}`);
   },

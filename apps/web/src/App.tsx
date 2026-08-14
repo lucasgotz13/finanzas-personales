@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { api, setUnauthorizedHandler } from './api';
+import LoginGate from './components/LoginGate';
 import BudgetsPage from './pages/BudgetsPage';
 import CategoriesPage from './pages/CategoriesPage';
 import IndicatorsPage from './pages/IndicatorsPage';
@@ -19,6 +21,44 @@ const TABS: Array<{ id: Tab; label: string }> = [
 
 export default function App(): JSX.Element {
   const [tab, setTab] = useState<Tab>('transactions');
+  // null = checking the session on first paint (WU2).
+  const [authed, setAuthed] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    api
+      .authStatus()
+      .then(setAuthed)
+      .catch(() => setAuthed(false));
+  }, []);
+
+  // Any unexpected 401 on a data call drops the session back to the gate.
+  useEffect(() => {
+    setUnauthorizedHandler(() => setAuthed(false));
+    return () => setUnauthorizedHandler(null);
+  }, []);
+
+  async function handleLogout(): Promise<void> {
+    try {
+      await api.logout();
+    } finally {
+      setAuthed(false);
+    }
+  }
+
+  if (authed === null) {
+    return (
+      <main className="login-gate">
+        <div className="card" data-testid="auth-loading">
+          Cargando…
+        </div>
+      </main>
+    );
+  }
+
+  if (authed === false) {
+    return <LoginGate onSuccess={() => setAuthed(true)} />;
+  }
+
   const tabButtons = TABS.map((t) => (
     <button
       key={t.id}
@@ -38,6 +78,9 @@ export default function App(): JSX.Element {
         <nav className="tabs desktop-tabs" role="tablist" aria-label="Secciones">
           {tabButtons}
         </nav>
+        <button type="button" className="link muted logout-button" onClick={() => void handleLogout()} data-testid="logout">
+          Salir
+        </button>
       </header>
       <main>
         <div className={tab === 'transactions' ? 'tab-panel' : 'tab-panel hidden'}>
