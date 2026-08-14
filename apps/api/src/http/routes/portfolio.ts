@@ -97,7 +97,10 @@ export function portfolioRouter(deps: PortfolioRouterDeps): Router {
   router.get(
     '/portfolio/positions/:id/history',
     wrap(async (req, res) => {
-      const id = parseId(req.params.id);
+      // Q1-A: no id-shape validation here — the domain owns the id-space
+      // contract (positive legacy ids and negative derived ids); unknown or
+      // non-numeric ids fall through to NotFoundError (404).
+      const id = Number(req.params.id);
       const range = parseRange(req.query.range);
       const currency = parseSeriesCurrency(req.query.currency);
       const force = req.query.force === 'true';
