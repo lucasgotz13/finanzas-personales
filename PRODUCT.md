@@ -20,7 +20,7 @@ The Argentine economic context is the product: multi-currency expenses (ARS/USD)
 
 ## Operating Context
 
-Single user on phone and desktop. Daily ritual: record expenses/income in seconds (form remembers direction/currency/category/date). Monthly ritual: review budgets (per-category caps, over-budget status) and period summaries (per-currency, savings rate). Ambient ritual: check indicator cards (freshness badges VENCIDO/REFERENCIA ANTIGUA; data freshness is fetch-time based with per-class TTLs). Investing ritual: record buy/sell trades and review derived positions, realized P&L, and portfolio price history. Deployed stack: React SPA on Vercel, Express API on Render (stateless), SQLite on Turso (libSQL client). es-AR UI, neutral register.
+Single user on phone and desktop. Daily ritual: log in with the passphrase (or resume the remembered session), record expenses/income in seconds (form remembers direction/currency/category/date). Monthly ritual: review budgets (per-category caps, over-budget status) and period summaries (per-currency, savings rate). Ambient ritual: check indicator cards (freshness badges VENCIDO/REFERENCIA ANTIGUA; data freshness is fetch-time based with per-class TTLs). Investing ritual: record buy/sell trades and review derived positions, realized P&L, and portfolio price history. Deployed stack: React SPA on Vercel, Express API on Render (stateless), SQLite on Turso (libSQL client). es-AR UI, neutral register.
 
 ## Capabilities and Constraints
 
@@ -29,9 +29,10 @@ Single user on phone and desktop. Daily ritual: record expenses/income in second
 - Hierarchical categories, monthly budgets per category + global cap (ARS, manual re-adjust), period summaries (month/quarter/year, per-currency, savings rate)
 - Indicators: 9 cards (5 USD quotes, riesgo país, IPC mensual, reservas, BADLAR) with per-class TTLs, stale/absent degradation, reference-age guard; sources dolarapi, BCRA v4, ArgentinaDatos (riesgo país + IPC), all keyless
 - Investments: buy/sell trade ledger with timeline validation (a sell can never exceed the running balance), positions derived from the ledger (moving-average cost, no manual position editing), realized P&L per ticker, and portfolio/asset price history charts (3m/6m/1y, ARS/USD, CCL-converted with graceful degradation)
+- Single-user auth: passphrase login gate, signed httpOnly session cookie (30-day opt-in "Seguir conectado"), logout from the header; fail-closed in prod (missing or short passphrase refuses to start)
 - es-AR amounts: dot = thousands, comma = decimal (parseEsArAmount); money via Intl es-AR
 - Tabs stay mounted (state preserved); responsive ≤640px; a11y: aria-labels, role=alert, :focus-visible, contrast AA (--muted-text #595959)
-- 464 tests green; backend API stays English, UI Spanish; no auth (single user)
+- 503 tests green; backend API stays English, UI Spanish; auth: single-user passphrase gate (env-driven, httpOnly cookie session, fail-closed in production)
 
 ## Brand Commitments
 

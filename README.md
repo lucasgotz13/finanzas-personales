@@ -7,6 +7,7 @@ global cap), review month/quarter/year summaries per category and currency,
 follow live national indicators (USD quotes, IPC, riesgo país, reservas,
 BADLAR), and manage an investments ledger: buy/sell trades with derived
 positions, realized P&L, and portfolio/asset price history charts (ARS/USD).
+Protected by an optional single-user passphrase login.
 
 ## Stack
 
@@ -63,6 +64,21 @@ TURSO_DATABASE_URL=libsql://my-db.turso.io TURSO_AUTH_TOKEN=<token> npm run migr
 
 The API runs migrations on boot against the same target it serves.
 
+## Authentication
+
+Optional single-user access gate. Set `FINANZAS_AUTH_PASSPHRASE` and every
+`/api/v1` endpoint requires login: the passphrase is exchanged for a signed
+httpOnly session cookie (short session by default, 30 days with "Seguir
+conectado").
+
+- **Unset** (dev default): auth is disabled and the API stays open.
+- **Set**: `POST /auth/login` issues the cookie, `GET /auth/status` probes it,
+  `POST /auth/logout` clears it; anything else without a valid cookie → 401.
+- **Fail-closed in production**: with `NODE_ENV=production`, a missing or
+  shorter-than-12-characters passphrase prevents the API from starting.
+
+The web app shows a login gate before any data; log out from the header.
+
 ## Quick start
 
 ```bash
@@ -100,6 +116,7 @@ scripts/          migration runner CLI
 | `GET /categories/tree`, `GET /categories/deleted`, `POST /categories`, `PATCH/DELETE /categories/:id`, `POST /categories/:id/restore` | category tree management |
 | `GET/PUT /budgets`, `GET /budgets/status?month=` | per-category caps + status |
 | `GET /summaries?period=&date=` | month/quarter/year summaries |
+| `POST /auth/login`, `POST /auth/logout`, `GET /auth/status` | single-user passphrase login (signed httpOnly cookie) |
 | `GET /indicators`, `POST /indicators/refresh?force=` | economic indicators (9 keys), TTL-gated refresh |
 | `GET /portfolio`, `POST /portfolio/refresh?force=` | derived positions + portfolio valuation |
 | `GET/POST /portfolio/trades`, `PUT/DELETE /portfolio/trades/:id` | buy/sell trade ledger |
