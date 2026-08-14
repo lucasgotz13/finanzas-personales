@@ -23,6 +23,7 @@ import { BcraSource } from '../sources/bcra';
 import { DolarApiSource } from '../sources/dolar-api';
 import { YahooSource } from '../sources/yahoo';
 import { YahooSeriesSource } from '../sources/yahoo-series';
+import { createAuthRouter, createLockout, requireAuth } from './auth';
 import { errorHandler, notFoundHandler } from './errors';
 import { budgetsRouter } from './routes/budgets';
 import { categoriesRouter } from './routes/categories';
@@ -41,6 +42,8 @@ export interface AppDeps {
   /** Optional chart series sources; tests inject stubs (PC-1). Defaults to Yahoo + argentinadatos. */
   seriesSource?: PriceSeriesSource;
   cclSource?: CclSeriesSource;
+  /** Passphrase enabling single-user auth; absent disables enforcement (dev). */
+  authSecret?: string;
 }
 
 /** Read-only CCL access: wraps the SAME indicator cache the IndicatorService writes (PI-4). */
@@ -107,6 +110,9 @@ export function buildApp(deps: AppDeps): express.Express {
     res.set('Cache-Control', 'no-store');
     next();
   });
+  const lockout = createLockout(() => clock.now());
+  app.use('/api/v1', createAuthRouter({ passphrase: deps.authSecret, clock, lockout }));
+  app.use('/api/v1', requireAuth(deps.authSecret));
   app.use('/api/v1', transactionsRouter({ transactionService }));
   app.use('/api/v1', categoriesRouter({ categoryService, clock }));
   app.use('/api/v1', budgetsRouter({ budgetService, clock }));

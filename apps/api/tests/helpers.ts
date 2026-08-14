@@ -6,6 +6,7 @@ import type { Express } from 'express';
 import type { Clock, CclPoint, CclSeriesSource, IndicatorSource, NativeSeries, PriceSeriesSource, PriceSource, SeriesRange } from '@finanzas/domain';
 import request from 'supertest';
 import { createDbClient, MIGRATIONS_DIR, migrate } from '../../../scripts/migrate';
+import { signToken } from '../src/http/auth';
 import { buildApp } from '../src/http/app';
 
 export class FakeClock implements Clock {
@@ -13,11 +14,16 @@ export class FakeClock implements Clock {
   now(): Date {
     return this.date;
   }
+  /** Advances the fake time by ms (exercises time-sensitive logic like lockout). */
+  advance(ms: number): void {
+    this.date = new Date(this.date.getTime() + ms);
+  }
 }
 
 export interface TestEnv {
   app: Express;
   db: Client;
+  clock: FakeClock;
   cleanup: () => void;
 }
 
@@ -52,28 +58,38 @@ export async function createTestApp(
     portfolioSource?: PriceSource;
     seriesSource?: PriceSeriesSource;
     cclSource?: CclSeriesSource;
+    authSecret?: string;
   } = {},
 ): Promise<TestEnv> {
   const dir = mkdtempSync(join(tmpdir(), 'finanzas-test-'));
   const dbPath = join(dir, 'test.db');
   await migrate(dbPath, MIGRATIONS_DIR);
   const db = await createDbClient(dbPath);
+  const clock = new FakeClock(now);
   const app = buildApp({
     db,
-    clock: new FakeClock(now),
+    clock,
     indicatorSources: deps.indicatorSources,
     portfolioSource: deps.portfolioSource,
     seriesSource: deps.seriesSource,
     cclSource: deps.cclSource,
+    authSecret: deps.authSecret,
   });
   return {
     app,
     db,
+    clock,
     cleanup: () => {
       db.close();
       rmSync(dir, { recursive: true, force: true });
     },
   };
+}
+
+/** Mints a valid session cookie header value for a passphrase (reuses the
+ * production token code, so forged cookies are indistinguishable from real ones). */
+export function authCookieFor(passphrase: string, now = new Date(Date.now() - 1000)): string {
+  return `finanzas_session=${signToken(passphrase, now)}`;
 }
 
 /** Seeds a `series_cache` row for one ticker/range (PC-4). */
