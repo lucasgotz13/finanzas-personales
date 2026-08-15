@@ -105,6 +105,31 @@ describe('ChartService.getPortfolioHistory (PC-1..PC-4)', () => {
     expect(h.cclSource.calls).toBe(0);
   });
 
+  it('drops points outside the 1m (30-day) window on aggregate reads', async () => {
+    const h = harness();
+    await seedPositions(h);
+    // 2026-07-01 is 39 days before T0 (2026-08-09): outside the 30-day window.
+    void h.cache.set({
+      kind: 'series', key: 'series:AAPL:1m', ticker: 'AAPL', range: '1m', nativeCurrency: 'USD',
+      points: [
+        { date: '2026-07-01', valueMinor: 10000 },
+        { date: '2026-08-06', valueMinor: 20000 },
+        { date: '2026-08-07', valueMinor: 21000 },
+      ], fetchedAt: iso(0),
+    });
+    void h.cache.set({ kind: 'series', key: 'series:GGAL.BA:1m', ticker: 'GGAL.BA', range: '1m', nativeCurrency: 'ARS', points: GGAL_SERIES.points, fetchedAt: iso(0) });
+    void h.cache.set({ kind: 'ccl', key: 'ccl:1m', range: '1m', points: CCL, fetchedAt: iso(0) });
+
+    const res = await h.service.getPortfolioHistory('1m', 'ARS', false);
+
+    expect(res).toMatchObject({ status: 'fresh', currency: 'ARS', range: '1m' });
+    expect(res.points).toEqual([
+      { date: '2026-08-06', valueMinor: 200_300_000 },
+      { date: '2026-08-07', valueMinor: 210_305_000 },
+    ]);
+    expect(h.seriesSource.calls).toEqual([]);
+  });
+
   it('returns absent on a cache miss and never fetches on read (PC-1)', async () => {
     const h = harness();
     await seedPositions(h);

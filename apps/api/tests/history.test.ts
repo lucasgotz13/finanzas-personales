@@ -98,6 +98,32 @@ describe('GET /api/v1/portfolio/history (PC-1..PC-4)', () => {
     }
   });
 
+  it('serves the fresh cached ARS aggregate for the 1m range', async () => {
+    const seriesSource = new StubSeriesSource(async () => {
+      throw new Error('GET must never fetch');
+    });
+    const cclSource = new StubCclSource(async () => {
+      throw new Error('GET must never fetch');
+    });
+    env = await makeEnv(seriesSource, cclSource);
+    await seedPositions(env);
+    await seedSeriesRow(env, 'series:AAPL.BA:1m', 'USD', AAPL_POINTS, T0.toISOString());
+    await seedSeriesRow(env, 'series:GGAL.BA:1m', 'ARS', GGAL_POINTS, T0.toISOString());
+    await seedCclRow(env, 'ccl:1m', CCL, T0.toISOString());
+
+    const res = await request(env.app).get('/api/v1/portfolio/history?range=1m&currency=ARS');
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ range: '1m', currency: 'ARS', status: 'fresh' });
+    expect(res.body.points).toEqual([
+      { date: '2026-08-06', valueMinor: 200_300_000 },
+      { date: '2026-08-07', valueMinor: 210_305_000 },
+    ]);
+    expect(seriesSource.count('AAPL.BA')).toBe(0);
+    expect(seriesSource.count('GGAL.BA')).toBe(0);
+    expect(cclSource.calls).toBe(0);
+  });
+
   it('force=true fetches sequentially through the stubs and serves fresh', async () => {
     const seriesSource = new StubSeriesSource(async (ticker) => {
       return ticker === 'AAPL.BA'

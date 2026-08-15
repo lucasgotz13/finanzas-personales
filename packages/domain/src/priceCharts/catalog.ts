@@ -6,10 +6,10 @@ export const SERIES_TTL_MS = 24 * 60 * 60_000;
 /** Max CCL forward-fill (PC-3, D4): 5 calendar days; older dates are dropped. */
 export const FF_MAX_DAYS = 5;
 
-/** Calendar window per range (design): 90/180/365 days, today included. */
-export const RANGE_WINDOW_DAYS: Record<SeriesRange, number> = { '3m': 90, '6m': 180, '1y': 365 };
+/** Calendar window per range (design): 30/90/180/365 days, today included. */
+export const RANGE_WINDOW_DAYS: Record<SeriesRange, number> = { '1m': 30, '3m': 90, '6m': 180, '1y': 365 };
 
-export const SERIES_RANGES: readonly SeriesRange[] = ['3m', '6m', '1y'];
+export const SERIES_RANGES: readonly SeriesRange[] = ['1m', '3m', '6m', '1y'];
 
 export const SERIES_CURRENCIES: readonly SeriesCurrency[] = ['ARS', 'USD'];
 

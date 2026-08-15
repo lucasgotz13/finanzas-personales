@@ -142,7 +142,7 @@ export interface PortfolioRefreshResult {
 }
 
 /** Price chart types mirroring the REST contract under /api/v1/portfolio/history. */
-export type SeriesRange = '3m' | '6m' | '1y';
+export type SeriesRange = '1m' | '3m' | '6m' | '1y';
 export type SeriesCurrency = 'ARS' | 'USD';
 export type SeriesStatus = 'fresh' | 'stale' | 'absent';
 

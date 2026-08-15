@@ -11,7 +11,7 @@ const AssetChart = lazy(() => import('../components/AssetChart'));
 const AUTO_REFRESH_MS = 5 * 60_000;
 
 /** PC-4: cache warm-up ranges — one force=true fetch per range and currency per warm-up. */
-const WARM_UP_RANGES: SeriesRange[] = ['3m', '6m', '1y'];
+const WARM_UP_RANGES: SeriesRange[] = ['1m', '3m', '6m', '1y'];
 const WARM_UP_CURRENCIES: SeriesCurrency[] = ['ARS', 'USD'];
 
 function money(minor: number | null, currency: 'ARS' | 'USD'): string {

@@ -33,6 +33,17 @@ describe('YahooSeriesSource (PC-1, PC-2)', () => {
     );
   });
 
+  it('maps the 1m range to the Yahoo 1mo param', async () => {
+    const fetchFn = jsonFetch(chart('USD', [ts('2026-08-05')], [200]));
+    const source = new YahooSeriesSource(fetchFn);
+
+    await source.fetchSeries('AAPL', '1m');
+
+    expect(String(fetchFn.mock.calls[0][0])).toBe(
+      'https://query1.finance.yahoo.com/v8/finance/chart/AAPL?interval=1d&range=1mo',
+    );
+  });
+
   it('passes ARS-native series through without CCL conversion (D1)', async () => {
     const t0 = ts('2026-08-05');
     const fetchFn = jsonFetch(chart('ARS', [t0], [26900]));
