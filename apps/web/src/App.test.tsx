@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import App from './App';
 import { ApiError, api, setUnauthorizedHandler } from './api';
+import { setSystemDark } from './test/setup';
 import type { BudgetStatus, PeriodSummary } from './types';
 
 const budgetStatus: BudgetStatus = {
@@ -179,6 +180,40 @@ describe('App auth gate (WU2)', () => {
 
     expect(await screen.findByRole('heading', { name: 'Ingresar' })).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalled();
+  });
+});
+
+describe('App theme (dark mode)', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
+  it('boots in dark when the system prefers dark and nothing is stored (inline-script effect)', async () => {
+    mockAllApis();
+    setSystemDark(true);
+    // The inline head script runs before first paint in the browser and sets
+    // the dataset; jsdom cannot run it, so simulate its effect directly. The
+    // app and the toggle read it on mount.
+    document.documentElement.dataset.theme = 'dark';
+    render(<App />);
+    await screen.findByTestId('note');
+
+    const toggle = screen.getByRole('button', { name: 'Modo claro' });
+    expect(toggle).toHaveAttribute('aria-pressed', 'true');
+    expect(document.documentElement.dataset.theme).toBe('dark');
+  });
+
+  it('boots in light when the system prefers dark but the user stored light', async () => {
+    mockAllApis();
+    setSystemDark(true);
+    document.documentElement.dataset.theme = 'light';
+    render(<App />);
+    await screen.findByTestId('note');
+
+    const toggle = screen.getByRole('button', { name: 'Modo oscuro' });
+    expect(toggle).toHaveAttribute('aria-pressed', 'false');
+    expect(document.documentElement.dataset.theme).toBe('light');
   });
 });
 

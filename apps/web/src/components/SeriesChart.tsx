@@ -2,10 +2,9 @@ import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YA
 import type { PricePoint, SeriesCurrency } from '../types';
 
 /** La billetera palette (PC-5): ink data line — NEVER the action green —
- * hairline grid/axes, muted tick text, paper card behind. */
-const INK = '#1a1815';
-const HAIRLINE = '#e8e4dc';
-const MUTED = '#595959';
+ * hairline grid/axes, muted tick text, paper card behind. Colors are painted
+ * by the CSS overrides on the recharts classes (index.css), so the chart
+ * flips with the theme.
 
 /** es-AR currency figure for a minor-unit value (158493 → "$ 1.584,93"). */
 export function formatChartMoney(valueMinor: number, currency: SeriesCurrency): string {
@@ -56,20 +55,18 @@ export default function SeriesChart({ points, currency }: SeriesChartProps): JSX
     <div className="chart-container">
       <ResponsiveContainer width="100%" height={220}>
         <LineChart data={points} margin={{ top: 8, right: 12, bottom: 4, left: 12 }}>
-          <CartesianGrid stroke={HAIRLINE} vertical={false} />
+          <CartesianGrid vertical={false} />
           <XAxis
             dataKey="date"
             tickFormatter={shortDate}
-            stroke={HAIRLINE}
-            tick={{ fill: MUTED, fontSize: 12 }}
+            tick={{ fontSize: 12 }}
             tickLine={false}
             axisLine={false}
             minTickGap={40}
           />
           <YAxis
             tickFormatter={formatAxisMoney}
-            stroke={HAIRLINE}
-            tick={{ fill: MUTED, fontSize: 12 }}
+            tick={{ fontSize: 12 }}
             tickLine={false}
             axisLine={false}
             width={64}
@@ -79,7 +76,6 @@ export default function SeriesChart({ points, currency }: SeriesChartProps): JSX
           <Line
             type="monotone"
             dataKey="valueMinor"
-            stroke={INK}
             strokeWidth={2}
             dot={false}
             activeDot={{ r: 3, strokeWidth: 0 }}
