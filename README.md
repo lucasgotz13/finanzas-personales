@@ -79,6 +79,39 @@ conectado").
 
 The web app shows a login gate before any data; log out from the header.
 
+## Deployment (self-host)
+
+The app is three pieces: the React SPA (any static host), the Express API
+(any Node host), and the SQLite database (local file or Turso).
+
+**API environment variables**
+
+| Variable | Purpose |
+|---|---|
+| `PORT` | HTTP port (default 3000; Render sets it automatically) |
+| `NODE_ENV` | Set `production` in production — enables fail-closed checks |
+| `FINANZAS_DB` | Local SQLite file path (default `finanzas.db` at repo root) |
+| `TURSO_DATABASE_URL` + `TURSO_AUTH_TOKEN` | Turso remote; overrides `FINANZAS_DB` when both are set |
+| `FINANZAS_AUTH_PASSPHRASE` | Single-user auth passphrase (≥12 chars in production) |
+
+Deploy steps:
+
+1. Create the database: `npm run migrate` against the same target the API
+   will use (local file or Turso, see Production (Turso) above).
+2. Deploy the API with the env vars above. The API runs migrations on boot
+   and is idempotent.
+3. Deploy the SPA. **`apps/web/vercel.json` rewrites `/api/*` to a specific
+   API URL — edit the `destination` to point at your own API.** In local
+   development the Vite proxy (`apps/web/vite.config.ts`) does the same job.
+
+Gotchas:
+
+- The API runs from source via `tsx`, which is a **runtime dependency** —
+  with `NODE_ENV=production`, npm skips devDependencies, so keep `tsx` in
+  `dependencies` or the API fails to start (exit 127).
+- Auth is fail-closed in production: missing or short passphrase refuses to
+  start rather than exposing the data.
+
 ## Quick start
 
 ```bash

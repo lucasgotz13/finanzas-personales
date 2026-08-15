@@ -42,7 +42,7 @@ Single user on phone and desktop. Daily ritual: log in with the passphrase (or r
 
 ## Evidence on Hand
 
-- Real product in production: https://finanzas-gotz.vercel.app (Vercel SPA) · API https://finanzas-api-vmgd.onrender.com · DB Turso libsql://finanzas-lucasgotz13.aws-us-east-1.turso.io
+- Real product in production (Vercel SPA · Render API · Turso DB); repo is public for self-hosting
 - Design critique snapshots: .impeccable/critique/ (17/40 → 23/40)
 - Live data sources verified: dolarapi.com/v1/dolares, api.bcra.gob.ar v4 Monetarias, api.argentinadatos.com (riesgo-pais/ultimo + finanzas/indices/inflacion last entry)
 - No invented testimonials, pricing, or benchmarks exist and must not be fabricated
