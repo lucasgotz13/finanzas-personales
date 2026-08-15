@@ -6,6 +6,20 @@
     <meta name="description" content="Finanzas Personales: registre sus gastos e ingresos, controle presupuestos y revise resúmenes por período." />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <meta name="theme-color" content="#f7f5f0" />
+    <script>
+      // Theme before first paint: the stored choice wins, else the system
+      // preference. Runs synchronously in head so there is no wrong-theme flash.
+      (function () {
+        try {
+          var stored = localStorage.getItem('finanzas-theme');
+          var dark = stored ? stored === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+          document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', dark ? '#1a1815' : '#f7f5f0');
+        } catch (err) {
+          // Sandboxed storage or no matchMedia: the light theme applies.
+        }
+      })();
+    </script>
     <title>Finanzas Personales</title>
   </head>
   <body>

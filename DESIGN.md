@@ -156,6 +156,37 @@ A warm neutral system with one saturated action accent and a semantic red/amber 
 
 **The Active-Is-Ink Rule.** The current navigation location is bold ink with a 2px ink underline (bottom-border on desktop tabs, top-border on the mobile bar) — a state, not an action. Green marks what you CAN do, ink marks where you ARE.
 
+## Dark (night)
+
+One dark theme exists: **"La Billetera de noche"** — the same warm world after dark, not a new brand. Warm paper becomes warm near-black, white cards become warm charcoal, hairlines step one shade lighter, and ink flips to warm light. The navy/blue-dark dashboard look remains the declared anti-reference: there is no blue-dark option and no third theme.
+
+The theme follows the system on first visit (`prefers-color-scheme`) and the header toggle flips it manually; the choice persists in `localStorage` (`finanzas-theme`) and an inline head script applies it before first paint, so there is never a flash of the wrong theme.
+
+### Tokens (night values)
+
+- **Warm Light Ink** (#f2ede2): text, card titles, active navigation — the night reading ink.
+- **Warm Muted Light** (#b3ac9d): secondary text; AA on the dark card.
+- **Warm Night Ground** (#1a1815): the ground; body background and theme-color in dark.
+- **Warm Charcoal Card** (#262219): every surface that sits on the night ground.
+- **Night Hairline** (#3a352b): 1px borders on cards, fields, and row separators.
+- **Action Green** (#0e7a3d) and hover (#0b6634): filled buttons unchanged.
+- **Action Link Light** (#58c46f): action link text and the :focus-visible outline in dark.
+- **Danger Light** (#e57373) on **Danger Night Tint** (#3a2320), border **#6e3b35**.
+- **Warning Light** (#e0a458) on **Warning Night Tint** (#3a2f1e).
+- **OK Night Tint** (#232b23); its text stays the night ink.
+- **Disabled Night** (#3a362e): disabled primary buttons.
+- **Night Whisper** (`0 1px 3px rgba(0, 0, 0, 0.45)`): the one shadow token after dark.
+
+### Named Rules
+
+**The One Green Rule (night amendment).** Filled action buttons keep the saturated green with white text — the green means "something can be done" in both themes. Link text and the focus outline switch to a lighter green (`--action-link`, #58c46f) so action text keeps AA contrast on the dark card; in the light theme the token equals the action green itself, so one rule covers both.
+
+**The Warm-Night-Only Rule.** The only dark is the warm one. No navy, no blue-dark, no gray-dark clone: dark mode is the same palette and the same role structure, luminance inverted.
+
+**Chips after dark.** Status tints darken with the ground (danger #3a2320, amber #3a2f1e, ok #232b23) and their text lightens (#e57373, #e0a458) to hold contrast on the darker tints. The ok chip stays ink-on-tint — state never borrows the action hue, in either theme.
+
+**Charts after dark.** The chart ink line flips to the warm light ink via CSS overrides on the recharts classes (`stroke: var(--ink)`); grid stays hairline and ticks muted. The action green still never appears in a data line.
+
 ## Typography
 
 **Body Font:** system-ui stack (system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif). No custom fonts are loaded; the system's character comes from weight, size, and numerals, not typeface.

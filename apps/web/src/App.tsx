@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api, setUnauthorizedHandler } from './api';
 import LoginGate from './components/LoginGate';
+import ThemeToggle from './components/ThemeToggle';
 import BudgetsPage from './pages/BudgetsPage';
 import CategoriesPage from './pages/CategoriesPage';
 import IndicatorsPage from './pages/IndicatorsPage';
@@ -74,6 +75,7 @@ export default function App(): JSX.Element {
     <>
       <header className="app-header">
         <h1>Finanzas Personales</h1>
+        <ThemeToggle />
         {/* Desktop tabs; hidden on mobile where the bottom bar takes over. */}
         <nav className="tabs desktop-tabs" role="tablist" aria-label="Secciones">
           {tabButtons}

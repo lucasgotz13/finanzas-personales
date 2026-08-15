@@ -211,7 +211,7 @@ describe('Price charts (PC-5, PC-6)', () => {
     vi.spyOn(api, 'getPortfolioHistory').mockResolvedValue(history(points));
   }
 
-  it('renders the portfolio chart with an ink data line and the always-visible honesty note', async () => {
+  it('renders the portfolio chart with a themed data line and the always-visible honesty note', async () => {
     mockCharts();
 
     render(<InvestmentsPage />);
@@ -221,8 +221,14 @@ describe('Price charts (PC-5, PC-6)', () => {
     await vi.waitFor(() => {
       const line = document.querySelector('.recharts-line path');
       expect(line).not.toBeNull();
-      expect(line).toHaveAttribute('stroke', '#1a1815');
+      // The ink stroke is a CSS override (index.css .recharts-line-curve →
+      // var(--ink)), so the chart flips with the theme instead of hardcoding.
+      expect(line).toHaveClass('recharts-line-curve');
     });
+    const curveRule = Array.from(document.styleSheets)
+      .flatMap((sheet) => Array.from(sheet.cssRules))
+      .find((rule) => rule.cssText.includes('.recharts-line-curve'));
+    expect(curveRule?.cssText).toContain('stroke: var(--ink)');
   });
 
   it('shows es-AR tabular values in the chart tooltip', async () => {

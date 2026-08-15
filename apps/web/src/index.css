@@ -1,7 +1,8 @@
 :root {
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  color: #1a1815;
-  background: #f7f5f0;
+  color: var(--ink);
+  background: var(--ground);
+  color-scheme: light;
   /* La billetera tokens: warm paper ground, warm near-black ink, ONE action
      green reserved for actionable elements, semantic chips for state. */
   --ink: #1a1815;
@@ -12,13 +13,45 @@
   --shadow: 0 1px 3px rgba(26, 24, 21, 0.06);
   --action: #0e7a3d;
   --action-hover: #0b6634;
+  /* Action green for text/focus; flips lighter in dark so links stay AA. */
+  --action-link: #0e7a3d;
+  --action-link-hover: #0b6634;
   --danger: #b3261e;
   --danger-bg: #fdecea;
+  --error-border: #f5c6c0;
   --warn: #b45309;
   --warn-bg: #fff4e5;
   /* OK chip: ink on a light gray-green tint — state, never the action green. */
   --ok: var(--ink);
   --ok-bg: #eef2ee;
+  --disabled-bg: #d9d5cc;
+}
+
+/* La billetera de noche: the same warm world after dark — warm paper becomes
+   warm near-black, white cards become warm charcoal, ink flips to warm light.
+   The navy/blue-dark dashboard look stays the declared anti-reference. */
+html[data-theme='dark'] {
+  color-scheme: dark;
+  --ink: #f2ede2;
+  --muted-text: #b3ac9d;
+  --ground: #1a1815;
+  --card: #2e2b27;
+  --hairline: #3a352b;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+  --action: #0e7a3d;
+  --action-hover: #0b6634;
+  /* Filled buttons keep the saturated green; text/focus takes the lighter
+     green so action text keeps AA contrast on the dark card. */
+  --action-link: #58c46f;
+  --action-link-hover: #7ed68f;
+  --danger: #e57373;
+  --danger-bg: #3a2320;
+  --error-border: #6e3b35;
+  --warn: #e0a458;
+  --warn-bg: #3a2f1e;
+  --ok: var(--ink);
+  --ok-bg: #232b23;
+  --disabled-bg: #3a362e;
 }
 
 body {
@@ -29,7 +62,7 @@ body {
 
 /* Keyboard focus indicator (WCAG 2.4.7): action-green outline on any focusable element */
 :focus-visible {
-  outline: 2px solid var(--action);
+  outline: 2px solid var(--action-link);
   outline-offset: 2px;
 }
 
@@ -53,6 +86,25 @@ header.app-header h1 {
 /* Session logout (WU2): quiet link at the header's end, away from the tabs. */
 header.app-header .logout-button {
   margin-left: auto;
+}
+
+/* Theme toggle: quiet icon button next to the title, muted → ink on hover. */
+button.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted-text);
+  cursor: pointer;
+}
+
+button.theme-toggle:hover {
+  color: var(--ink);
 }
 
 nav.tabs {
@@ -117,7 +169,7 @@ button.primary:hover:not(:disabled) {
 /* Disabled primary: neutral gray-warm with ink-muted text — the action hue
    is for actionable buttons only, not a faded green. */
 button.primary:disabled {
-  background: #d9d5cc;
+  background: var(--disabled-bg);
   color: var(--muted-text);
   opacity: 1;
   cursor: default;
@@ -126,7 +178,7 @@ button.primary:disabled {
 .error-box {
   color: var(--danger);
   background: var(--danger-bg);
-  border: 1px solid #f5c6c0;
+  border: 1px solid var(--error-border);
   border-radius: 8px;
   padding: 0.5rem;
   font-size: 0.85rem;
@@ -366,14 +418,14 @@ ul.tree .tree-row {
 button.link {
   border: none;
   background: none;
-  color: var(--action);
+  color: var(--action-link);
   text-decoration: underline;
   cursor: pointer;
   font-size: 0.85rem;
 }
 
 button.link:hover {
-  color: var(--action-hover);
+  color: var(--action-link-hover);
 }
 
 /* Non-action text links (row Editar/Cancelar, form Cancelar): ink underline
@@ -478,7 +530,7 @@ button:disabled {
 }
 
 .indicator-card.stale {
-  border-color: #f5c6c0;
+  border-color: var(--error-border);
 }
 
 .indicator-label {
@@ -601,6 +653,24 @@ ul.tree .tree-row input {
 
 .chart-container {
   width: 100%;
+}
+
+/* Charts flip with the theme: recharts paints SVG presentation attributes,
+   and CSS custom-property rules override them (PC-5 palette on both themes). */
+.recharts-line-curve {
+  stroke: var(--ink);
+}
+
+.recharts-cartesian-grid line {
+  stroke: var(--hairline);
+}
+
+.recharts-cartesian-axis-tick-value {
+  fill: var(--muted-text);
+}
+
+.recharts-cartesian-axis-line {
+  stroke: var(--hairline);
 }
 
 /* Tabular es-AR tooltip on the paper card (PC-5). */
@@ -733,8 +803,8 @@ tr.asset-chart-row td {
   .data .actions-cell {
     position: sticky;
     right: 0;
-    background: #fff;
-    box-shadow: -1px 0 0 #e8e4dc;
+    background: var(--card);
+    box-shadow: -1px 0 0 var(--hairline);
   }
 
   /* Single-column form; 16px inputs prevent iOS focus-zoom (also covers the
@@ -799,6 +869,11 @@ tr.asset-chart-row td {
   button.danger,
   button.link {
     min-height: 44px;
+  }
+
+  button.theme-toggle {
+    width: 44px;
+    height: 44px;
   }
 
   ul.tree .tree-row {
