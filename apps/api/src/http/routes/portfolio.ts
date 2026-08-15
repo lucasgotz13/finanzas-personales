@@ -1,4 +1,4 @@
-import type { ChartService, PortfolioService, TradeInput, TradeService } from '@finanzas/domain';
+import type { ChartService, PortfolioService, SeriesRange, TradeInput, TradeService } from '@finanzas/domain';
 import { isSeriesCurrency, isSeriesRange, ValidationError } from '@finanzas/domain';
 import { Router } from 'express';
 import { wrap } from '../errors';
@@ -15,8 +15,8 @@ function parseId(raw: string): number {
   return id;
 }
 
-function parseRange(raw: unknown): '3m' | '6m' | '1y' {
-  if (typeof raw !== 'string' || !isSeriesRange(raw)) throw new ValidationError('Invalid range', ['range must be 3m, 6m or 1y']);
+function parseRange(raw: unknown): SeriesRange {
+  if (typeof raw !== 'string' || !isSeriesRange(raw)) throw new ValidationError('Invalid range', ['range must be 1m, 3m, 6m or 1y']);
   return raw;
 }
 

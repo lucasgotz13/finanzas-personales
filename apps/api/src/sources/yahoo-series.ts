@@ -5,8 +5,8 @@ const DEFAULT_TIMEOUT_MS = 10_000;
 /** 429 safety: fail fast per ticker for 60 s instead of hammering Yahoo (PC-4). */
 const COOLDOWN_MS = 60_000;
 
-/** Our range windows map to Yahoo v8 chart range params ('3m' → '3mo'). */
-const RANGE_TO_YAHOO: Record<SeriesRange, string> = { '3m': '3mo', '6m': '6mo', '1y': '1y' };
+/** Our range windows map to Yahoo v8 chart range params ('1m' → '1mo'). */
+const RANGE_TO_YAHOO: Record<SeriesRange, string> = { '1m': '1mo', '3m': '3mo', '6m': '6mo', '1y': '1y' };
 
 interface ChartBody {
   chart?: {

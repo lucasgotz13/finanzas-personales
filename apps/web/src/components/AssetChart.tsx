@@ -4,7 +4,7 @@ import { useApi } from '../hooks/useApi';
 import type { SeriesCurrency, SeriesRange } from '../types';
 import SeriesChart from './SeriesChart';
 
-const RANGES: SeriesRange[] = ['3m', '6m', '1y'];
+const RANGES: SeriesRange[] = ['1m', '3m', '6m', '1y'];
 const CURRENCIES: SeriesCurrency[] = ['ARS', 'USD'];
 
 interface AssetChartProps {

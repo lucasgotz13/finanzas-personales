@@ -1,5 +1,5 @@
-/** Time window of a price chart (PC-1): 3 months, 6 months or 1 year. */
-export type SeriesRange = '3m' | '6m' | '1y';
+/** Time window of a price chart (PC-1): 1 month, 3 months, 6 months or 1 year. */
+export type SeriesRange = '1m' | '3m' | '6m' | '1y';
 
 /** Chart display currency (PC-1): Argentine pesos or US dollars. */
 export type SeriesCurrency = 'ARS' | 'USD';
