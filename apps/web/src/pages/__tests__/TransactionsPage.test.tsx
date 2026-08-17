@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { arDateString } from '@finanzas/domain';
@@ -11,11 +11,22 @@ const categories: CategoryNode[] = [{ id: 1, name: 'Food', parentId: null, child
 const transactions: ApiTransaction[] = [
   { id: 1, direction: 'expense', amountMinor: 15000, currency: 'ARS', rate: 1, date: '2026-07-15', categoryId: 1, note: 'Lunch' },
 ];
+const sortableTransactions: ApiTransaction[] = [
+  { id: 1, direction: 'expense', amountMinor: 50000, currency: 'ARS', rate: 1, date: '2026-07-15', categoryId: 1, note: 'Large' },
+  { id: 2, direction: 'income', amountMinor: 10000, currency: 'ARS', rate: 1, date: '2026-07-01', categoryId: 1, note: 'Small' },
+];
 
 /** Amount assertions are scoped to the list table because the month-total
  *  money card legitimately renders the same figures (duplicate text). */
 async function listTable(): Promise<HTMLElement> {
   return screen.findByTestId('transaction-list');
+}
+
+function listNotes(table: HTMLElement): string[] {
+  return within(table)
+    .getAllByRole('row')
+    .slice(1)
+    .map((row) => within(row).getAllByRole('cell')[1].textContent ?? '');
 }
 
 describe('TransactionsPage', () => {
@@ -184,5 +195,63 @@ describe('TransactionsPage', () => {
     await user.click(screen.getByRole('button', { name: 'Gasto' }));
     expect(screen.getByRole('button', { name: 'Gasto' })).toHaveAttribute('aria-pressed', 'true');
     expect(todas).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('resets transaction sorting when the direction filter or month changes', async () => {
+    vi.spyOn(api, 'getCategoryTree').mockResolvedValue(categories);
+    vi.spyOn(api, 'listTransactions').mockImplementation(async () => [...sortableTransactions]);
+
+    const user = userEvent.setup();
+    render(<TransactionsPage />);
+    const table = await listTable();
+    const sortButton = within(table).getByRole('button', { name: /equivalente ARS/ });
+
+    await user.click(sortButton);
+    expect(within(table).getByRole('columnheader', { name: /Monto/ })).toHaveAttribute('aria-sort', 'ascending');
+
+    await user.click(screen.getByRole('button', { name: 'Gasto' }));
+    await waitFor(() =>
+      expect(within(screen.getByTestId('transaction-list')).getByRole('columnheader', { name: /Monto/ })).toHaveAttribute(
+        'aria-sort',
+        'none',
+      ),
+    );
+    expect(screen.queryByText(/Ordenado por equivalente ARS/)).not.toBeInTheDocument();
+
+    await user.click(within(screen.getByTestId('transaction-list')).getByRole('button', { name: /equivalente ARS/ }));
+    const month = screen.getByLabelText('Mes') as HTMLInputElement;
+    fireEvent.change(month, { target: { value: month.value === '2026-07' ? '2026-08' : '2026-07' } });
+    await waitFor(() =>
+      expect(within(screen.getByTestId('transaction-list')).getByRole('columnheader', { name: /Monto/ })).toHaveAttribute(
+        'aria-sort',
+        'none',
+      ),
+    );
+  });
+
+  it('preserves active sorting and reorders after an optimistic update', async () => {
+    vi.spyOn(api, 'getCategoryTree').mockResolvedValue(categories);
+    vi.spyOn(api, 'listTransactions').mockResolvedValue(sortableTransactions);
+    const updated: ApiTransaction = { ...sortableTransactions[0], amountMinor: 5000 };
+    const updateSpy = vi.spyOn(api, 'updateTransaction').mockResolvedValue(updated);
+
+    const user = userEvent.setup();
+    render(<TransactionsPage />);
+    const table = await listTable();
+    await user.click(within(table).getByRole('button', { name: /equivalente ARS/ }));
+    expect(listNotes(table)).toEqual(['Small', 'Large']);
+
+    const largeRow = screen.getByText('Large').closest('tr');
+    expect(largeRow).not.toBeNull();
+    await user.click(within(largeRow as HTMLElement).getByRole('button', { name: 'Editar' }));
+    await user.clear(screen.getByTestId('amount'));
+    await user.type(screen.getByTestId('amount'), '50');
+    await user.click(screen.getByTestId('submit'));
+
+    await waitFor(() =>
+      expect(updateSpy).toHaveBeenCalledWith(1, expect.objectContaining({ amountMinor: 5000 })),
+    );
+    await waitFor(() => expect(listNotes(table)).toEqual(['Large', 'Small']));
+    expect(within(table).getByRole('columnheader', { name: /Monto/ })).toHaveAttribute('aria-sort', 'ascending');
   });
 });
