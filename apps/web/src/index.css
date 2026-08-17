@@ -322,6 +322,47 @@ table.data th {
   font-weight: 600;
 }
 
+.transaction-sort-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+  margin: 0.25rem 0 0.5rem;
+}
+
+.sort-hint {
+  color: var(--muted-text);
+  font-size: 0.8rem;
+}
+
+button.sort-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 44px;
+  padding: 0.35rem 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+button.sort-button:hover {
+  color: var(--ink);
+}
+
+.sort-indicator {
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+button.sort-reset {
+  min-height: 44px;
+  padding: 0.35rem 0.5rem;
+}
+
 /* Money is always the loudest thing: tabular figures on every amount. */
 .money {
   font-variant-numeric: tabular-nums;

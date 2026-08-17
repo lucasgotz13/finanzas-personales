@@ -166,6 +166,7 @@ export default function TransactionsPage(): JSX.Element {
             confirmingId={confirmingId}
             onConfirmDelete={confirmDelete}
             onCancelDelete={() => setConfirmingId(null)}
+            sortResetKey={`${month}:${direction}`}
           />
         )}
       </section>
