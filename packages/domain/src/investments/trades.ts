@@ -179,9 +179,12 @@ export class TradeService {
       }
       if (row.quantity - balance > EPSILON) {
         const idPart = Number.isFinite(row.id) ? ` (id ${row.id})` : '';
-        throw new ValidationError('Invalid trade timeline', [
-          `${row.type} of ${row.quantity} ${ticker} on ${row.date}${idPart} exceeds balance ${balance}; fix that ${row.type} first`,
-        ]);
+        throw new ValidationError(
+          'Invalid trade timeline',
+          [`${row.type} of ${row.quantity} ${ticker} on ${row.date}${idPart} exceeds balance ${balance}; fix that ${row.type} first`],
+          'TRADE_EXCEEDS_BALANCE',
+          { type: row.type, ticker, quantity: row.quantity, date: row.date, balance },
+        );
       }
       balance -= row.quantity;
     }

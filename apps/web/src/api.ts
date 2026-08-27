@@ -1,3 +1,4 @@
+import type { ErrorReason } from '@finanzas/domain';
 import type {
   BudgetStatus,
   CategoryNode,
@@ -38,35 +39,56 @@ const API_MESSAGE_TRANSLATIONS: Record<string, string> = {
   'Authentication is disabled': 'La autenticación está deshabilitada.',
 };
 
-/** Maps a known backend error message to es-AR; unknown messages pass through unchanged. */
+/** Maps a known backend error message to es-AR; unknown messages pass through unchanged.
+ * Fallback layer only: structured errors are translated by `translateApiError`. */
 export function translateApiMessage(message: string): string {
   return API_MESSAGE_TRANSLATIONS[message] ?? message;
 }
 
-/** Dynamic lockout detail → es-AR (the remaining seconds vary per request).
- * The backend copy stays English ("too many failed attempts; try again in
- * 42s"); the UI renders the same meaning in the user's language. */
-export function translateAuthDetail(detail: string): string {
-  const match = /^too many failed attempts; try again in (\d+)s$/.exec(detail);
-  if (match === null) return translateApiMessage(detail);
-  return `Demasiados intentos fallidos; espere ${match[1]} segundos.`;
-}
+/**
+ * es-AR templates keyed by the backend's structured error reason (issue #103).
+ * Each template reproduces the exact visible copy the old message/detail
+ * parsers produced; a template returns undefined when its dynamic meta is
+ * missing so the caller can fall back to the exact-message table.
+ */
+const REASON_TEMPLATES: Partial<Record<ErrorReason, (meta: Record<string, unknown>) => string | undefined>> = {
+  TRADE_EXCEEDS_BALANCE: (meta) => {
+    const { type, ticker, quantity, date, balance } = meta;
+    if (typeof type !== 'string' || typeof ticker !== 'string' || typeof date !== 'string') return undefined;
+    const noun = type === 'sell' ? 'venta' : 'compra';
+    const fix = type === 'sell' ? 'esa venta' : 'esa compra';
+    return `La ${noun} de ${quantity} ${ticker} del ${date} supera el saldo de ${balance}; corregí primero ${fix}.`;
+  },
+  AUTH_LOCKED: (meta) =>
+    typeof meta.seconds === 'number' ? `Demasiados intentos fallidos; espere ${meta.seconds} segundos.` : undefined,
+  RATE_REQUIRED_FOR_CURRENCY: () => 'El tipo de cambio es obligatorio al cambiar a una moneda que no es ARS.',
+  CATEGORY_HAS_CHILDREN: () => 'No se puede borrar una categoría con subcategorías.',
+  INVALID_NAME: () => 'Nombre inválido.',
+  INVALID_PARENT_ID: () => 'Categoría padre inválida.',
+  NOTHING_TO_UPDATE: () => 'No hay nada para actualizar.',
+  INVALID_CATEGORY_ID: () => 'Identificador de categoría inválido.',
+  INVALID_TRANSACTION_ID: () => 'Identificador de transacción inválido.',
+  INVALID_DATE_RANGE: () => 'Rango de fechas inválido.',
+  INVALID_PERIOD: () => 'Período inválido.',
+  INVALID_DATE: () => 'Fecha inválida.',
+  INVALID_MONTH: () => 'Mes inválido.',
+  INVALID_BUDGETS_PAYLOAD: () => 'Datos de presupuesto inválidos.',
+  ROUTE_NOT_FOUND: () => 'Ruta no encontrada.',
+  INVALID_PASSPHRASE: () => 'Contraseña incorrecta.',
+  AUTH_DISABLED: () => 'La autenticación está deshabilitada.',
+};
 
-/** Dynamic timeline-rejection detail → es-AR (TH-6). The backend copy stays
- * English ("sell of 10 AAPL.BA on 2026-08-10 exceeds balance 5; fix that sell
- * first"); the UI renders the same meaning in the user's language. */
-export function translateTradeDetail(detail: string): string {
-  const match =
-    /^(buy|sell) of (\S+) (\S+) on (\d{4}-\d{2}-\d{2})(?: \(id \d+\))? exceeds balance (\S+); fix that (?:buy|sell) first$/.exec(detail);
-  if (match === null) return translateApiMessage(detail);
-  const [, type, quantity, ticker, date, balance] = match;
-  const noun = type === 'sell' ? 'venta' : 'compra';
-  const fix = type === 'sell' ? 'esa venta' : 'esa compra';
-  return `La ${noun} de ${quantity} ${ticker} del ${date} supera el saldo de ${balance}; corregí primero ${fix}.`;
+/** Single translation entry point for API errors: structured reason template
+ * first, then the legacy exact-message table, then the raw (English) message. */
+export function translateApiError(err: ApiError): string {
+  const template = err.reason !== undefined ? REASON_TEMPLATES[err.reason as ErrorReason] : undefined;
+  const translated = template?.(err.meta ?? {});
+  if (translated !== undefined) return translated;
+  return translateApiMessage(err.message);
 }
 
 interface ErrorEnvelope {
-  error?: { code?: string; message?: string; details?: string[] };
+  error?: { code?: string; message?: string; details?: string[]; reason?: string; meta?: Record<string, unknown> };
 }
 
 export class ApiError extends Error {
@@ -75,6 +97,8 @@ export class ApiError extends Error {
     readonly code: string,
     message: string,
     readonly details: string[] = [],
+    readonly reason?: string,
+    readonly meta?: Record<string, unknown>,
   ) {
     super(message);
     this.name = 'ApiError';
@@ -111,6 +135,8 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
       body?.error?.code ?? 'UNKNOWN',
       body?.error?.message ?? `Solicitud fallida (${res.status})`,
       body?.error?.details ?? [],
+      body?.error?.reason,
+      body?.error?.meta,
     );
   }
   if (res.status === 204) return undefined as T;

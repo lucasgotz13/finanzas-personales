@@ -230,6 +230,8 @@ describe('TransactionService.update (ET-5)', () => {
     await expect(env.service.update(tx.id as number, { currency: 'USD' })).rejects.toMatchObject({
       message: 'Rate is required when changing currency to a non-ARS currency',
       details: ['rate is required for currency USD'],
+      reason: 'RATE_REQUIRED_FOR_CURRENCY',
+      meta: { currency: 'USD' },
     });
     const stored = await env.transactions.findById(tx.id as number);
     expect(stored).toMatchObject({ currency: 'ARS', rate: 1 });

@@ -61,9 +61,14 @@ describe('TradeForm', () => {
   it('shows the rejected-sell timeline error in es-AR naming the trade (TH-6)', async () => {
     const user = userEvent.setup();
     const spy = vi.spyOn(api, 'createTrade').mockRejectedValue(
-      new ApiError(422, 'VALIDATION_ERROR', 'Invalid trade timeline', [
-        'sell of 10 AAPL.BA on 2026-08-10 exceeds balance 5; fix that sell first',
-      ]),
+      new ApiError(
+        422,
+        'VALIDATION_ERROR',
+        'Invalid trade timeline',
+        ['sell of 10 AAPL.BA on 2026-08-10 exceeds balance 5; fix that sell first'],
+        'TRADE_EXCEEDS_BALANCE',
+        { type: 'sell', ticker: 'AAPL.BA', quantity: 10, date: '2026-08-10', balance: 5 },
+      ),
     );
 
     render(<TradeForm onSaved={vi.fn()} />);

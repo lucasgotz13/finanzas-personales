@@ -210,6 +210,7 @@ describe('GET /api/v1/summaries (PS-1..5, IT-3)', () => {
     const res = await request(env.app).get('/api/v1/summaries?period=month&date=2026-02-31');
     expect(res.status).toBe(422);
     expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.reason).toBe('INVALID_DATE');
     expect(res.body.error.message).toBe('Invalid date');
     expect(res.body.error.details).toEqual(['date must be YYYY-MM-DD']);
   });

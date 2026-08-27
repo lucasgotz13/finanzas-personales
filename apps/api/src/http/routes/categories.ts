@@ -15,14 +15,16 @@ export function toApiCategory(cat: Category): Record<string, unknown> {
 
 function parseId(raw: string): number {
   const id = Number(raw);
-  if (!Number.isInteger(id) || id <= 0) throw new ValidationError('Invalid category id', ['id must be a positive integer']);
+  if (!Number.isInteger(id) || id <= 0)
+    throw new ValidationError('Invalid category id', ['id must be a positive integer'], 'INVALID_CATEGORY_ID');
   return id;
 }
 
 function parseParentId(value: unknown): number | null {
   if (value === null || value === undefined) return null;
   const id = Number(value);
-  if (!Number.isInteger(id) || id <= 0) throw new ValidationError('Invalid parentId', ['parentId must be a positive integer or null']);
+  if (!Number.isInteger(id) || id <= 0)
+    throw new ValidationError('Invalid parentId', ['parentId must be a positive integer or null'], 'INVALID_PARENT_ID');
   return id;
 }
 
@@ -73,13 +75,13 @@ export function categoriesRouter(deps: CategoriesRouterDeps): Router {
       const body = req.body as { name?: unknown; parentId?: unknown };
       let updated: Category | undefined;
       if (body.name !== undefined) {
-        if (typeof body.name !== 'string') throw new ValidationError('Invalid name', ['name must be a string']);
+        if (typeof body.name !== 'string') throw new ValidationError('Invalid name', ['name must be a string'], 'INVALID_NAME');
         updated = await categoryService.rename(id, body.name);
       }
       if ('parentId' in body) {
         updated = await categoryService.move(id, parseParentId(body.parentId));
       }
-      if (!updated) throw new ValidationError('Nothing to update', ['provide name and/or parentId']);
+      if (!updated) throw new ValidationError('Nothing to update', ['provide name and/or parentId'], 'NOTHING_TO_UPDATE');
       res.json(toApiCategory(updated));
     }),
   );

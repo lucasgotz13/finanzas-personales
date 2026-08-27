@@ -68,9 +68,13 @@ export function createLockout(now: () => Date = () => new Date()): Lockout {
       const current = now();
       if (current < entry.until) {
         const remaining = Math.ceil((entry.until.getTime() - current.getTime()) / 1000);
-        throw new HttpError('UNAUTHORIZED', 'Too many failed attempts', [
-          `too many failed attempts; try again in ${remaining}s`,
-        ]);
+        throw new HttpError(
+          'UNAUTHORIZED',
+          'Too many failed attempts',
+          [`too many failed attempts; try again in ${remaining}s`],
+          'AUTH_LOCKED',
+          { seconds: remaining },
+        );
       }
       state.delete(ip);
     },
@@ -127,13 +131,13 @@ export function createAuthRouter(deps: AuthRouterDeps): Router {
         throw new ValidationError('Passphrase is required', ['passphrase must be a non-empty string']);
       }
       if (passphrase === undefined) {
-        throw new HttpError('UNAUTHORIZED', 'Authentication is disabled');
+        throw new HttpError('UNAUTHORIZED', 'Authentication is disabled', [], 'AUTH_DISABLED');
       }
       const ip = req.ip ?? 'unknown';
       lockout.check(ip);
       if (submitted !== passphrase) {
         lockout.recordFailure(ip);
-        throw new HttpError('UNAUTHORIZED', 'Invalid passphrase');
+        throw new HttpError('UNAUTHORIZED', 'Invalid passphrase', [], 'INVALID_PASSPHRASE');
       }
       lockout.reset(ip);
       const remember = body?.remember === true;

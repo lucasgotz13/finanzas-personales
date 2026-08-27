@@ -42,7 +42,7 @@ describe('POST /api/v1/auth/login', () => {
     env = await testApp();
     const res = await request(env.app).post('/api/v1/auth/login').send({ passphrase: 'wrong-passphrase' });
     expect(res.status).toBe(401);
-    expect(res.body).toMatchObject({ error: { code: 'UNAUTHORIZED' } });
+    expect(res.body).toMatchObject({ error: { code: 'UNAUTHORIZED', reason: 'INVALID_PASSPHRASE' } });
     expect(Array.isArray(res.body.error.details)).toBe(true);
   });
 
@@ -69,7 +69,8 @@ describe('login lockout (per-IP)', () => {
     }
     const res = await request(env.app).post('/api/v1/auth/login').send({ passphrase: SECRET });
     expect(res.status).toBe(401);
-    expect(res.body).toMatchObject({ error: { code: 'UNAUTHORIZED' } });
+    expect(res.body).toMatchObject({ error: { code: 'UNAUTHORIZED', reason: 'AUTH_LOCKED' } });
+    expect(res.body.error.meta).toEqual({ seconds: 60 });
     expect(res.body.error.details[0]).toMatch(/too many failed attempts; try again in 60s/);
   });
 
@@ -210,6 +211,6 @@ describe('auth disabled (dev convenience)', () => {
     env = await createTestApp();
     const res = await request(env.app).post('/api/v1/auth/login').send({ passphrase: 'anything' });
     expect(res.status).toBe(401);
-    expect(res.body).toMatchObject({ error: { code: 'UNAUTHORIZED' } });
+    expect(res.body).toMatchObject({ error: { code: 'UNAUTHORIZED', reason: 'AUTH_DISABLED' } });
   });
 });

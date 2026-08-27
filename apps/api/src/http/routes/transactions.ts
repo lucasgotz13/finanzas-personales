@@ -34,7 +34,8 @@ export function toApiTransaction(tx: Transaction): ApiTransaction {
 
 function parseId(raw: string): number {
   const id = Number(raw);
-  if (!Number.isInteger(id) || id <= 0) throw new ValidationError('Invalid transaction id', ['id must be a positive integer']);
+  if (!Number.isInteger(id) || id <= 0)
+    throw new ValidationError('Invalid transaction id', ['id must be a positive integer'], 'INVALID_TRANSACTION_ID');
   return id;
 }
 
@@ -73,7 +74,11 @@ export function transactionsRouter(deps: TransactionsRouterDeps): Router {
         to = bounds.end;
       } else if (q.from !== undefined || q.to !== undefined) {
         if (!q.from || !q.to || !isArDateString(q.from) || !isArDateString(q.to)) {
-          throw new ValidationError('Invalid date range', ['from and to must be valid YYYY-MM-DD dates and provided together']);
+          throw new ValidationError(
+            'Invalid date range',
+            ['from and to must be valid YYYY-MM-DD dates and provided together'],
+            'INVALID_DATE_RANGE',
+          );
         }
         from = new Date(`${q.from}T00:00:00Z`);
         to = new Date(`${q.to}T00:00:00Z`);

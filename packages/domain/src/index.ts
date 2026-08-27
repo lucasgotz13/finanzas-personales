@@ -1,5 +1,5 @@
 export { DomainError, ValidationError, NotFoundError, ConflictError } from './errors';
-export type { ErrorCode } from './errors';
+export type { ErrorCode, ErrorReason, ErrorMeta } from './errors';
 
 export { Money, SUPPORTED_CURRENCIES, BASE_CURRENCY, isSupportedCurrency } from './vo/money';
 export type { Currency, MoneyInput } from './vo/money';

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ApiError, api, translateApiMessage, translateAuthDetail } from '../api';
+import { ApiError, api, translateApiError, translateApiMessage } from '../api';
 
 export interface LoginGateProps {
   /** Fired after a successful login; the App shell flips to the authed UI. */
@@ -30,11 +30,11 @@ export default function LoginGate({ onSuccess }: LoginGateProps): JSX.Element {
       await api.login(passphrase, remember);
       onSuccess();
     } catch (err) {
-      // Prefer the dynamic detail (lockout seconds) over the static message,
-      // matching the TradeForm pattern.
+      // Structured reason first (lockout seconds, wrong passphrase), then the
+      // legacy message table, then the raw message.
       setError(
-        err instanceof ApiError && err.details.length > 0
-          ? err.details.map(translateAuthDetail).join(' ')
+        err instanceof ApiError
+          ? translateApiError(err)
           : translateApiMessage(err instanceof Error ? err.message : 'No se pudo iniciar sesión.'),
       );
     } finally {

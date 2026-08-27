@@ -20,7 +20,7 @@ export function summariesRouter(deps: SummariesRouterDeps): Router {
       const period = req.query.period;
       const dateParam = req.query.date;
       if (typeof period !== 'string' || !(PERIODS as readonly string[]).includes(period)) {
-        throw new ValidationError('Invalid period', ['period must be one of month, quarter, year']);
+        throw new ValidationError('Invalid period', ['period must be one of month, quarter, year'], 'INVALID_PERIOD');
       }
       let date: Date;
       if (dateParam === undefined) {
@@ -30,7 +30,7 @@ export function summariesRouter(deps: SummariesRouterDeps): Router {
         // AR calendar day unambiguous).
         date = new Date(`${dateParam}T12:00:00Z`);
       } else {
-        throw new ValidationError('Invalid date', ['date must be YYYY-MM-DD']);
+        throw new ValidationError('Invalid date', ['date must be YYYY-MM-DD'], 'INVALID_DATE');
       }
       res.json(await summaryService.getSummary(period as PeriodType, date));
     }),

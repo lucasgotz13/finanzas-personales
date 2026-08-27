@@ -47,7 +47,7 @@ export class CategoryService {
   async remove(id: number, deletedAt: string): Promise<Category> {
     const existing = await this.getActive(id);
     if (await this.deps.categories.hasChildren(id)) {
-      throw new ConflictError('Cannot delete a category with children', ['delete its children first']);
+      throw new ConflictError('Cannot delete a category with children', ['delete its children first'], 'CATEGORY_HAS_CHILDREN');
     }
     return this.save(id, new Category({ ...existing, deletedAt }));
   }

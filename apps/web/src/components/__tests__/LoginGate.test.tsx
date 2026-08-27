@@ -47,7 +47,14 @@ describe('LoginGate', () => {
   it('translates the lockout detail with the remaining seconds', async () => {
     const user = userEvent.setup();
     vi.spyOn(api, 'login').mockRejectedValue(
-      new ApiError(401, 'UNAUTHORIZED', 'Too many failed attempts', ['too many failed attempts; try again in 42s']),
+      new ApiError(
+        401,
+        'UNAUTHORIZED',
+        'Too many failed attempts',
+        ['too many failed attempts; try again in 42s'],
+        'AUTH_LOCKED',
+        { seconds: 42 },
+      ),
     );
     render(<LoginGate onSuccess={vi.fn()} />);
 

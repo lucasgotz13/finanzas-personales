@@ -128,6 +128,8 @@ describe('PATCH /api/v1/transactions/:id (ET-5)', () => {
     const res = await request(app).patch(`/api/v1/transactions/${created.body.id}`).send({ currency: 'USD' });
     expect(res.status).toBe(422);
     expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.reason).toBe('RATE_REQUIRED_FOR_CURRENCY');
+    expect(res.body.error.meta).toEqual({ currency: 'USD' });
     expect(res.body.error.details.length).toBeGreaterThan(0);
     // Original transaction untouched
     const after = await request(app).get(`/api/v1/transactions?month=2026-07`);
