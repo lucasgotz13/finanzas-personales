@@ -1,5 +1,5 @@
 import type { Clock, PeriodType, SummaryService } from '@finanzas/domain';
-import { ValidationError } from '@finanzas/domain';
+import { isArDateString, ValidationError } from '@finanzas/domain';
 import { Router } from 'express';
 import { wrap } from '../errors';
 
@@ -9,7 +9,6 @@ export interface SummariesRouterDeps {
 }
 
 const PERIODS = ['month', 'quarter', 'year'] as const;
-const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 export function summariesRouter(deps: SummariesRouterDeps): Router {
   const router = Router();
@@ -26,7 +25,7 @@ export function summariesRouter(deps: SummariesRouterDeps): Router {
       let date: Date;
       if (dateParam === undefined) {
         date = clock.now();
-      } else if (typeof dateParam === 'string' && DATE_RE.test(dateParam)) {
+      } else if (typeof dateParam === 'string' && isArDateString(dateParam)) {
         // Interpret the query date as an AR-calendar date (noon UTC keeps the
         // AR calendar day unambiguous).
         date = new Date(`${dateParam}T12:00:00Z`);

@@ -13,10 +13,9 @@ export interface PriceCache {
 }
 
 /** Derived position read model (PI-1): positions come from the trade ledger,
- * so mutations are gone — the port exposes reads only (D9). */
+ * so mutations are gone — the port exposes a single read (D9). */
 export interface PositionRepository {
   list(): Promise<Position[]>;
-  findByTicker(ticker: string): Promise<Position | null>;
 }
 
 /** Trade ledger persistence (TH-1). Ordering by (date, id) is the repo's job. */

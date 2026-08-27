@@ -278,14 +278,4 @@ describe('DerivedPositionRepository (PI-1, D2, D3)', () => {
     const positions = await repo.list();
     expect(positions.map((p) => p.ticker)).toEqual(['AAPL.BA']);
   });
-
-  it('finds a merged position by ticker', async () => {
-    const { service } = makeService();
-    await service.create(buy('AAPL.BA', '2026-08-01', 10, 18000));
-    const repo = new DerivedPositionRepository(service, new StubLegacyPositions([legacyPosition(5, 'AAPL.BA', 'Apple')]));
-
-    const found = await repo.findByTicker('AAPL.BA');
-    expect(found).toMatchObject({ id: 5, name: 'Apple' });
-    expect(await repo.findByTicker('MELI.BA')).toBeNull();
-  });
 });

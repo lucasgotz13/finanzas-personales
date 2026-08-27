@@ -194,6 +194,15 @@ describe('GET /api/v1/summaries (PS-1..5, IT-3)', () => {
     expect(res.status).toBe(422);
   });
 
+  it('rejects an impossible calendar date with 422 (no silent roll-forward)', async () => {
+    env = await createTestApp();
+    const res = await request(env.app).get('/api/v1/summaries?period=month&date=2026-02-31');
+    expect(res.status).toBe(422);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.message).toBe('Invalid date');
+    expect(res.body.error.details).toEqual(['date must be YYYY-MM-DD']);
+  });
+
   it('defaults the date to today when omitted', async () => {
     env = await createTestApp(new Date('2026-08-08T12:00:00.000Z'));
     const res = await request(env.app).get('/api/v1/summaries?period=month');

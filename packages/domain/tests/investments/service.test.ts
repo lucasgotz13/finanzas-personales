@@ -32,9 +32,6 @@ class InMemoryPositionRepository implements PositionRepository {
     return stored;
   }
   async list(): Promise<Position[]> { return [...this.rows.values()]; }
-  async findByTicker(ticker: string): Promise<Position | null> {
-    return [...this.rows.values()].find((p) => p.ticker === ticker) ?? null;
-  }
   async delete(id: number): Promise<boolean> { return this.rows.delete(id); }
 }
 
