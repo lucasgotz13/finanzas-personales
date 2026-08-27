@@ -58,9 +58,12 @@ export class TransactionService {
     // MUST be provided — the existing rate belongs to the old currency and must
     // never be silently inherited.
     if (p.currency !== undefined && p.currency !== 'ARS' && p.rate === undefined) {
-      throw new ValidationError('Rate is required when changing currency to a non-ARS currency', [
-        `rate is required for currency ${p.currency}`,
-      ]);
+      throw new ValidationError(
+        'Rate is required when changing currency to a non-ARS currency',
+        [`rate is required for currency ${p.currency}`],
+        'RATE_REQUIRED_FOR_CURRENCY',
+        { currency: p.currency },
+      );
     }
     const merged = {
       direction: p.direction ?? existing.direction,

@@ -100,6 +100,8 @@ describe('Timeline integrity over HTTP (TH-2)', () => {
 
     expect(res.status).toBe(422);
     expect(res.body.error.details).toEqual(['sell of 10 AAPL.BA on 2026-08-10 exceeds balance 5; fix that sell first']);
+    expect(res.body.error.reason).toBe('TRADE_EXCEEDS_BALANCE');
+    expect(res.body.error.meta).toEqual({ type: 'sell', ticker: 'AAPL.BA', quantity: 10, date: '2026-08-10', balance: 5 });
     const list = await request(app).get('/api/v1/portfolio/trades');
     expect(list.body).toHaveLength(1);
   });

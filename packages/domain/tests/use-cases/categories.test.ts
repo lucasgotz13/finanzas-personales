@@ -134,7 +134,10 @@ describe('CategoryService.remove (CM-4 soft-delete)', () => {
   it('rejects deleting a category that still has children (CM-4)', async () => {
     const env = build();
     await seed(env);
-    await expect(env.service.remove(3, NOW.toISOString())).rejects.toThrow(ConflictError);
+    await expect(env.service.remove(3, NOW.toISOString())).rejects.toMatchObject({
+      code: 'CONFLICT',
+      reason: 'CATEGORY_HAS_CHILDREN',
+    });
   });
 
   it('rejects deleting an already-deleted category', async () => {

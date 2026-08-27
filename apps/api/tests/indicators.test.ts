@@ -198,6 +198,6 @@ describe('POST /api/v1/indicators/refresh (EI-2, EI-3)', () => {
     env = await makeEnv(stubs);
     const res = await request(env.app).get('/api/v1/indicators/refresh');
     expect(res.status).toBe(404);
-    expect(res.body).toEqual({ error: { code: 'NOT_FOUND', message: 'Route not found', details: [] } });
+    expect(res.body).toEqual({ error: { code: 'NOT_FOUND', message: 'Route not found', details: [], reason: 'ROUTE_NOT_FOUND' } });
   });
 });

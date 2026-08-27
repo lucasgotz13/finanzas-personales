@@ -113,6 +113,7 @@ describe('DELETE /api/v1/categories/:id (CM-4)', () => {
     await request(app).post('/api/v1/categories').send({ name: 'Rent', parentId: 3 });
     const res = await request(app).delete('/api/v1/categories/3');
     expect(res.status).toBe(409);
+    expect(res.body.error.reason).toBe('CATEGORY_HAS_CHILDREN');
   });
 
   it('rejects deleting a missing category with 404', async () => {

@@ -24,7 +24,7 @@ export function budgetsRouter(deps: BudgetsRouterDeps): Router {
     wrap(async (req, res) => {
       const map = req.body as Record<string, number>;
       if (typeof map !== 'object' || map === null || Array.isArray(map)) {
-        throw new ValidationError('Invalid budgets payload', ['expected an object of categoryId -> capMinor']);
+        throw new ValidationError('Invalid budgets payload', ['expected an object of categoryId -> capMinor'], 'INVALID_BUDGETS_PAYLOAD');
       }
       await budgetService.replaceAll(map);
       res.json(await budgetService.list());
@@ -36,7 +36,7 @@ export function budgetsRouter(deps: BudgetsRouterDeps): Router {
     wrap(async (req, res) => {
       const month = req.query.month;
       if (typeof month !== 'string') {
-        throw new ValidationError('Invalid month', ['month query parameter is required as YYYY-MM']);
+        throw new ValidationError('Invalid month', ['month query parameter is required as YYYY-MM'], 'INVALID_MONTH');
       }
       // Validate the key through the domain (throws 422 when malformed).
       PeriodKey.parse('month', month);

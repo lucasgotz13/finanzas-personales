@@ -108,6 +108,8 @@ describe('TradeService timeline integrity (TH-2)', () => {
 
     await expect(service.create(sell('AAPL.BA', '2026-08-10', 10, 25000))).rejects.toMatchObject({
       details: ['sell of 10 AAPL.BA on 2026-08-10 exceeds balance 5; fix that sell first'],
+      reason: 'TRADE_EXCEEDS_BALANCE',
+      meta: { type: 'sell', ticker: 'AAPL.BA', quantity: 10, date: '2026-08-10', balance: 5 },
     });
     expect((await repo.list()).map((t) => t.id)).toEqual([1]);
   });
