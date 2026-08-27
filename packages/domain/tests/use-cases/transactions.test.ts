@@ -1,5 +1,6 @@
 import { describe, expect, it, beforeEach } from 'vitest';
 import { TransactionService } from '../../src/use-cases/transactions';
+import type { TransactionPatch } from '../../src/use-cases/transactions';
 import { InMemoryTransactionRepository, InMemoryCategoryRepository } from '../helpers/fakes';
 import { ValidationError, NotFoundError } from '../../src/errors';
 
@@ -175,6 +176,95 @@ describe('TransactionService.update (ET-5)', () => {
     await expect(
       env.service.update(999, { direction: 'expense', amountMinor: 100, currency: 'ARS', txDate: today, categoryId: 1 }),
     ).rejects.toThrow(NotFoundError);
+  });
+
+  it('applies a partial patch and keeps the untouched fields', async () => {
+    const env = build();
+    const tx = await env.service.create({
+      direction: 'expense',
+      amountMinor: 2500,
+      currency: 'USD',
+      rate: 950,
+      txDate: today,
+      categoryId: 1,
+      note: 'Before',
+    });
+    const updated = await env.service.update(tx.id as number, { note: 'After' });
+    expect(updated.note).toBe('After');
+    expect(updated.currency).toBe('USD');
+    expect(updated.rate).toBe(950);
+    expect(updated.amountMinor).toBe(2500);
+    expect(updated.txDate).toBe(today);
+    expect(updated.categoryId).toBe(1);
+  });
+
+  it('returns the unchanged transaction for an empty patch', async () => {
+    const env = build();
+    const tx = await env.service.create({
+      direction: 'expense',
+      amountMinor: 1000,
+      currency: 'ARS',
+      txDate: today,
+      categoryId: 1,
+    });
+    const updated = await env.service.update(tx.id as number, {});
+    expect(updated).toMatchObject({
+      direction: 'expense',
+      amountMinor: 1000,
+      currency: 'ARS',
+      rate: 1,
+      txDate: today,
+      categoryId: 1,
+    });
+  });
+
+  it('rejects changing ARS to USD without a rate (W1, ET-1)', async () => {
+    const env = build();
+    const tx = await env.service.create({
+      direction: 'expense',
+      amountMinor: 1000,
+      currency: 'ARS',
+      txDate: today,
+      categoryId: 1,
+    });
+    await expect(env.service.update(tx.id as number, { currency: 'USD' })).rejects.toMatchObject({
+      message: 'Rate is required when changing currency to a non-ARS currency',
+      details: ['rate is required for currency USD'],
+    });
+    const stored = await env.transactions.findById(tx.id as number);
+    expect(stored).toMatchObject({ currency: 'ARS', rate: 1 });
+  });
+
+  it('accepts changing ARS to USD when the patch carries a rate (W1, ET-1)', async () => {
+    const env = build();
+    const tx = await env.service.create({
+      direction: 'expense',
+      amountMinor: 1000,
+      currency: 'ARS',
+      txDate: today,
+      categoryId: 1,
+    });
+    const updated = await env.service.update(tx.id as number, { currency: 'USD', rate: 950 });
+    expect(updated.currency).toBe('USD');
+    expect(updated.rate).toBe(950);
+  });
+
+  it('ignores unknown keys in the patch', async () => {
+    const env = build();
+    const tx = await env.service.create({
+      direction: 'expense',
+      amountMinor: 1000,
+      currency: 'ARS',
+      txDate: today,
+      categoryId: 1,
+    });
+    const updated = await env.service.update(tx.id as number, {
+      note: 'x',
+      hacker: 'yes',
+    } as TransactionPatch);
+    expect(updated.note).toBe('x');
+    const stored = await env.transactions.findById(tx.id as number);
+    expect((stored as unknown as Record<string, unknown>).hacker).toBeUndefined();
   });
 });
 

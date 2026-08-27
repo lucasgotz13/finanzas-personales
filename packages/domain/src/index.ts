@@ -86,7 +86,7 @@ export type {
 } from './ports/repositories';
 
 export { TransactionService } from './use-cases/transactions';
-export type { TransactionServiceDeps, CreateTransactionInput } from './use-cases/transactions';
+export type { TransactionServiceDeps, CreateTransactionInput, TransactionPatch } from './use-cases/transactions';
 
 export { CategoryService } from './use-cases/categories';
 export type { CategoryServiceDeps } from './use-cases/categories';
