@@ -1,5 +1,6 @@
 import { NotFoundError, ValidationError } from '../errors';
 import { normalizeTicker } from './catalog';
+import { isArDateString } from '../vo/period-key';
 import type { TradeRepository } from './ports';
 import type { Position, RealizedTotals, Trade, TradeInput } from './types';
 
@@ -32,13 +33,6 @@ function fnv1a(input: string): number {
     hash = Math.imul(hash, 0x01000193) >>> 0;
   }
   return hash >>> 0;
-}
-
-function isValidDate(value: unknown): value is string {
-  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
-  const [year, month, day] = value.split('-').map(Number);
-  const d = new Date(Date.UTC(year, month - 1, day));
-  return d.getUTCFullYear() === year && d.getUTCMonth() === month - 1 && d.getUTCDate() === day;
 }
 
 function byDateThenId(a: TimelineRow, b: TimelineRow): number {
@@ -133,7 +127,7 @@ export class TradeService {
       throw new ValidationError('Invalid ticker', ['ticker must be a non-empty string']);
     }
     const ticker = normalizeTicker(input.ticker);
-    if (!isValidDate(input.date)) {
+    if (!isArDateString(input.date)) {
       throw new ValidationError('Invalid date', ['date must be a valid YYYY-MM-DD calendar date']);
     }
     const quantity = Number(input.quantity);

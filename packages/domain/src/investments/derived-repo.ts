@@ -24,9 +24,4 @@ export class DerivedPositionRepository implements PositionRepository {
       return { ...p, id: legacyRow.id, name: legacyRow.name, createdAt: legacyRow.createdAt };
     });
   }
-
-  async findByTicker(ticker: string): Promise<Position | null> {
-    const positions = await this.list();
-    return positions.find((p) => p.ticker === ticker) ?? null;
-  }
 }

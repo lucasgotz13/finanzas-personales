@@ -29,7 +29,6 @@ class InMemoryPositionRepository implements PositionRepository {
   async create(p: Position): Promise<Position> { const s = { ...p, id: this.nextId++ }; this.rows.set(s.id as number, s); return s; }
   async update(id: number, p: Position): Promise<Position | null> { if (!this.rows.has(id)) return null; this.rows.set(id, { ...p, id }); return this.rows.get(id) ?? null; }
   async list(): Promise<Position[]> { return [...this.rows.values()]; }
-  async findByTicker(ticker: string): Promise<Position | null> { return [...this.rows.values()].find((p) => p.ticker === ticker) ?? null; }
   async delete(id: number): Promise<boolean> { return this.rows.delete(id); }
 }
 
