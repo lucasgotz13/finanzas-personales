@@ -1,5 +1,5 @@
 import { isArDateString, PeriodKey, ValidationError } from '@finanzas/domain';
-import type { CreateTransactionInput, Transaction, TransactionService } from '@finanzas/domain';
+import type { CreateTransactionInput, Transaction, TransactionPatch, TransactionService } from '@finanzas/domain';
 import { Router } from 'express';
 import { wrap } from '../errors';
 
@@ -93,26 +93,9 @@ export function transactionsRouter(deps: TransactionsRouterDeps): Router {
   router.patch('/transactions/:id',
     wrap(async (req, res) => {
       const id = parseId(req.params.id);
-      const existing = await transactionService.getById(id);
-      const body = req.body as Record<string, unknown>;
-      // W1 fix (ET-1/ET-2): when the currency changes to a non-ARS currency,
-      // a rate MUST be provided — the existing rate belongs to the old
-      // currency and must never be silently inherited.
-      if (body.currency !== undefined && body.currency !== 'ARS' && body.rate === undefined) {
-        throw new ValidationError('Rate is required when changing currency to a non-ARS currency', [
-          `rate is required for currency ${body.currency}`,
-        ]);
-      }
-      const merged: Record<string, unknown> = {
-        direction: body.direction ?? existing.direction,
-        amountMinor: body.amountMinor ?? existing.amountMinor,
-        currency: body.currency ?? existing.currency,
-        rate: body.rate ?? existing.rate,
-        date: body.date ?? existing.txDate,
-        categoryId: body.categoryId ?? existing.categoryId,
-        note: body.note ?? existing.note,
-      };
-      const tx = await transactionService.update(id, toCreateInput(merged));
+      // The domain owns patch semantics: whitelist, merge over the stored row
+      // and the W1 invariant (a non-ARS currency change requires a rate).
+      const tx = await transactionService.update(id, req.body as TransactionPatch);
       res.json(toApiTransaction(tx));
     }),
   );
