@@ -29,6 +29,17 @@ describe('GET/PUT /api/v1/budgets (BM-3)', () => {
     expect(res.body).toEqual({ 1: 70000 });
   });
 
+  it('PUT swaps the entire map, dropping old entries absent from the new multi-category map', async () => {
+    env = await createTestApp();
+    const app = env.app;
+    await request(app).put('/api/v1/budgets').send({ 1: 100000, 2: 50000 });
+    const put = await request(app).put('/api/v1/budgets').send({ 3: 250000, 5: 11111, 10: 30000 });
+    expect(put.status).toBe(200);
+    expect(put.body).toEqual({ 3: 250000, 5: 11111, 10: 30000 });
+    const res = await request(app).get('/api/v1/budgets');
+    expect(res.body).toEqual({ 3: 250000, 5: 11111, 10: 30000 });
+  });
+
   it('rejects a non-positive cap with 422', async () => {
     env = await createTestApp();
     const res = await request(env.app).put('/api/v1/budgets').send({ 1: 0 });

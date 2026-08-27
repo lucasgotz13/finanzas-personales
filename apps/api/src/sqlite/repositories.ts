@@ -1,4 +1,4 @@
-import type { Client, Row } from '@libsql/client';
+import type { Client, InStatement, Row } from '@libsql/client';
 import { arDateString } from '@finanzas/domain';
 import type {
   Budget,
@@ -171,14 +171,19 @@ export class SqliteCategoryRepository implements CategoryRepository {
 export class SqliteBudgetRepository implements BudgetRepository {
   constructor(private db: Client) {}
 
+  /** Replaces the whole map atomically (BM-3): the DELETE and every INSERT run
+   * as one libsql batch (implicit transaction), so a failure mid-way leaves the
+   * previous map intact instead of a partially written one. The batch always
+   * contains at least the DELETE, so an empty map empties the table. */
   async replaceAll(budgets: Budget[]): Promise<void> {
-    await this.db.execute('DELETE FROM budgets');
+    const stmts: InStatement[] = [{ sql: 'DELETE FROM budgets' }];
     for (const b of budgets) {
-      await this.db.execute({
+      stmts.push({
         sql: 'INSERT INTO budgets (category_id, cap_minor) VALUES (?, ?)',
         args: [b.categoryId, b.capMinor],
       });
     }
+    await this.db.batch(stmts, 'write');
   }
 
   async listAll(): Promise<Budget[]> {
