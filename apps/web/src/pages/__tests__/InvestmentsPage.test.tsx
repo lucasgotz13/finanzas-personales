@@ -198,6 +198,27 @@ describe('InvestmentsPage (PI-6, TH-6)', () => {
     expect(api.refreshPortfolio).toHaveBeenCalledWith(true);
     await vi.waitFor(() => expect(api.getPortfolio).toHaveBeenCalledTimes(2));
   });
+
+  it('does not fetch while inactive and fetches once when activated (optimize batch)', async () => {
+    const getPortfolio = vi.spyOn(api, 'getPortfolio').mockResolvedValue(summary());
+    const listTrades = vi.spyOn(api, 'listTrades').mockResolvedValue(trades());
+    vi.spyOn(api, 'getPortfolioHistory').mockResolvedValue(history());
+
+    const { rerender } = render(<InvestmentsPage active={false} />);
+
+    // Dormant tab: no portfolio/trades fetches, no chart chunk mount.
+    expect(getPortfolio).not.toHaveBeenCalled();
+    expect(listTrades).not.toHaveBeenCalled();
+    expect(screen.queryByTestId('portfolio-chart')).not.toBeInTheDocument();
+
+    rerender(<InvestmentsPage active />);
+
+    expect(await screen.findByTestId('positions-table')).toBeInTheDocument();
+    expect(getPortfolio).toHaveBeenCalledTimes(1);
+    expect(listTrades).toHaveBeenCalledTimes(1);
+    // Activation mounts the lazy portfolio chart (chunk loads now, not at boot).
+    expect(await screen.findByTestId('portfolio-chart')).toBeInTheDocument();
+  });
 });
 
 describe('Price charts (PC-5, PC-6)', () => {

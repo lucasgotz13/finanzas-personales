@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import type { PricePoint, SeriesCurrency } from '../types';
 
@@ -51,6 +52,9 @@ interface SeriesChartProps {
 /** Presentational line chart for one series (PC-5): ink monotone line, hairline
  * axes, muted ticks. Animations off so jsdom renders deterministically. */
 export default function SeriesChart({ points, currency }: SeriesChartProps): JSX.Element {
+  // Stable tooltip element: recharts re-renders its content on every chart
+  // update, so a fresh element per render would recreate the tooltip each time.
+  const tooltipContent = useMemo(() => <ChartTooltip currency={currency} />, [currency]);
   return (
     <div className="chart-container">
       <ResponsiveContainer width="100%" height={220}>
@@ -72,7 +76,7 @@ export default function SeriesChart({ points, currency }: SeriesChartProps): JSX
             width={64}
             domain={['auto', 'auto']}
           />
-          <Tooltip content={<ChartTooltip currency={currency} />} cursor={{ stroke: 'var(--hairline)', strokeWidth: 1 }} />
+          <Tooltip content={tooltipContent} cursor={{ stroke: 'var(--hairline)', strokeWidth: 1 }} />
           <Line
             type="monotone"
             dataKey="valueMinor"

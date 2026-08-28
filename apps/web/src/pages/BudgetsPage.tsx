@@ -1,5 +1,5 @@
 import { arDateString } from '@finanzas/domain';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { api } from '../api';
 import { formatMonth } from '../dates';
 import { useApi } from '../hooks/useApi';
@@ -11,11 +11,12 @@ function flattenTree(nodes: CategoryNode[]): CategoryNode[] {
 }
 
 /** Budgets page: edit caps and review the current month's over-budget status (BM-1..4). */
-export default function BudgetsPage(): JSX.Element {
+export default function BudgetsPage({ active = true }: { active?: boolean }): JSX.Element {
   const [month, setMonth] = useState(arDateString(new Date()).slice(0, 7));
-  const categories = useApi(() => api.getCategoryTree(), []);
-  const budgets = useApi(() => api.getBudgets(), []);
-  const status = useApi(() => api.getBudgetStatus(month), [month, budgets.data]);
+  const categories = useApi(() => api.getCategoryTree(), [], active);
+  const budgets = useApi(() => api.getBudgets(), [], active);
+  const status = useApi(() => api.getBudgetStatus(month), [month, budgets.data], active);
+  const flatCategories = useMemo(() => flattenTree(categories.data ?? []), [categories.data]);
 
   return (
     <>
@@ -30,7 +31,7 @@ export default function BudgetsPage(): JSX.Element {
           </div>
         )}
         <BudgetEditor
-          categories={flattenTree(categories.data ?? [])}
+          categories={flatCategories}
           initialCaps={budgets.data ?? {}}
           loading={categories.loading || budgets.loading}
           onSave={async (map) => {
@@ -53,7 +54,7 @@ export default function BudgetsPage(): JSX.Element {
         {status.loading ? <div className="empty">Cargando…</div> : status.data && (
           <BudgetStatusView
             status={status.data}
-            categoryNames={Object.fromEntries(flattenTree(categories.data ?? []).map((c) => [c.id, c.name]))}
+            categoryNames={Object.fromEntries(flatCategories.map((c) => [c.id, c.name]))}
           />
         )}
       </section>

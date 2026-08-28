@@ -115,7 +115,32 @@ export function setUnauthorizedHandler(fn: (() => void) | null): void {
   unauthorizedHandler = fn;
 }
 
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+/** Stable reads that are safe to serve from a short-lived client cache:
+ * idempotent, change only through explicit mutations (which clear the cache),
+ * and fetched by several pages at boot. Everything else (transactions,
+ * summaries, budget status, history) stays uncached: mutation-prone or
+ * volatile. */
+const CACHEABLE_PATHS = new Set([
+  '/categories/tree',
+  '/categories/deleted',
+  '/indicators',
+  '/portfolio',
+  '/portfolio/trades',
+  '/budgets',
+  '/auth/status',
+]);
+
+const CACHE_TTL_MS = 30_000;
+
+/** Completed-GET cache keyed by path; entries expire after CACHE_TTL_MS. */
+const completedCache = new Map<string, { value: unknown; expiresAt: number }>();
+/** In-flight GET promises keyed by path: concurrent identical GETs share one fetch. */
+const inFlight = new Map<string, Promise<unknown>>();
+/** Bumped by every mutation so a GET that resolves after a mutation never
+ * writes stale data into the completed cache. */
+let cacheGeneration = 0;
+
+async function doFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     headers: { 'Content-Type': 'application/json' },
     ...options,
@@ -141,6 +166,51 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   }
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
+}
+
+/** GET dedup + short cache (optimize batch): concurrent identical GETs share
+ * one promise; completed stable reads are served from the cache within the
+ * TTL. Any mutation clears the completed cache so the next read re-fetches.
+ * Error behavior and response shapes are unchanged. */
+async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const method = (options.method ?? 'GET').toUpperCase();
+
+  // Every mutation invalidates completed reads: the tree after a category
+  // write, budgets after PUT, the portfolio after a trade/refresh, etc.
+  if (method !== 'GET') {
+    cacheGeneration += 1;
+    completedCache.clear();
+  }
+
+  if (method === 'GET') {
+    const hit = completedCache.get(path);
+    if (hit !== undefined && hit.expiresAt > Date.now()) return hit.value as T;
+    const pending = inFlight.get(path);
+    if (pending !== undefined) return pending as Promise<T>;
+  }
+
+  const generationAtStart = cacheGeneration;
+  const promise = doFetch<T>(path, options).finally(() => {
+    inFlight.delete(path);
+  });
+
+  if (method === 'GET') {
+    inFlight.set(path, promise);
+    if (CACHEABLE_PATHS.has(path)) {
+      // Failures are never cached; a mutation racing this GET (generation
+      // changed) discards the result instead of caching stale data.
+      promise.then(
+        (value) => {
+          if (cacheGeneration === generationAtStart) {
+            completedCache.set(path, { value, expiresAt: Date.now() + CACHE_TTL_MS });
+          }
+        },
+        () => undefined,
+      );
+    }
+  }
+
+  return promise;
 }
 
 function qs(params: Record<string, string | number | undefined>): string {
