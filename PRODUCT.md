@@ -28,17 +28,19 @@ Single user on phone and desktop. Daily ritual: log in with the passphrase (or r
 - Edit/delete transactions from the UI with inline confirm; category soft-delete with restore (deleted-categories section)
 - Hierarchical categories, monthly budgets per category + global cap (ARS, manual re-adjust), period summaries (month/quarter/year, per-currency, savings rate)
 - Indicators: 9 cards (5 USD quotes, riesgo país, IPC mensual, reservas, BADLAR) with per-class TTLs, stale/absent degradation, reference-age guard; sources dolarapi, BCRA v4, ArgentinaDatos (riesgo país + IPC), all keyless
-- Investments: buy/sell trade ledger with timeline validation (a sell can never exceed the running balance), positions derived from the ledger (moving-average cost, no manual position editing), realized P&L per ticker, and portfolio/asset price history charts (3m/6m/1y, ARS/USD, CCL-converted with graceful degradation)
+- Investments: buy/sell trade ledger with timeline validation (a sell can never exceed the running balance), positions derived from the ledger (moving-average cost, no manual position editing), realized P&L per ticker, and portfolio/asset price history charts (1m/3m/6m/1y, ARS/USD, CCL-converted with graceful degradation)
 - Single-user auth: passphrase login gate, signed httpOnly session cookie (30-day opt-in "Seguir conectado"), logout from the header; fail-closed in prod (missing or short passphrase refuses to start)
+- Dark mode: warm night palette ("La Billetera de noche"), header toggle, system-preference default with persisted choice, no-flash boot; DESIGN.md carries the night tokens
+- Transaction table: client-side sorting by ARS equivalent at the captured entry rate (asc/desc) with an accessible "Restablecer orden" reset to chronological order
 - es-AR amounts: dot = thousands, comma = decimal (parseEsArAmount); money via Intl es-AR
 - Tabs stay mounted (state preserved); responsive ≤640px; a11y: aria-labels, role=alert, :focus-visible, contrast AA (--muted-text #595959)
-- 503 tests green; backend API stays English, UI Spanish; auth: single-user passphrase gate (env-driven, httpOnly cookie session, fail-closed in production)
+- 538 tests green; backend API stays English, UI Spanish; auth: single-user passphrase gate (env-driven, httpOnly cookie session, fail-closed in production)
 
 ## Brand Commitments
 
 - Name: "Finanzas Personales" (keep as-is)
 - UI language: Spanish (es-AR), neutral register (no voseo in UI copy)
-- Everything else visual is open (redesign in progress — old navy/white look is anti-reference, not authority)
+- Visual world: "La Billetera" (warm paper + one green) is CONFIRMED by the owner — an "El Legajo" archive-world replacement was explored and rejected (2026-08, PR #108 closed unmerged); do not re-propose wholesale replacement. Navy/white generic dashboard remains the anti-reference.
 
 ## Evidence on Hand
 

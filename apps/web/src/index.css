@@ -710,10 +710,6 @@ ul.tree .tree-row input {
   fill: var(--muted-text);
 }
 
-.recharts-cartesian-axis-line {
-  stroke: var(--hairline);
-}
-
 /* Tabular es-AR tooltip on the paper card (PC-5). */
 .chart-tooltip {
   background: var(--card);
