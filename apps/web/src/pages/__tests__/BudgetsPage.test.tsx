@@ -112,6 +112,38 @@ describe('BudgetsPage', () => {
     expect(putBudgets).not.toHaveBeenCalled();
   });
 
+  it('prefills saved budget caps into the inputs after load (#105)', async () => {
+    vi.spyOn(api, 'getCategoryTree').mockResolvedValue(categories);
+    vi.spyOn(api, 'getBudgets').mockResolvedValue({ 1: 50000 });
+    vi.spyOn(api, 'putBudgets').mockResolvedValue({});
+    vi.spyOn(api, 'getBudgetStatus').mockResolvedValue(status);
+
+    render(<BudgetsPage />);
+
+    // Minor units (50000) render as the plain string '500' in the input.
+    expect(await screen.findByTestId('cap-1')).toHaveValue('500');
+  });
+
+  it('includes untouched saved caps in the PUT map on save (#105)', async () => {
+    vi.spyOn(api, 'getCategoryTree').mockResolvedValue(categories);
+    vi.spyOn(api, 'getBudgets').mockResolvedValue({ 1: 50000, 2: 20000 });
+    const putBudgets = vi.spyOn(api, 'putBudgets').mockResolvedValue({});
+    vi.spyOn(api, 'getBudgetStatus').mockResolvedValue(status);
+
+    const user = userEvent.setup();
+    render(<BudgetsPage />);
+    await screen.findByTestId('cap-1');
+    expect(screen.getByTestId('cap-1')).toHaveValue('500');
+
+    // Edit ONLY cap-1; the untouched cap-2 saved value must be sent too,
+    // because PUT /budgets replaces the whole map (BM-3).
+    await user.clear(screen.getByTestId('cap-1'));
+    await user.type(screen.getByTestId('cap-1'), '400');
+    await user.click(screen.getByTestId('budget-save'));
+
+    expect(putBudgets).toHaveBeenCalledWith({ 1: 40000, 2: 20000 });
+  });
+
   it('renders the over-budget status with formatted amounts and badges (BM-4)', async () => {
     vi.spyOn(api, 'getCategoryTree').mockResolvedValue(categories);
     vi.spyOn(api, 'getBudgets').mockResolvedValue({ 1: 100000 });

@@ -16,17 +16,30 @@ function formatMinor(minor: number): string {
   return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(minor / 100);
 }
 
+/** Maps category ids to their saved cap as a plain string ('500' = 50000 minor units), '' when unbudgeted. */
+function buildCaps(categories: Array<{ id: number }>, initialCaps: Record<string, number>): Record<string, string> {
+  return Object.fromEntries(categories.map((c) => {
+    const minor = initialCaps[String(c.id)];
+    return [String(c.id), minor ? String(minor / 100) : ''];
+  }));
+}
+
 /** Per-category monthly caps editor; saving PUTs the whole map in minor units (BM-3). */
 export default function BudgetEditor({ categories, initialCaps, onSave, loading = false }: BudgetEditorProps): JSX.Element {
-  const [caps, setCaps] = useState<Record<string, string>>(() =>
-    Object.fromEntries(categories.map((c) => {
-      const minor = initialCaps[String(c.id)];
-      return [String(c.id), minor ? String(minor / 100) : ''];
-    })),
-  );
+  const [caps, setCaps] = useState<Record<string, string>>(buildCaps(categories, initialCaps));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+
+  // The app mounts every tab at boot (state-preservation pattern), so this
+  // component's first render happens before any fetch lands: re-seed caps when
+  // the real categories/budgets arrive, and after each save's background
+  // reload. The only refetches of these props happen at boot and after save,
+  // so user typing is never clobbered mid-edit.
+  useEffect(() => {
+    if (loading) return;
+    setCaps(buildCaps(categories, initialCaps));
+  }, [loading, categories, initialCaps]);
 
   // Transient success message: clears ~2s after it appears (and on unmount).
   useEffect(() => {
