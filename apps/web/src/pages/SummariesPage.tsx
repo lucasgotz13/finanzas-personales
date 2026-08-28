@@ -5,10 +5,10 @@ import { useApi } from '../hooks/useApi';
 import SummaryView from '../components/SummaryView';
 
 /** Summaries page: month/quarter/year period picker (PS-1..5, IT-3). */
-export default function SummariesPage(): JSX.Element {
+export default function SummariesPage({ active = true }: { active?: boolean }): JSX.Element {
   const [period, setPeriod] = useState<'month' | 'quarter' | 'year'>('month');
   const [date, setDate] = useState(arDateString(new Date()));
-  const summary = useApi(() => api.getSummary(period, date), [period, date]);
+  const summary = useApi(() => api.getSummary(period, date), [period, date], active);
 
   return (
     <section className="card">

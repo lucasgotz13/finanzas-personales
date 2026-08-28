@@ -11,17 +11,19 @@ function message(err: unknown): string {
 }
 
 /** Read-only Argentina indicators tab: cache-first GET + auto and manual refresh (EI-6). */
-export default function IndicatorsPage(): JSX.Element {
+export default function IndicatorsPage({ active = true }: { active?: boolean }): JSX.Element {
   const [tick, setTick] = useState(0);
-  const indicators = useApi(() => api.getIndicators(), [tick]);
+  const indicators = useApi(() => api.getIndicators(), [tick], active);
   const [refreshing, setRefreshing] = useState(false);
   const [refreshError, setRefreshError] = useState<string | null>(null);
 
-  // Auto-refresh every 5 min while the document is visible. Panels stay
-  // mounted (P1), so the interval pauses in hidden tabs and fires once on
-  // visibilitychange back to visible. The refresh is never forced: the
-  // server TTL gates the fetch, then the views reload (EI-6).
+  // Auto-refresh every 5 min while the document is visible AND the tab is
+  // active. Panels stay mounted (P1), so the interval pauses in hidden tabs
+  // and on tab switches, and fires once on visibilitychange back to visible.
+  // The refresh is never forced: the server TTL gates the fetch, then the
+  // views reload (EI-6).
   useEffect(() => {
+    if (!active) return;
     let intervalId: ReturnType<typeof setInterval> | undefined;
     const tick = (): void => {
       void (async () => {
@@ -58,8 +60,7 @@ export default function IndicatorsPage(): JSX.Element {
       stop();
       document.removeEventListener('visibilitychange', onVisibilityChange);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [active]);
 
   const manualRefresh = async (): Promise<void> => {
     setRefreshing(true);

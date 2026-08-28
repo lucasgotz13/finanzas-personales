@@ -1,4 +1,4 @@
-import { Fragment, lazy, Suspense, useEffect, useState } from 'react';
+import { Fragment, lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { api, translateApiMessage } from '../api';
 import TradeForm from '../components/TradeForm';
 import { useApi } from '../hooks/useApi';
@@ -57,11 +57,14 @@ function groupTrades(trades: Trade[]): TradeGroup[] {
 
 /** Portfolio tab (PI-6, TH-6): money-first summary with realized P&L, trade
  * ledger grouped per asset with inline confirms, read-only derived positions
- * and a visibility-gated 5-min auto-refresh. */
-export default function InvestmentsPage(): JSX.Element {
+ * and a visibility-gated 5-min auto-refresh. `active` gates every fetch and
+ * effect on the tab being open; `activated` latches on the first activation
+ * so the lazy chart chunks and their state persist across tab switches. */
+export default function InvestmentsPage({ active = true }: { active?: boolean }): JSX.Element {
   const [tick, setTick] = useState(0);
-  const portfolio = useApi(() => api.getPortfolio(), [tick]);
-  const trades = useApi(() => api.listTrades(), [tick]);
+  const portfolio = useApi(() => api.getPortfolio(), [tick], active);
+  const trades = useApi(() => api.listTrades(), [tick], active);
+  const [activated, setActivated] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [refreshError, setRefreshError] = useState<string | null>(null);
   const [editing, setEditing] = useState<Trade | null>(null);
@@ -69,10 +72,17 @@ export default function InvestmentsPage(): JSX.Element {
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
-  // PC-4 warm-up: on tab open and every visibilitychange→visible, force one
-  // fetch per range and currency so renders stay cache-first. Bounded by the
-  // visibility gating — no timers, no repeated fetches while the tab stays open.
+  // Latch: once activated, the charts stay mounted across tab switches.
   useEffect(() => {
+    if (active) setActivated(true);
+  }, [active]);
+
+  // PC-4 warm-up: on activation and every visibilitychange→visible, force one
+  // fetch per range and currency so renders stay cache-first. Bounded by the
+  // activation + visibility gating — no timers, no repeated fetches while the
+  // tab stays open.
+  useEffect(() => {
+    if (!active) return;
     const warmUp = (): void => {
       for (const range of WARM_UP_RANGES) {
         for (const currency of WARM_UP_CURRENCIES) {
@@ -86,12 +96,13 @@ export default function InvestmentsPage(): JSX.Element {
     if (!document.hidden) warmUp();
     document.addEventListener('visibilitychange', onVisibilityChange);
     return () => document.removeEventListener('visibilitychange', onVisibilityChange);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [active]);
 
-  // Auto-refresh every 5 min while the document is visible (PI-5): pauses in
-  // hidden tabs and catches up once on visibilitychange back to visible.
+  // Auto-refresh every 5 min while the document is visible and the tab is
+  // active (PI-5): pauses in hidden tabs and on tab switches, catches up once
+  // on visibilitychange back to visible.
   useEffect(() => {
+    if (!active) return;
     let intervalId: ReturnType<typeof setInterval> | undefined;
     const tickRefresh = (): void => {
       void api
@@ -122,8 +133,7 @@ export default function InvestmentsPage(): JSX.Element {
       stop();
       document.removeEventListener('visibilitychange', onVisibilityChange);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [active]);
 
   const manualRefresh = async (): Promise<void> => {
     setRefreshing(true);
@@ -152,7 +162,7 @@ export default function InvestmentsPage(): JSX.Element {
 
   const totals = portfolio.data?.totals ?? null;
   const positions: PositionView[] = portfolio.data?.positions ?? [];
-  const groups = groupTrades(trades.data ?? []);
+  const groups = useMemo(() => groupTrades(trades.data ?? []), [trades.data]);
   const startEdit = (trade: Trade): void => {
     setConfirmingId(null);
     setDeleteError(null);
@@ -179,9 +189,11 @@ export default function InvestmentsPage(): JSX.Element {
           </button>
         </div>
       )}
-      <Suspense fallback={<div className="empty">Cargando…</div>}>
-        <PortfolioChart />
-      </Suspense>
+      {activated ? (
+        <Suspense fallback={<div className="empty">Cargando…</div>}>
+          <PortfolioChart />
+        </Suspense>
+      ) : null}
       {portfolio.loading && portfolio.data === null ? (
         <div className="empty">Cargando…</div>
       ) : (

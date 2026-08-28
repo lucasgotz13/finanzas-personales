@@ -14,21 +14,22 @@ type DirectionFilter = 'all' | 'expense' | 'income';
  * (ET-1..6, IT-1/2). Edits/deletes are applied optimistically to the local
  * list; the hook data syncs on background reloads without flashing "Loading…".
  */
-export default function TransactionsPage(): JSX.Element {
+export default function TransactionsPage({ active = true }: { active?: boolean }): JSX.Element {
   const [month, setMonth] = useState(arDateString(new Date()).slice(0, 7));
   const [direction, setDirection] = useState<DirectionFilter>('all');
   const [editing, setEditing] = useState<ApiTransaction | null>(null);
   const [confirmingId, setConfirmingId] = useState<number | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  const categories = useApi(() => api.getCategoryTree(), []);
+  const categories = useApi(() => api.getCategoryTree(), [], active);
   const transactions = useApi(
     () => api.listTransactions({ month, direction: direction === 'all' ? undefined : direction }),
     [month, direction],
+    active,
   );
   // Month totals come from the full month (no direction filter), so the money
   // card stays honest when the list below is filtered to a single direction.
-  const monthTotals = useApi(() => api.listTransactions({ month }), [month]);
+  const monthTotals = useApi(() => api.listTransactions({ month }), [month], active);
 
   // Net flow per currency (income − expense), the honest "Total del mes".
   const totals = useMemo(() => {

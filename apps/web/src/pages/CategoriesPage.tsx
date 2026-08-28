@@ -5,9 +5,9 @@ import CategoryTree from '../components/CategoryTree';
 import type { CategoryNode } from '../types';
 
 /** Category management page: add (nested), rename, soft-delete and restore (CM-1..5). */
-export default function CategoriesPage(): JSX.Element {
-  const categories = useApi(() => api.getCategoryTree(), []);
-  const deleted = useApi(() => api.getDeletedCategories(), []);
+export default function CategoriesPage({ active = true }: { active?: boolean }): JSX.Element {
+  const categories = useApi(() => api.getCategoryTree(), [], active);
+  const deleted = useApi(() => api.getDeletedCategories(), [], active);
   const [name, setName] = useState('');
   const [parentId, setParentId] = useState('');
   const [formError, setFormError] = useState<string | null>(null);

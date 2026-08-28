@@ -110,6 +110,35 @@ describe('App tab switching', () => {
     expect(desktopButton?.classList.contains('active')).toBe(true);
     expect(clickedIndicator.classList.contains('active')).toBe(true);
   });
+
+  it('defers budgets/indicators/portfolio fetches until their tab is opened (optimize batch)', async () => {
+    mockAllApis();
+    vi.spyOn(api, 'getPortfolioHistory').mockResolvedValue({ points: [], currency: 'ARS', range: '3m', status: 'fresh' });
+    const user = userEvent.setup();
+    render(<App />);
+    await screen.findByTestId('note');
+
+    // Boot fetches only the active transactions tab: no budgets, no
+    // indicators, no portfolio/history until the user opens those tabs.
+    expect(api.getBudgets).not.toHaveBeenCalled();
+    expect(api.getBudgetStatus).not.toHaveBeenCalled();
+    expect(api.getIndicators).not.toHaveBeenCalled();
+    expect(api.getPortfolio).not.toHaveBeenCalled();
+    expect(api.listTrades).not.toHaveBeenCalled();
+    expect(api.getPortfolioHistory).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('tab', { name: 'Presupuestos' }));
+    await vi.waitFor(() => expect(api.getBudgets).toHaveBeenCalled());
+    expect(api.getBudgetStatus).toHaveBeenCalled();
+
+    await user.click(screen.getByRole('tab', { name: 'Indicadores' }));
+    await vi.waitFor(() => expect(api.getIndicators).toHaveBeenCalled());
+
+    await user.click(screen.getByRole('tab', { name: 'Inversiones' }));
+    await vi.waitFor(() => expect(api.getPortfolio).toHaveBeenCalled());
+    expect(api.listTrades).toHaveBeenCalled();
+    await vi.waitFor(() => expect(api.getPortfolioHistory).toHaveBeenCalled());
+  });
 });
 
 describe('App auth gate (WU2)', () => {

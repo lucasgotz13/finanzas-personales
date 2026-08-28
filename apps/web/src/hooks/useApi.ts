@@ -11,8 +11,14 @@ export interface ApiState<T> {
 /**
  * Plain-fetch hook (D5: no state library). Re-fetches when `deps` change;
  * `reload` re-runs the fetcher manually after mutations.
+ *
+ * `enabled` gates the fetch: while false the hook is dormant — mount and
+ * `deps` changes never call the fetcher. Flipping it true triggers the same
+ * load path as a mount. `reload()` while disabled is a no-op (it neither
+ * fetches nor queues a deferred reload): a dormant page cannot mutate, so
+ * there is nothing to catch up on; the next activation fetches fresh anyway.
  */
-export function useApi<T>(fetcher: () => Promise<T>, deps: unknown[]): ApiState<T> {
+export function useApi<T>(fetcher: () => Promise<T>, deps: unknown[], enabled = true): ApiState<T> {
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -30,8 +36,9 @@ export function useApi<T>(fetcher: () => Promise<T>, deps: unknown[]): ApiState<
   }, [...deps, tick]);
 
   useEffect(() => {
+    if (!enabled) return;
     load();
-  }, [load]);
+  }, [load, enabled]);
 
-  return { data, loading, error, reload: () => setTick((t) => t + 1) };
+  return { data, loading, error, reload: () => { if (enabled) setTick((t) => t + 1); } };
 }
