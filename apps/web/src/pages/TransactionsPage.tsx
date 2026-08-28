@@ -1,13 +1,25 @@
 import { arDateString } from '@finanzas/domain';
 import { useEffect, useMemo, useState } from 'react';
 import { api, categoryNameMap, translateApiMessage } from '../api';
-import { formatMonth } from '../dates';
+import { formatMonth, formatRefMonth } from '../dates';
 import { useApi } from '../hooks/useApi';
 import TransactionForm from '../components/TransactionForm';
 import TransactionList from '../components/TransactionList';
 import type { ApiTransaction } from '../types';
 
 type DirectionFilter = 'all' | 'expense' | 'income';
+
+/** The last 4 months including the given one (oldest → newest), as 'YYYY-MM' keys. */
+function recentMonths(current: string): string[] {
+  const [year, month] = current.split('-').map(Number);
+  if (!Number.isInteger(year) || !Number.isInteger(month) || month < 1 || month > 12) return [current];
+  const months: string[] = [];
+  for (let offset = -3; offset <= 0; offset++) {
+    const date = new Date(Date.UTC(year, month - 1 + offset, 1));
+    months.push(`${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`);
+  }
+  return months;
+}
 
 /**
  * Transactions page: period filters, manual entry form and the period list
@@ -98,7 +110,10 @@ export default function TransactionsPage(): JSX.Element {
   return (
     <>
       <section className="card money-card" data-testid="month-total">
-        <h2>Total del mes</h2>
+        <header className="membrete">
+          <h2>Total del mes</h2>
+          <span className="membrete-period">{formatMonth(month)}</span>
+        </header>
         {totals.length === 0 ? (
           <span className="total-empty">—</span>
         ) : (
@@ -114,7 +129,7 @@ export default function TransactionsPage(): JSX.Element {
           </div>
         )}
       </section>
-      <section className="card">
+      <section className="card card--sheet">
         <h2>{editing ? 'Editar transacción' : 'Registrar transacción'}</h2>
         <TransactionForm
           key={editing?.id ?? 'create'}
@@ -125,10 +140,23 @@ export default function TransactionsPage(): JSX.Element {
           onCancel={() => setEditing(null)}
         />
       </section>
-      <section className="card">
+      <section className="card card--sheet">
         <h2>Transacciones — {formatMonth(month)}</h2>
         <div className="filters">
           <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} aria-label="Mes" />
+          <nav className="month-tabs" aria-label="Meses recientes">
+            {recentMonths(month).map((m) => (
+              <button
+                key={m}
+                type="button"
+                className={m === month ? 'active' : ''}
+                aria-pressed={m === month}
+                onClick={() => setMonth(m)}
+              >
+                {formatRefMonth(m)}
+              </button>
+            ))}
+          </nav>
           <nav className="tabs">
             {(['all', 'expense', 'income'] as const).map((d) => (
               <button

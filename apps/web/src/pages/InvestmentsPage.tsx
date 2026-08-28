@@ -212,7 +212,7 @@ export default function InvestmentsPage(): JSX.Element {
               </div>
             </div>
           </section>
-          <section className="card">
+          <section className="card card--sheet">
             <h2>{editing ? 'Editar operación' : 'Registrar operación'}</h2>
             <TradeForm
               key={editing?.id ?? 'create'}
@@ -265,6 +265,12 @@ export default function InvestmentsPage(): JSX.Element {
                               <button type="button" className="link muted" onClick={() => startEdit(trade)}>Editar</button>
                               {confirmingId === trade.id ? (
                                 <span className="confirm-prompt" role="alert">
+                                  <span className="confirm-slip" aria-hidden="true">
+                                    <span className="confirm-slip-field">{group.ticker}</span>
+                                    <span className="confirm-slip-field">{trade.type === 'buy' ? 'Compra' : 'Venta'}</span>
+                                    <span className="confirm-slip-field">{trade.quantity} u</span>
+                                    <span className="confirm-slip-field">{trade.date}</span>
+                                  </span>
                                   <span className="confirm-question">¿Borrar la operación?</span>
                                   <button type="button" className="danger" onClick={() => void confirmDelete()}>Borrar</button>
                                   <button type="button" className="link muted" onClick={() => setConfirmingId(null)}>Cancelar</button>

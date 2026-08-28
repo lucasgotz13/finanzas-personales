@@ -142,9 +142,16 @@ export default function TransactionList({
           </tr>
         </thead>
         <tbody>
-          {visibleTransactions.map((tx) => (
+          {visibleTransactions.map((tx, index) => (
             <tr key={tx.id}>
-              <td>{formatDate(tx.date)}</td>
+              <td>
+                {/* The folio number: every sheet in the legajo is numbered.
+                    Ordinal decoration only, so it stays out of the a11y tree. */}
+                <span className="folio" aria-hidden="true">
+                  {String(index + 1).padStart(2, '0')}
+                </span>
+                <span className="foja-date">{formatDate(tx.date)}</span>
+              </td>
               <td>{tx.note || '—'}</td>
               <td>{categoryNames.get(tx.categoryId) ?? `#${tx.categoryId}`}</td>
               <td className="tx-direction">{tx.direction === 'income' ? 'Ingreso' : 'Gasto'}</td>
@@ -161,6 +168,12 @@ export default function TransactionList({
                 </button>
                 {confirmingId === tx.id ? (
                   <span className="confirm-prompt" role="alert">
+                    <span className="confirm-slip" aria-hidden="true">
+                      <span className="confirm-slip-field">Foja {String(index + 1).padStart(2, '0')}</span>
+                      <span className="confirm-slip-field">{formatDate(tx.date)}</span>
+                      <span className="confirm-slip-field">{tx.note || '—'}</span>
+                      <span className="confirm-slip-field">{formatAmount(tx)}</span>
+                    </span>
                     <span className="confirm-question">¿Borrar la transacción?</span>
                     <span className="confirm-note">Se eliminará de presupuestos y resúmenes.</span>
                     <button

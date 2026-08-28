@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Finanzas Personales: registre sus gastos e ingresos, controle presupuestos y revise resúmenes por período." />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <meta name="theme-color" content="#f7f5f0" />
+    <meta name="theme-color" content="#cbb490" />
     <script>
       // Theme before first paint: the stored choice wins, else the system
       // preference. Runs synchronously in head so there is no wrong-theme flash.
@@ -14,7 +14,7 @@
           var stored = localStorage.getItem('finanzas-theme');
           var dark = stored ? stored === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
           document.documentElement.dataset.theme = dark ? 'dark' : 'light';
-          document.querySelector('meta[name="theme-color"]').setAttribute('content', dark ? '#1a1815' : '#f7f5f0');
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', dark ? '#171208' : '#cbb490');
         } catch (err) {
           // Sandboxed storage or no matchMedia: the light theme applies.
         }
@@ -24,12 +24,13 @@
   </head>
   <body>
     <!--
-      THESIS: La billetera — the Argentine fintech screen language for the owner's own money: the money is always the loudest thing, one saturated action color exists only where something can be done, state lives in chips. Refuses the generic dashboard table sea.
-      OWN-WORLD: warm neutral ground and white cards, near-black warm ink with big tabular figures for every amount, ONE saturated green reserved for actionable elements, semantic red/amber chips for status; bottom bar at thumb reach on phones, calm light ground for day and night scanning.
-      STORY: the owner records an expense in seconds, sees the month total and the FX-at-entry beside the row, watches the ARS conversion live while typing a USD amount, and trusts the badges that say when data is not fresh.
-      FIRST VIEWPORT: Transacciones — month total per currency up top, entry card below, list with rate column; the action color on Guardar only.
-      FORM: candidate 6 of the grounded list — seed 196064b8.
-      FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md
+      DIRECTION CONTRACT — El Legajo (seed 5fecdba8, code-led)
+      THESIS: your money as a well-kept file — each month a folder, each expense a numbered sheet, each state an ink stamp; refuses the generic dashboard and the soft-boxed ledger alike.
+      OWN-WORLD: manila and kraft surfaces, brown-black ink, stamp red, receipt white; typewriter folio numbering; tables carried by alignment with hairlines only where meaning demands; night = a single warm lamp over the open folder, everything else recedes.
+      STORY: the owner opens the drawer, pulls the month's folder, reads the honest total on the folder header, files a new sheet in seconds, and stamps states without dead ends.
+      FIRST VIEWPORT (mobile): month folder header on top; the month total stamped large; the new-entry sheet always at hand; the month's fojas aligned below; closed months' tabs and the drawer edge above the bottom nav.
+      FORM: grounded candidate 7 of the resonance list; concept-seed 5fecdba8; code-led.
+      FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance.
     -->
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>

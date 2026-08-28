@@ -45,6 +45,7 @@ export default function LoginGate({ onSuccess }: LoginGateProps): JSX.Element {
   return (
     <main className="login-gate">
       <div className="card">
+        <span className="folder-label">Finanzas Personales</span>
         <h1>Ingresar</h1>
         <p className="login-subtitle">Acceso con contraseña</p>
         <form className="login-form" onSubmit={handleSubmit} noValidate>

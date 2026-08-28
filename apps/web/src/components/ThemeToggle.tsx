@@ -1,8 +1,9 @@
 import { useState } from 'react';
 
 const STORAGE_KEY = 'finanzas-theme';
-const LIGHT_THEME_COLOR = '#f7f5f0';
-const DARK_THEME_COLOR = '#1a1815';
+// El Legajo palette: kraft desk in the working light, desk in shadow at night.
+const LIGHT_THEME_COLOR = '#cbb490';
+const DARK_THEME_COLOR = '#171208';
 
 function applyTheme(dark: boolean): void {
   document.documentElement.dataset.theme = dark ? 'dark' : 'light';

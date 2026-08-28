@@ -96,7 +96,7 @@ describe('App tab switching', () => {
     const bottomBar = document.querySelector('.bottom-bar');
     expect(bottomBar).not.toBeNull();
 
-    const indicatorsButton = Array.from(bottomBar!.querySelectorAll('button')).find((b) => b.textContent === 'Indicadores');
+    const indicatorsButton = Array.from(bottomBar!.querySelectorAll('button')).find((b) => b.textContent === 'INDIC.');
     expect(indicatorsButton).toBeDefined();
     fireEvent.click(indicatorsButton!);
     const clickedIndicator = indicatorsButton!;

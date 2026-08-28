@@ -19,7 +19,7 @@ export default function BudgetsPage(): JSX.Element {
 
   return (
     <>
-      <section className="card">
+      <section className="card card--sheet">
         <h2>Topes mensuales (ARS)</h2>
         {categories.error && (
           <div className="error-box" role="alert">

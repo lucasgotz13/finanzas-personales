@@ -24,7 +24,7 @@ describe('ThemeToggle', () => {
   it('flips the theme on click: dataset, persistence, aria-pressed and the theme-color meta', () => {
     const meta = document.createElement('meta');
     meta.name = 'theme-color';
-    meta.content = '#f7f5f0';
+    meta.content = '#cbb490';
     document.head.appendChild(meta);
 
     render(<ThemeToggle />);
@@ -36,7 +36,7 @@ describe('ThemeToggle', () => {
     expect(localStorage.getItem('finanzas-theme')).toBe('dark');
     expect(button).toHaveAttribute('aria-pressed', 'true');
     expect(button).toHaveAccessibleName('Modo claro');
-    expect(meta.getAttribute('content')).toBe('#1a1815');
+    expect(meta.getAttribute('content')).toBe('#171208');
 
     fireEvent.click(button);
 
@@ -44,6 +44,6 @@ describe('ThemeToggle', () => {
     expect(localStorage.getItem('finanzas-theme')).toBe('light');
     expect(button).toHaveAttribute('aria-pressed', 'false');
     expect(button).toHaveAccessibleName('Modo oscuro');
-    expect(meta.getAttribute('content')).toBe('#f7f5f0');
+    expect(meta.getAttribute('content')).toBe('#cbb490');
   });
 });

@@ -11,13 +11,13 @@ import TransactionsPage from './pages/TransactionsPage';
 
 export type Tab = 'transactions' | 'categories' | 'budgets' | 'summaries' | 'indicators' | 'inversiones';
 
-const TABS: Array<{ id: Tab; label: string }> = [
-  { id: 'transactions', label: 'Transacciones' },
-  { id: 'categories', label: 'Categorías' },
-  { id: 'budgets', label: 'Presupuestos' },
-  { id: 'summaries', label: 'Resúmenes' },
-  { id: 'indicators', label: 'Indicadores' },
-  { id: 'inversiones', label: 'Inversiones' },
+const TABS: Array<{ id: Tab; label: string; short: string }> = [
+  { id: 'transactions', label: 'Transacciones', short: 'TRANS.' },
+  { id: 'categories', label: 'Categorías', short: 'CATEG.' },
+  { id: 'budgets', label: 'Presupuestos', short: 'PRESUP.' },
+  { id: 'summaries', label: 'Resúmenes', short: 'RESÚM.' },
+  { id: 'indicators', label: 'Indicadores', short: 'INDIC.' },
+  { id: 'inversiones', label: 'Inversiones', short: 'INVERS.' },
 ];
 
 export default function App(): JSX.Element {
@@ -105,9 +105,20 @@ export default function App(): JSX.Element {
         </div>
       </main>
       {/* Mobile-first navigation: thumb-reachable, same buttons and state as
-          the header tabs (CSS swaps them at the ≤640px breakpoint). */}
+          the header tabs (CSS swaps them at the ≤640px breakpoint). Short
+          labels: six full names overflow the 390px drawer edge. */}
       <nav className="bottom-bar mobile-only" role="tablist" aria-label="Secciones">
-        {tabButtons}
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            role="tab"
+            aria-selected={tab === t.id}
+            className={tab === t.id ? 'active' : ''}
+            onClick={() => setTab(t.id)}
+          >
+            {t.short}
+          </button>
+        ))}
       </nav>
     </>
   );

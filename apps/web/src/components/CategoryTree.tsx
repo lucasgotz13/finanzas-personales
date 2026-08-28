@@ -95,6 +95,14 @@ export default function CategoryTree({
           )}
           {confirmingId === node.id ? (
             <span className="confirm-prompt" role="alert">
+              <span className="confirm-slip" aria-hidden="true">
+                <span className="confirm-slip-field">{node.name}</span>
+                {node.children.length > 0 && (
+                  <span className="confirm-slip-field">
+                    {node.children.length} {node.children.length === 1 ? 'subcategoría' : 'subcategorías'}
+                  </span>
+                )}
+              </span>
               <span className="confirm-question">¿Borrar la categoría?</span>
               <span className="confirm-note">Se puede restaurar más tarde.</span>
               <button

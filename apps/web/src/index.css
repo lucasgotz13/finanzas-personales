@@ -1,57 +1,123 @@
+/* ============================================================
+   EL LEGAJO — the Argentine fiscal archive, well kept.
+   Every month a folder, every expense a numbered sheet (foja),
+   every state an ink stamp. Light is the working light over the
+   desk (kraft + manila + receipt paper); dark is one warm lamp
+   over the open folder, everything else receding into shadow.
+   ============================================================ */
+
+/* --- The typewriter voice: self-hosted Courier Prime --- */
+@font-face {
+  font-family: 'Courier Prime';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/courier-prime-latin-400.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Courier Prime';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/courier-prime-latin-ext-400.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF,
+    U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'Courier Prime';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/courier-prime-latin-700.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Courier Prime';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/courier-prime-latin-ext-700.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF,
+    U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
 :root {
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   color: var(--ink);
   background: var(--ground);
   color-scheme: light;
-  /* La billetera tokens: warm paper ground, warm near-black ink, ONE action
-     green reserved for actionable elements, semantic chips for state. */
-  --ink: #1a1815;
-  --muted-text: #595959;
-  --ground: #f7f5f0;
-  --card: #ffffff;
-  --hairline: #e8e4dc;
-  --shadow: 0 1px 3px rgba(26, 24, 21, 0.06);
-  --action: #0e7a3d;
-  --action-hover: #0b6634;
-  /* Action green for text/focus; flips lighter in dark so links stay AA. */
-  --action-link: #0e7a3d;
-  --action-link-hover: #0b6634;
-  --danger: #b3261e;
-  --danger-bg: #fdecea;
-  --error-border: #f5c6c0;
-  --warn: #b45309;
-  --warn-bg: #fff4e5;
-  /* OK chip: ink on a light gray-green tint — state, never the action green. */
+
+  /* El Legajo, working light: kraft desk, manila folder, receipt paper,
+     brown-black ink, stamp red. --muted-text is tuned darker than the seed
+     hex (#6b5d48) to hold the 4.5:1 body floor on both card and ground. */
+  --ground: #cbb490;
+  --card: #ecd9ac;
+  --sheet: #faf6ec;
+  --ink: #2b241a;
+  --muted-text: #514533;
+  --hairline: #b39a6b;
+  --stamp: #a63d2f;
+  --receipt: #faf6ec;
+
+  /* The stamped impression: ink-filled button, receipt-white text. */
+  --ink-btn-bg: #2b241a;
+  --ink-btn-bg-hover: #443826;
+  --ink-btn-text: #faf6ec;
+
+  --danger: #a63d2f;
+  --danger-bg: #f0d9cb;
+  --error-border: #cf8d7c;
+  --warn: #754c10;
+  --warn-bg: #e6cfa0;
   --ok: var(--ink);
-  --ok-bg: #eef2ee;
-  --disabled-bg: #d9d5cc;
+  --ok-bg: #e2d2a4;
+  --disabled-bg: #d9c49a;
+
+  --selection-bg: #a63d2f;
+  --selection-text: #faf6ec;
+  --shadow: 0 1px 2px rgba(43, 36, 26, 0.14);
+
+  /* Voices: the typewriter carries the printed stationery, the system
+     stack carries the workhorse UI. */
+  --font-type: 'Courier Prime', 'Courier New', monospace;
+  --font-ui: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 }
 
-/* La billetera de noche: the same warm world after dark — warm paper becomes
-   warm near-black, white cards become warm charcoal, ink flips to warm light.
-   The navy/blue-dark dashboard look stays the declared anti-reference. */
+/* El Legajo after dark: the desk in shadow, the folder under one warm lamp.
+   The radial glow over the open content is world lighting, not decoration. */
 html[data-theme='dark'] {
   color-scheme: dark;
-  --ink: #f2ede2;
-  --muted-text: #b3ac9d;
-  --ground: #1a1815;
-  --card: #2e2b27;
-  --hairline: #3a352b;
-  --shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
-  --action: #0e7a3d;
-  --action-hover: #0b6634;
-  /* Filled buttons keep the saturated green; text/focus takes the lighter
-     green so action text keeps AA contrast on the dark card. */
-  --action-link: #58c46f;
-  --action-link-hover: #7ed68f;
-  --danger: #e57373;
-  --danger-bg: #3a2320;
-  --error-border: #6e3b35;
-  --warn: #e0a458;
-  --warn-bg: #3a2f1e;
+  --ground: #171208;
+  --card: #241c11;
+  --sheet: #2e2415;
+  --ink: #f0e6d2;
+  --muted-text: #a89877;
+  --hairline: #3f3421;
+  --stamp: #e08570;
+  --receipt: #f0e6d2;
+
+  --ink-btn-bg: #f0e6d2;
+  --ink-btn-bg-hover: #d8cbae;
+  --ink-btn-text: #241c11;
+
+  --danger: #e08570;
+  --danger-bg: #3a221a;
+  --error-border: #6e4437;
+  --warn: #d9a05e;
+  --warn-bg: #3a2d18;
   --ok: var(--ink);
-  --ok-bg: #232b23;
-  --disabled-bg: #3a362e;
+  --ok-bg: #332a18;
+  --disabled-bg: #3a3020;
+
+  --selection-bg: #e08570;
+  --selection-text: #171208;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
 body {
@@ -60,13 +126,88 @@ body {
   color: var(--ink);
 }
 
-/* Keyboard focus indicator (WCAG 2.4.7): action-green outline on any focusable element */
+/* The lamp: one warm radial over the open folder in dark mode. Static world
+   lighting — never gated on reduced-motion, it is not motion. Strong enough
+   to read in the mobile-dark capture: the open folder sits under the lamp,
+   the rest of the desk recedes. */
+html[data-theme='dark'] body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(
+    160% 90% at 50% 0%,
+    rgba(255, 196, 110, 0.16),
+    rgba(255, 196, 110, 0.04) 45%,
+    transparent 75%
+  );
+}
+
+/* The lamp falls on the open folder: cards catch a faint warm light at their
+   top edge in dark mode. Alpha stays low so ink keeps ≥4.5:1 on sheet/card. */
+html[data-theme='dark'] .card {
+  background: linear-gradient(180deg, rgba(255, 196, 110, 0.06), transparent 30%), var(--card);
+}
+
+html[data-theme='dark'] .card--sheet {
+  background: linear-gradient(180deg, rgba(255, 196, 110, 0.05), transparent 30%), var(--sheet);
+}
+
+/* --- Browser surfaces themed from the palette --- */
+::selection {
+  background: var(--selection-bg);
+  color: var(--selection-text);
+}
+
+input,
+textarea {
+  caret-color: var(--ink);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--hairline) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--hairline);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-text);
+}
+
+/* Keyboard focus indicator (WCAG 2.4.7): 2px stamp ring. */
 :focus-visible {
-  outline: 2px solid var(--action-link);
+  outline: 2px solid var(--stamp);
   outline-offset: 2px;
 }
 
-/* The header sits ON the ground: no navy block, ink title, underline tabs. */
+/* Login gate exception: the autofocus lands on the untouched passphrase, so
+   the stamp-red ring reads as an unexplained error. The login form uses the
+   ink focus ring instead; stamp red stays reserved for real errors (the
+   wrong-passphrase error box). */
+form.login-form input:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+button.link {
+  text-underline-offset: 3px;
+}
+
+/* --- Header: the desk edge, no block; the app name is the membrete --- */
 header.app-header {
   display: flex;
   align-items: center;
@@ -77,7 +218,10 @@ header.app-header {
 }
 
 header.app-header h1 {
-  font-size: 1.1rem;
+  font-family: var(--font-type);
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
   margin: 0;
   margin-right: 1rem;
   color: var(--ink);
@@ -88,53 +232,104 @@ header.app-header .logout-button {
   margin-left: auto;
 }
 
-/* Theme toggle: quiet icon button next to the title, muted → ink on hover. */
+/* Theme toggle: a round ink stamp, slightly hand-tilted. */
 button.theme-toggle {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2rem;
-  height: 2rem;
+  width: 2.25rem;
+  height: 2.25rem;
   padding: 0;
-  border: none;
-  border-radius: 8px;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
   background: transparent;
-  color: var(--muted-text);
+  color: var(--ink);
+  transform: rotate(-6deg);
   cursor: pointer;
 }
 
 button.theme-toggle:hover {
-  color: var(--ink);
+  color: var(--stamp);
+  border-color: var(--stamp);
 }
 
+/* --- Folder tabs (header and filters): the tab vocabulary --- */
 nav.tabs {
   display: flex;
   gap: 0.25rem;
 }
 
 nav.tabs button {
-  border: none;
-  border-bottom: 2px solid transparent;
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
   background: transparent;
   color: var(--muted-text);
   padding: 0.5rem 0.9rem;
   cursor: pointer;
-  font-size: 0.95rem;
+  font-family: var(--font-type);
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 nav.tabs button:hover {
   color: var(--ink);
 }
 
+/* Active tab: the pulled folder tab — sheet surface, ink label. */
 nav.tabs button.active {
+  background: var(--card);
+  border-color: var(--hairline);
   color: var(--ink);
   font-weight: 700;
-  border-bottom-color: var(--ink);
 }
 
 /* Desktop header tabs swap with the bottom bar at the ≤640px breakpoint. */
 nav.tabs.desktop-tabs {
   display: flex;
+}
+
+/* --- Month folder tabs (transactions period picker) --- */
+/* Recent months as folder tabs beside the month input; the active month is
+   the pulled tab — taller, sheet surface, ink label. The input stays for
+   arbitrary picks. */
+.month-tabs {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.25rem;
+}
+
+.month-tabs button {
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+  background: transparent;
+  color: var(--muted-text);
+  padding: 0.35rem 0.7rem;
+  cursor: pointer;
+  font-family: var(--font-type);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.month-tabs button:hover {
+  color: var(--ink);
+}
+
+.month-tabs button.active {
+  background: var(--sheet);
+  border-color: var(--hairline);
+  color: var(--ink);
+  font-weight: 700;
+  padding-top: 0.55rem;
+}
+
+/* Compact month input: the tabs carry the first-viewport pick, so the input
+   steps back and stays only for arbitrary months. */
+.filters input[type='month'] {
+  padding: 0.35rem 0.5rem;
 }
 
 main {
@@ -143,6 +338,7 @@ main {
   padding: 0 1rem 1rem;
 }
 
+/* --- Cards: manila folder faces; --card--sheet is the receipt paper --- */
 .card {
   background: var(--card);
   border: 1px solid var(--hairline);
@@ -152,22 +348,39 @@ main {
   box-shadow: var(--shadow);
 }
 
+.card--sheet {
+  background: var(--sheet);
+}
+
+/* More space above every card heading than below it. */
+.card h2,
+.investments-page h2,
+.indicators-page h2 {
+  font-family: var(--font-type);
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  margin: 0 0 0.6rem;
+  color: var(--ink);
+}
+
+/* --- Buttons --- */
+/* Primary: the stamped impression — ink fill, receipt-white text. */
 button.primary {
-  background: var(--action);
-  color: #fff;
+  background: var(--ink-btn-bg);
+  color: var(--ink-btn-text);
   border: none;
-  border-radius: 8px;
+  border-radius: 6px;
   padding: 0.5rem 1rem;
   cursor: pointer;
   font-weight: 600;
 }
 
 button.primary:hover:not(:disabled) {
-  background: var(--action-hover);
+  background: var(--ink-btn-bg-hover);
 }
 
-/* Disabled primary: neutral gray-warm with ink-muted text — the action hue
-   is for actionable buttons only, not a faded green. */
+/* Disabled primary: neutral warm with ink-muted text — no faded ink. */
 button.primary:disabled {
   background: var(--disabled-bg);
   color: var(--muted-text);
@@ -175,23 +388,57 @@ button.primary:disabled {
   cursor: default;
 }
 
+/* Error box: a stamp-red edged receipt sheet. */
 .error-box {
   color: var(--danger);
   background: var(--danger-bg);
-  border: 1px solid var(--error-border);
-  border-radius: 8px;
+  border: 1px solid var(--stamp);
+  border-radius: 6px;
   padding: 0.5rem;
   font-size: 0.85rem;
 }
 
-/* --- Login gate (WU2): centered card on the warm paper --- */
+/* --- Login gate: the closed folder --- */
 main.login-gate {
   max-width: 420px;
   margin: 3rem auto;
   padding: 0 1rem;
 }
 
+main.login-gate .card {
+  position: relative;
+  padding-top: 2.4rem;
+}
+
+/* The folder tab on the closed cover — same geometry as the indicator
+   cards' tabs (background: inherit merges it with the card below). */
+main.login-gate .card::before {
+  content: '';
+  position: absolute;
+  top: -9px;
+  left: 0.75rem;
+  width: 2.4rem;
+  height: 9px;
+  background: inherit;
+  border: 1px solid var(--hairline);
+  border-bottom: none;
+  border-radius: 4px 4px 0 0;
+}
+
+/* The product name as the folder label. */
+.login-gate .folder-label {
+  display: block;
+  font-family: var(--font-type);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted-text);
+  margin: 0 0 0.35rem;
+}
+
 .login-gate h1 {
+  font-family: var(--font-type);
   font-size: 1.25rem;
   margin: 0 0 0.25rem;
   color: var(--ink);
@@ -217,12 +464,13 @@ form.login-form label {
   color: var(--ink);
 }
 
+/* The passphrase field: the sheet you pull out of the folder. */
 form.login-form input[type='password'] {
   padding: 0.45rem;
   border: 1px solid var(--hairline);
-  border-radius: 8px;
+  border-radius: 6px;
   font-size: 0.95rem;
-  background: var(--card);
+  background: var(--sheet);
   color: var(--ink);
 }
 
@@ -237,6 +485,7 @@ form.login-form .login-remember {
 form.login-form .login-remember input[type='checkbox'] {
   width: 1.1rem;
   height: 1.1rem;
+  accent-color: var(--ink);
 }
 
 form.login-form button.primary {
@@ -246,12 +495,14 @@ form.login-form button.primary {
 .success-box {
   background: var(--ok-bg);
   color: var(--ok);
-  border-radius: 8px;
+  border: 1px solid var(--hairline);
+  border-radius: 6px;
   padding: 0.5rem;
   font-size: 0.85rem;
   margin-top: 0.5rem;
 }
 
+/* --- Forms: receipt-paper sheets; labels system-ui, values typewriter --- */
 form.transaction-form {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -265,14 +516,31 @@ form.transaction-form label {
   gap: 0.25rem;
 }
 
+/* One printed-field baseline for every input and select in the world. */
 form.transaction-form input,
-form.transaction-form select {
+form.transaction-form select,
+.filters input,
+.filters select,
+table.data input,
+ul.tree .tree-row input {
   padding: 0.45rem;
   border: 1px solid var(--hairline);
-  border-radius: 8px;
+  border-radius: 6px;
   font-size: 0.95rem;
-  background: var(--card);
+  background: var(--sheet);
   color: var(--ink);
+}
+
+select {
+  accent-color: var(--ink);
+}
+
+/* Foja data (amounts, dates) reads typewriter with tabular figures. */
+input[inputmode='decimal'],
+input[type='date'],
+input[type='month'] {
+  font-family: var(--font-type);
+  font-variant-numeric: tabular-nums;
 }
 
 /* Live USD→ARS conversion preview under the amount (muted, tabular). */
@@ -289,37 +557,74 @@ form.transaction-form .actions {
   align-items: center;
 }
 
-/* One consistent danger style everywhere (Borrar, category delete). */
+/* One consistent danger style everywhere (Borrar, category delete):
+   the stamp red, filled. */
 button.danger {
-  background: var(--danger);
-  color: #fff;
+  background: var(--stamp);
+  color: var(--receipt);
   border: none;
-  border-radius: 8px;
+  border-radius: 6px;
   padding: 0.35rem 0.8rem;
   cursor: pointer;
 }
 
-button.danger:hover:not(:disabled) {
-  background: #8f1c16;
+html[data-theme='dark'] button.danger {
+  color: #171208;
 }
 
+button.danger:hover:not(:disabled) {
+  filter: brightness(0.92);
+}
+
+html[data-theme='dark'] button.danger:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+/* --- Fojas: the transaction ledger, carried by alignment --- */
 table.data {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
 }
 
-table.data th,
+/* Hairlines only where meaning demands: the printed rule under the form
+   header, and the group edge at the last sheet. No full grid. */
+table.data th {
+  text-align: left;
+  padding: 0.35rem 0.6rem 0.45rem;
+  border-bottom: 1px solid var(--ink);
+  color: var(--muted-text);
+  font-family: var(--font-type);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
 table.data td {
   text-align: left;
-  padding: 0.55rem 0.6rem;
+  padding: 0.6rem;
+  border-bottom: none;
+}
+
+table.data tbody tr:last-child td {
   border-bottom: 1px solid var(--hairline);
 }
 
-table.data th {
-  color: var(--muted-text);
+/* The folio number: every sheet is numbered. */
+.folio {
+  font-family: var(--font-type);
   font-size: 0.8rem;
-  font-weight: 600;
+  font-weight: 700;
+  color: var(--muted-text);
+  margin-right: 0.6rem;
+}
+
+.foja-date {
+  font-family: var(--font-type);
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .transaction-sort-controls {
@@ -368,15 +673,17 @@ button.sort-reset {
   font-variant-numeric: tabular-nums;
 }
 
-/* List amounts: 1rem, 600, tabular. */
+/* List amounts: foja data in the typewriter voice, tabular. */
 .row-amount {
-  font-size: 1rem;
-  font-weight: 600;
+  font-family: var(--font-type);
+  font-size: 0.95rem;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 
-/* FX-at-entry cell: quiet tabular figure. */
+/* FX-at-entry cell: quiet typewriter figure. */
 .rate-cell {
+  font-family: var(--font-type);
   font-variant-numeric: tabular-nums;
   color: var(--muted-text);
 }
@@ -385,32 +692,103 @@ button.sort-reset {
   color: var(--muted-text);
 }
 
-/* Semantic state chips: pill radius, 600, uppercase via CSS. */
+/* --- Ink stamps (badges): uppercase, letterspaced, 2px border, hand-tilted --- */
 .badge {
-  font-size: 0.75rem;
-  border-radius: 999px;
-  padding: 0.1rem 0.5rem;
-  font-weight: 600;
+  display: inline-block;
+  font-family: var(--font-type);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
+  color: var(--ink);
+  border: 2px solid currentColor;
+  border-radius: 3px;
+  padding: 0.05rem 0.4rem;
+  transform: rotate(-1.5deg);
   white-space: nowrap;
 }
 
 .badge.over {
-  background: var(--danger-bg);
-  color: var(--danger);
+  color: var(--stamp);
 }
 
 .badge.ok {
-  background: var(--ok-bg);
-  color: var(--ok);
+  color: var(--ink);
 }
 
-/* Month-total money card: per-currency totals, large tabular figures. */
+/* --- Money card → the folder membrete --- */
+.money-card {
+  position: relative;
+  padding-bottom: 1.1rem;
+}
+
+/* The flagship membrete gets the same folder tab as the indicator cards —
+   same geometry, same hand. */
+.money-card::before {
+  content: '';
+  position: absolute;
+  top: -9px;
+  left: 0.75rem;
+  width: 2.4rem;
+  height: 9px;
+  background: var(--card);
+  border: 1px solid var(--hairline);
+  border-bottom: none;
+  border-radius: 4px 4px 0 0;
+}
+
+/* The one authored moment: the membrete stamps in and settles when the
+   folder opens (data lands / page mounts). Exponential ease-out from an
+   already-visible default. */
+@media (prefers-reduced-motion: no-preference) {
+  .money-card {
+    animation: stamp-settle 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+}
+
+@keyframes stamp-settle {
+  0% {
+    transform: scale(1.05);
+    opacity: 0.85;
+  }
+  60% {
+    transform: scale(0.995);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* The printed header: ruled stationery line with the period at the right. */
+.membrete {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--hairline);
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
 .money-card h2 {
-  font-size: 1rem;
-  margin: 0 0 0.5rem;
+  font-family: var(--font-type);
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin: 0;
   color: var(--muted-text);
-  font-weight: 600;
+}
+
+.membrete-period {
+  font-family: var(--font-type);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
 }
 
 .totals {
@@ -425,8 +803,10 @@ button.sort-reset {
   color: var(--muted-text);
 }
 
+/* The honest total: a large typewriter-stamped figure. */
 .total .total-amount {
-  font-size: 1.5rem;
+  font-family: var(--font-type);
+  font-size: 2rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   line-height: 1.2;
@@ -442,6 +822,16 @@ button.sort-reset {
   padding: 0.75rem 0;
 }
 
+/* Narrated period flow (Summaries): one quiet typewriter sentence before the
+   alignment tables — the world reads the numbers aloud, then shows them. */
+.summary-flow {
+  font-family: var(--font-type);
+  font-size: 0.85rem;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  margin: 0 0 0.75rem;
+}
+
 ul.tree {
   list-style: none;
   padding-left: 0.5rem;
@@ -455,22 +845,25 @@ ul.tree .tree-row {
   padding: 0.25rem 0;
 }
 
-/* Action links (Renombrar, Restaurar): a click performs something — action green. */
+/* Action links (Renombrar, Restaurar, Reintentar): ink underline — the
+   stamp red is reserved for destructive buttons and state stamps, so a red
+   link never sits beside a red Borrar. */
 button.link {
   border: none;
   background: none;
-  color: var(--action-link);
+  color: var(--ink);
   text-decoration: underline;
+  text-decoration-thickness: 1px;
   cursor: pointer;
   font-size: 0.85rem;
 }
 
 button.link:hover {
-  color: var(--action-link-hover);
+  text-decoration-thickness: 2px;
 }
 
 /* Non-action text links (row Editar/Cancelar, form Cancelar): ink underline
-   without the action color — green on the first viewport is Guardar only. */
+   without the stamp color — red on the first viewport is Borrar only. */
 button.link.muted {
   color: var(--muted-text);
 }
@@ -490,7 +883,7 @@ button:disabled {
   align-items: center;
 }
 
-/* Trade groups (trade-history): asset header + ledger table per ticker. */
+/* Trade groups (trade-history): ticker as the folio label of each group. */
 .trade-group {
   margin-bottom: 1.25rem;
 }
@@ -504,7 +897,9 @@ button:disabled {
 }
 
 .trade-group-ticker {
+  font-family: var(--font-type);
   font-weight: 700;
+  letter-spacing: 0.04em;
   font-variant-numeric: tabular-nums;
   color: var(--ink);
 }
@@ -512,8 +907,29 @@ button:disabled {
 .confirm-prompt {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 0.5rem;
   font-size: 0.8rem;
+}
+
+/* The "tira de prueba": a receipt slip showing exactly what will be removed.
+   Quiet typewriter fields on sheet paper, slightly hand-tilted. Decorative
+   duplicate of the row beside it, so it stays out of the a11y tree. */
+.confirm-prompt .confirm-slip {
+  flex-basis: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.75rem;
+  background: var(--sheet);
+  border: 1px solid var(--hairline);
+  border-radius: 3px;
+  padding: 0.25rem 0.5rem;
+  transform: rotate(-0.6deg);
+  font-family: var(--font-type);
+  font-size: 0.72rem;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
 }
 
 .confirm-prompt .confirm-question {
@@ -532,8 +948,7 @@ button:disabled {
   margin-bottom: 0.75rem;
 }
 
-/* Indicators page: plain header row on the ground, indicator cards directly
-   on the warm paper — no card-in-card chrome. */
+/* --- Indicators: file cards with a folder tab on top --- */
 .indicators-page {
   margin-bottom: 1rem;
 }
@@ -556,10 +971,11 @@ button:disabled {
 .indicators-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 0.75rem;
+  gap: 1.25rem 0.75rem;
 }
 
 .indicator-card {
+  position: relative;
   background: var(--card);
   border: 1px solid var(--hairline);
   border-radius: 12px;
@@ -570,8 +986,22 @@ button:disabled {
   box-shadow: var(--shadow);
 }
 
+/* The folder tab rising from each file card. */
+.indicator-card::before {
+  content: '';
+  position: absolute;
+  top: -9px;
+  left: 0.75rem;
+  width: 2.4rem;
+  height: 9px;
+  background: inherit;
+  border: 1px solid var(--hairline);
+  border-bottom: none;
+  border-radius: 4px 4px 0 0;
+}
+
 .indicator-card.stale {
-  border-color: var(--error-border);
+  border-color: var(--stamp);
 }
 
 .indicator-label {
@@ -580,13 +1010,15 @@ button:disabled {
 }
 
 .indicator-value {
-  font-size: 1.35rem;
-  font-weight: 600;
+  font-family: var(--font-type);
+  font-size: 1.3rem;
+  font-weight: 700;
   color: var(--ink);
   font-variant-numeric: tabular-nums;
 }
 
 .indicator-unit {
+  font-family: var(--font-ui);
   font-size: 0.8rem;
   font-weight: 400;
   color: var(--muted-text);
@@ -602,37 +1034,29 @@ button:disabled {
   color: var(--muted-text);
 }
 
-/* Freshness chips (VENCIDO / REFERENCIA ANTIGUA): danger / warning palette. */
+/* Freshness stamps (VENCIDO / REFERENCIA ANTIGUA). */
 .stale-badge,
 .aged-badge {
+  display: inline-block;
   align-self: flex-start;
+  font-family: var(--font-type);
   font-size: 0.7rem;
-  border-radius: 999px;
-  padding: 0.1rem 0.5rem;
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
+  border: 2px solid currentColor;
+  border-radius: 3px;
+  padding: 0.05rem 0.4rem;
+  transform: rotate(-1.5deg);
   white-space: nowrap;
 }
 
 .stale-badge {
-  background: var(--danger-bg);
-  color: var(--danger);
+  color: var(--stamp);
 }
 
 .aged-badge {
-  background: var(--warn-bg);
   color: var(--warn);
-}
-
-/* Warm-card material for inline inputs (budget caps, category rename). */
-table.data input,
-ul.tree .tree-row input {
-  padding: 0.4rem;
-  border: 1px solid var(--hairline);
-  border-radius: 8px;
-  font-size: 0.9rem;
-  background: var(--card);
-  color: var(--ink);
 }
 
 /* Hidden tabs stay mounted but invisible at EVERY viewport width (P1 #5) */
@@ -640,8 +1064,12 @@ ul.tree .tree-row input {
   display: none;
 }
 
-/* Price charts (PC-5): world tokens only — ink data line, hairline grid and
-   axes, muted ticks; the action green never appears in a data line. */
+/* --- Charts: ink line on receipt paper --- */
+.chart-card,
+.asset-chart {
+  background: var(--sheet);
+}
+
 .chart-card h2,
 .asset-chart h2 {
   font-size: 1rem;
@@ -675,13 +1103,15 @@ ul.tree .tree-row input {
   gap: 0.25rem;
 }
 
+/* Range chips: little receipt slips in the typewriter voice. */
 .chip {
   border: 1px solid var(--hairline);
-  background: var(--card);
+  background: var(--sheet);
   color: var(--ink);
+  font-family: var(--font-type);
   font-size: 0.75rem;
-  font-weight: 600;
-  border-radius: 999px;
+  font-weight: 700;
+  border-radius: 4px;
   padding: 0.2rem 0.7rem;
   cursor: pointer;
 }
@@ -710,25 +1140,26 @@ ul.tree .tree-row input {
   fill: var(--muted-text);
 }
 
-.recharts-cartesian-axis-line {
-  stroke: var(--hairline);
-}
-
-/* Tabular es-AR tooltip on the paper card (PC-5). */
+/* Tabular es-AR tooltip on the receipt paper (PC-5). */
 .chart-tooltip {
-  background: var(--card);
+  background: var(--sheet);
   border: 1px solid var(--hairline);
-  border-radius: 8px;
+  border-radius: 6px;
   padding: 0.4rem 0.6rem;
   box-shadow: var(--shadow);
   font-size: 0.75rem;
   color: var(--muted-text);
 }
 
+.chart-tooltip-date {
+  font-family: var(--font-type);
+}
+
 .chart-tooltip-value {
+  font-family: var(--font-type);
   color: var(--ink);
   font-variant-numeric: tabular-nums;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 /* Row-tap expansion for the inline asset chart (PC-5). */
@@ -746,7 +1177,7 @@ tr.asset-chart-row td {
   background: var(--ground);
 }
 
-/* --- Mobile: bottom bar at thumb reach (≤640px) --- */
+/* --- Mobile: the drawer edge at thumb reach (≤640px) --- */
 .bottom-bar {
   display: none;
 }
@@ -760,7 +1191,7 @@ tr.asset-chart-row td {
   }
 
   header.app-header h1 {
-    font-size: 1rem;
+    font-size: 1.05rem;
     margin-right: 0;
   }
 
@@ -780,13 +1211,16 @@ tr.asset-chart-row td {
   nav.tabs button {
     flex: 0 0 auto;
     padding: 0.55rem 0.7rem;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     min-height: 44px;
     white-space: nowrap;
   }
 
+  /* The drawer: manila front, folder tabs sitting on its lip. The active
+     tab is the pulled one — taller, sheet surface, ink label. */
   .bottom-bar {
     display: flex;
+    align-items: flex-end;
     position: fixed;
     bottom: 0;
     left: 0;
@@ -794,19 +1228,24 @@ tr.asset-chart-row td {
     z-index: 20;
     background: var(--card);
     border-top: 1px solid var(--hairline);
-    box-shadow: 0 -1px 3px rgba(26, 24, 21, 0.06);
+    box-shadow: 0 -1px 3px rgba(43, 36, 26, 0.14);
     padding-bottom: env(safe-area-inset-bottom);
   }
 
   .bottom-bar button {
     flex: 1;
-    border: none;
-    border-top: 2px solid transparent;
+    border: 1px solid transparent;
+    border-bottom: none;
+    border-radius: 6px 6px 0 0;
     background: transparent;
-    color: var(--ink);
-    font-size: 0.8rem;
-    font-weight: 500;
+    color: var(--muted-text);
+    font-family: var(--font-type);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
     padding: 0.5rem 0.25rem;
+    margin: 5px 2px 0;
     min-height: 44px;
     cursor: pointer;
     white-space: nowrap;
@@ -814,12 +1253,11 @@ tr.asset-chart-row td {
     text-overflow: ellipsis;
   }
 
-  /* Active nav item is a state, not an action: ink bold + 2px underline
-     (matches the desktop tabs), never the action green. */
   .bottom-bar button.active {
+    background: var(--sheet);
+    border-color: var(--hairline);
     color: var(--ink);
-    font-weight: 700;
-    border-top-color: var(--ink);
+    margin-top: 0;
   }
 
   main {
@@ -840,12 +1278,16 @@ tr.asset-chart-row td {
   }
 
   /* The actions column (Editar/Borrar + inline confirm) stays pinned while
-     the table scrolls; card white + hairline so it reads as part of the card. */
+     the table scrolls; it takes its card's paper so it reads as part of it. */
   .data .actions-cell {
     position: sticky;
     right: 0;
     background: var(--card);
     box-shadow: -1px 0 0 var(--hairline);
+  }
+
+  .card--sheet .data .actions-cell {
+    background: var(--sheet);
   }
 
   /* Single-column form; 16px inputs prevent iOS focus-zoom (also covers the
@@ -899,11 +1341,11 @@ tr.asset-chart-row td {
   }
 
   .indicator-value {
-    font-size: 1.2rem;
+    font-size: 1.15rem;
   }
 
   .total .total-amount {
-    font-size: 1.4rem;
+    font-size: 1.6rem;
   }
 
   button.primary,

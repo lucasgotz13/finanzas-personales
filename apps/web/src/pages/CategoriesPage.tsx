@@ -59,7 +59,7 @@ export default function CategoriesPage(): JSX.Element {
 
   return (
     <>
-      <section className="card">
+      <section className="card card--sheet">
         <h2>Agregar categoría</h2>
         <form className="transaction-form" onSubmit={handleAdd} noValidate>
           <label>
