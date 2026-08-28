@@ -86,22 +86,22 @@ export default function App(): JSX.Element {
       </header>
       <main>
         <div className={tab === 'transactions' ? 'tab-panel' : 'tab-panel hidden'}>
-          <TransactionsPage />
+          <TransactionsPage active={tab === 'transactions'} />
         </div>
         <div className={tab === 'categories' ? 'tab-panel' : 'tab-panel hidden'}>
-          <CategoriesPage />
+          <CategoriesPage active={tab === 'categories'} />
         </div>
         <div className={tab === 'budgets' ? 'tab-panel' : 'tab-panel hidden'}>
-          <BudgetsPage />
+          <BudgetsPage active={tab === 'budgets'} />
         </div>
         <div className={tab === 'summaries' ? 'tab-panel' : 'tab-panel hidden'}>
-          <SummariesPage />
+          <SummariesPage active={tab === 'summaries'} />
         </div>
         <div className={tab === 'indicators' ? 'tab-panel' : 'tab-panel hidden'}>
-          <IndicatorsPage />
+          <IndicatorsPage active={tab === 'indicators'} />
         </div>
         <div className={tab === 'inversiones' ? 'tab-panel' : 'tab-panel hidden'}>
-          <InvestmentsPage />
+          <InvestmentsPage active={tab === 'inversiones'} />
         </div>
       </main>
       {/* Mobile-first navigation: thumb-reachable, same buttons and state as
