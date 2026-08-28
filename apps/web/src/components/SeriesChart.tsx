@@ -1,10 +1,10 @@
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import type { PricePoint, SeriesCurrency } from '../types';
 
-/** La billetera palette (PC-5): ink data line — NEVER the action green —
- * hairline grid/axes, muted tick text, paper card behind. Colors are painted
- * by the CSS overrides on the recharts classes (index.css), so the chart
- * flips with the theme.
+/** El Legajo palette (PC-5): ink data line on receipt paper — hairline grid,
+ * muted tick text, hairline hover cursor and an ink activeDot (never a
+ * recharts default blue). Colors are painted by the CSS overrides on the
+ * recharts classes (index.css), so the chart flips with the theme. */
 
 /** es-AR currency figure for a minor-unit value (158493 → "$ 1.584,93"). */
 export function formatChartMoney(valueMinor: number, currency: SeriesCurrency): string {
@@ -72,13 +72,13 @@ export default function SeriesChart({ points, currency }: SeriesChartProps): JSX
             width={64}
             domain={['auto', 'auto']}
           />
-          <Tooltip content={<ChartTooltip currency={currency} />} />
+          <Tooltip content={<ChartTooltip currency={currency} />} cursor={{ stroke: 'var(--hairline)', strokeWidth: 1 }} />
           <Line
             type="monotone"
             dataKey="valueMinor"
             strokeWidth={2}
             dot={false}
-            activeDot={{ r: 3, strokeWidth: 0 }}
+            activeDot={{ r: 4, fill: 'var(--ink)', strokeWidth: 0 }}
             isAnimationActive={false}
           />
         </LineChart>

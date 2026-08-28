@@ -11,3 +11,6 @@ finanzas.db-shm
 
 # vite dev cache
 .vite/
+
+# impeccable QA evidence (screenshots con datos demo)
+.impeccable/review/
