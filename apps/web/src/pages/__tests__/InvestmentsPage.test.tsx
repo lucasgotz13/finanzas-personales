@@ -94,6 +94,9 @@ describe('InvestmentsPage (PI-6, TH-6)', () => {
   it('shows the portfolio fetch error in a role=alert box and Reintentar reloads', async () => {
     const getPortfolio = vi.spyOn(api, 'getPortfolio').mockRejectedValue(new Error('api caída'));
     vi.spyOn(api, 'listTrades').mockResolvedValue([]);
+    // The lazy chart card also owns a role=alert box; resolve its fetch so
+    // the portfolio error stays the only alert.
+    vi.spyOn(api, 'getPortfolioHistory').mockResolvedValue(history());
     const user = userEvent.setup();
 
     render(<InvestmentsPage />);
@@ -117,6 +120,8 @@ describe('InvestmentsPage (PI-6, TH-6)', () => {
 
   it('creates a trade through the form, edits one prefilled and deletes one after confirmation', async () => {
     mockPortfolioAndTrades();
+    // Resolve the chart fetch: its error box also carries role=alert (F4).
+    vi.spyOn(api, 'getPortfolioHistory').mockResolvedValue(history());
     const create = vi.spyOn(api, 'createTrade').mockResolvedValue({ id: 4, ticker: 'MELI.BA', type: 'buy', date: '2026-08-06', quantity: 2, priceMinor: 50000, currency: 'USD' });
     const update = vi.spyOn(api, 'updateTrade').mockResolvedValue({ id: 2, ticker: 'AAPL.BA', type: 'sell', date: '2026-08-05', quantity: 4, priceMinor: 25000, currency: 'USD' });
     const del = vi.spyOn(api, 'deleteTrade').mockResolvedValue(undefined);
@@ -357,6 +362,23 @@ describe('Price charts (PC-5, PC-6)', () => {
     expect(await screen.findByTestId('chart-error')).toBeInTheDocument();
     await user.click(screen.getByTestId('retry-chart'));
     await vi.waitFor(() => expect(getHistory).toHaveBeenCalledTimes(10)); // 8 warm-up + 1 mount + 1 retry
+  });
+
+  it('expands the inline asset chart from the keyboard (Enter and Space) (F3)', async () => {
+    mockCharts();
+    vi.spyOn(api, 'getPositionHistory').mockResolvedValue(history());
+    render(<InvestmentsPage />);
+    const row = await screen.findByTestId('position-1');
+    // The row is focusable and announces its expansion state.
+    expect(row).toHaveAttribute('tabindex', '0');
+    expect(row).toHaveAttribute('aria-expanded', 'false');
+    row.focus();
+    fireEvent.keyDown(row, { key: 'Enter' });
+    expect(await screen.findByTestId('asset-chart-1')).toBeInTheDocument();
+    expect(row).toHaveAttribute('aria-expanded', 'true');
+    // Space also toggles, and it does not scroll the page.
+    fireEvent.keyDown(row, { key: ' ' });
+    expect(screen.queryByTestId('asset-chart-1')).not.toBeInTheDocument();
   });
 
   it('expands one inline asset chart per tapped row, swapping on the next tap', async () => {

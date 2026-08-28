@@ -65,7 +65,7 @@ export default function PortfolioChart(): JSX.Element {
         </div>
       </div>
       {chart.error !== null && (
-        <div className="error-box" data-testid="chart-error">
+        <div className="error-box" role="alert" data-testid="chart-error">
           {chart.error}{' '}
           <button type="button" className="link" data-testid="retry-chart" onClick={() => chart.reload()}>
             Reintentar
@@ -86,7 +86,7 @@ export default function PortfolioChart(): JSX.Element {
           Sin datos históricos
         </div>
       ) : chart.data !== null ? (
-        <SeriesChart points={chart.data.points} currency={chart.data.currency} />
+        <SeriesChart points={chart.data.points} currency={chart.data.currency} range={chart.data.range} />
       ) : null}
     </section>
   );

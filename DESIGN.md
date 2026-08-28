@@ -167,7 +167,7 @@ The theme follows the system on first visit (`prefers-color-scheme`) and the hea
 - **Warm Light Ink** (#f2ede2): text, card titles, active navigation — the night reading ink.
 - **Warm Muted Light** (#b3ac9d): secondary text; AA on the dark card.
 - **Warm Night Ground** (#1a1815): the ground; body background and theme-color in dark.
-- **Warm Charcoal Card** (#262219): every surface that sits on the night ground.
+- **Warm Charcoal Card** (#2e2b27): every surface that sits on the night ground.
 - **Night Hairline** (#3a352b): 1px borders on cards, fields, and row separators.
 - **Action Green** (#0e7a3d) and hover (#0b6634): filled buttons unchanged.
 - **Action Link Light** (#58c46f): action link text and the :focus-visible outline in dark.

@@ -1,7 +1,7 @@
 import { arDateString } from '@finanzas/domain';
 import { useState } from 'react';
 import { api, flattenTree, translateApiMessage } from '../api';
-import { parseEsArAmount } from '../amount';
+import { inputValueEsAr, parseEsArAmount } from '../amount';
 import type { ApiTransaction, CategoryNode, CreateTransactionInput } from '../types';
 
 export interface TransactionFormProps {
@@ -24,9 +24,13 @@ export default function TransactionForm({ categories, onCreated, initial, onUpda
   // State seeds from `initial` on mount; the parent remounts (key) to switch
   // between create mode and editing a different row, so no sync effect is needed.
   const [direction, setDirection] = useState<'expense' | 'income'>(initial?.direction ?? 'expense');
-  const [amount, setAmount] = useState(initial ? String(initial.amountMinor / 100) : '');
+  // Edit prefills use the es-AR input form (comma decimal, no dot): the
+  // fields teach comma entry and parseEsArAmount round-trips it (S7).
+  const [amount, setAmount] = useState(initial ? inputValueEsAr(initial.amountMinor, initial.currency) : '');
   const [currency, setCurrency] = useState<'ARS' | 'USD'>(initial?.currency ?? 'ARS');
-  const [rate, setRate] = useState(initial && initial.currency === 'USD' ? String(initial.rate) : '');
+  const [rate, setRate] = useState(
+    initial && initial.currency === 'USD' ? inputValueEsAr(Math.round(initial.rate * 100), initial.currency) : '',
+  );
   const [date, setDate] = useState(initial?.date ?? arDateString(new Date()));
   const [categoryId, setCategoryId] = useState(initial ? String(initial.categoryId) : '');
   const [note, setNote] = useState(initial?.note ?? '');

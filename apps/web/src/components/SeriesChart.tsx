@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import type { PricePoint, SeriesCurrency } from '../types';
+import type { PricePoint, SeriesCurrency, SeriesRange } from '../types';
 
 /** El Legajo palette (PC-5): ink data line on receipt paper — hairline grid,
  * muted tick text, hairline hover cursor and an ink activeDot (never a
@@ -14,6 +14,12 @@ export function formatChartMoney(valueMinor: number, currency: SeriesCurrency): 
 
 function formatAxisMoney(valueMinor: number): string {
   return new Intl.NumberFormat('es-AR', { notation: 'compact', maximumFractionDigits: 1 }).format(valueMinor / 100);
+}
+
+// V6: the 1y axis reads "jun 26 jun 26" when every tick collapses to month+
+// year. Short ranges carry the day; only 1y keeps the month-year form.
+function dayMonthDate(date: string): string {
+  return new Date(`${date}T00:00:00`).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' });
 }
 
 function shortDate(date: string): string {
@@ -36,7 +42,7 @@ function ChartTooltip({ active, payload, currency }: TooltipProps): JSX.Element 
   const point = payload[0].payload;
   return (
     <div className="chart-tooltip">
-      <div className="chart-tooltip-date">{longDate(point.date)}</div>
+      <div>{longDate(point.date)}</div>
       <div className="chart-tooltip-value" data-testid="chart-tooltip-value">
         {formatChartMoney(point.valueMinor, currency)}
       </div>
@@ -47,11 +53,13 @@ function ChartTooltip({ active, payload, currency }: TooltipProps): JSX.Element 
 interface SeriesChartProps {
   points: PricePoint[];
   currency: SeriesCurrency;
+  /** Active range: drives the x-axis tick format (V6). */
+  range: SeriesRange;
 }
 
 /** Presentational line chart for one series (PC-5): ink monotone line, hairline
  * axes, muted ticks. Animations off so jsdom renders deterministically. */
-export default function SeriesChart({ points, currency }: SeriesChartProps): JSX.Element {
+export default function SeriesChart({ points, currency, range }: SeriesChartProps): JSX.Element {
   // Stable tooltip element: recharts re-renders its content on every chart
   // update, so a fresh element per render would recreate the tooltip each time.
   const tooltipContent = useMemo(() => <ChartTooltip currency={currency} />, [currency]);
@@ -62,11 +70,11 @@ export default function SeriesChart({ points, currency }: SeriesChartProps): JSX
           <CartesianGrid vertical={false} />
           <XAxis
             dataKey="date"
-            tickFormatter={shortDate}
+            tickFormatter={range === '1y' ? shortDate : dayMonthDate}
             tick={{ fontSize: 12 }}
             tickLine={false}
             axisLine={false}
-            minTickGap={40}
+            minTickGap={60}
           />
           <YAxis
             tickFormatter={formatAxisMoney}

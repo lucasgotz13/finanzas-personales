@@ -79,7 +79,7 @@ describe('TradeForm', () => {
     await user.type(screen.getByTestId('trade-price'), '250');
     await user.click(screen.getByTestId('submit'));
 
-    expect(await screen.findByText('La venta de 10 AAPL.BA del 2026-08-10 supera el saldo de 5; corregí primero esa venta.')).toBeInTheDocument();
+    expect(await screen.findByText('La venta de 10 AAPL.BA del 2026-08-10 supera el saldo de 5; corrija primero esa venta.')).toBeInTheDocument();
     expect(spy).toHaveBeenCalledTimes(1);
   });
 

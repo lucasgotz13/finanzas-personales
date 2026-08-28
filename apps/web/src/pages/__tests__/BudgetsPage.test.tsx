@@ -197,4 +197,24 @@ describe('BudgetsPage', () => {
     // depends on it), and the retry adds the third.
     await waitFor(() => expect(getStatus).toHaveBeenCalledTimes(3));
   });
+
+  it('surfaces the budgets fetch error and blocks saving until budgets have loaded (F1)', async () => {
+    vi.spyOn(api, 'getCategoryTree').mockResolvedValue(categories);
+    const getBudgets = vi.spyOn(api, 'getBudgets').mockRejectedValue(new Error('topes caídos'));
+    const putBudgets = vi.spyOn(api, 'putBudgets').mockResolvedValue({});
+    vi.spyOn(api, 'getBudgetStatus').mockResolvedValue(status);
+
+    const user = userEvent.setup();
+    render(<BudgetsPage />);
+
+    // The silent-data-loss path is closed: the error is announced and the
+    // save stays blocked with a quiet hint while caps never loaded.
+    expect(await screen.findByRole('alert')).toHaveTextContent('topes caídos');
+    expect(screen.getByTestId('budget-save')).toBeDisabled();
+    expect(screen.getByTestId('budget-save-hint')).toBeInTheDocument();
+
+    await user.click(screen.getByTestId('retry-budgets'));
+    await waitFor(() => expect(getBudgets).toHaveBeenCalledTimes(2));
+    expect(putBudgets).not.toHaveBeenCalled();
+  });
 });

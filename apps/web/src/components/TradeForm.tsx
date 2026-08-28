@@ -1,7 +1,7 @@
 import { arDateString } from '@finanzas/domain';
 import { useState } from 'react';
 import { ApiError, api, translateApiError, translateApiMessage } from '../api';
-import { parseEsArAmount } from '../amount';
+import { inputValueEsAr, parseEsArAmount } from '../amount';
 import type { Trade, TradeInput } from '../types';
 
 export interface TradeFormProps {
@@ -15,13 +15,13 @@ const TYPE_LABELS: Record<'buy' | 'sell', string> = { buy: 'Compra', sell: 'Vent
 
 /** Trade entry form (TH-6): type, ticker, date, quantity and price in USD.
  * Validation errors render in es-AR, including timeline rejections that name
- * the offending trade ("corregí primero esa venta"). */
+ * the offending trade ("corrija primero esa venta"). */
 export default function TradeForm({ initial, onSaved, onCancel }: TradeFormProps): JSX.Element {
   const [type, setType] = useState<'buy' | 'sell'>(initial?.type ?? 'buy');
   const [ticker, setTicker] = useState(initial?.ticker ?? '');
   const [date, setDate] = useState(initial?.date ?? arDateString(new Date()));
   const [quantity, setQuantity] = useState(initial ? String(initial.quantity) : '');
-  const [price, setPrice] = useState(initial ? String(initial.priceMinor / 100) : '');
+  const [price, setPrice] = useState(initial ? inputValueEsAr(initial.priceMinor, initial.currency) : '');
   const [errors, setErrors] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
 

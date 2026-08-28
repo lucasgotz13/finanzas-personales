@@ -16,6 +16,9 @@ export default function IndicatorsPage({ active = true }: { active?: boolean }):
   const indicators = useApi(() => api.getIndicators(), [tick], active);
   const [refreshing, setRefreshing] = useState(false);
   const [refreshError, setRefreshError] = useState<string | null>(null);
+  // A background refresh failure is news, not an alarm: only errors the user
+  // caused by pressing Refrescar keep the assertive role="alert" (S12).
+  const [refreshErrorIsManual, setRefreshErrorIsManual] = useState(false);
 
   // Auto-refresh every 5 min while the document is visible AND the tab is
   // active. Panels stay mounted (P1), so the interval pauses in hidden tabs
@@ -31,6 +34,7 @@ export default function IndicatorsPage({ active = true }: { active?: boolean }):
           await api.refreshIndicators(false);
           setRefreshError(null);
         } catch (err) {
+          setRefreshErrorIsManual(false);
           setRefreshError(message(err));
         } finally {
           setTick((t) => t + 1);
@@ -68,6 +72,7 @@ export default function IndicatorsPage({ active = true }: { active?: boolean }):
     try {
       await api.refreshIndicators(true);
     } catch (err) {
+      setRefreshErrorIsManual(true);
       setRefreshError(message(err));
     } finally {
       setRefreshing(false);
@@ -84,7 +89,7 @@ export default function IndicatorsPage({ active = true }: { active?: boolean }):
         </button>
       </div>
       {refreshError && (
-        <div className="error-box" role="alert" data-testid="refresh-error">
+        <div className="error-box" role={refreshErrorIsManual ? 'alert' : 'status'} data-testid="refresh-error">
           {refreshError}
         </div>
       )}

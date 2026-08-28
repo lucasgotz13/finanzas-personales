@@ -100,7 +100,19 @@ export default function TransactionsPage({ active = true }: { active?: boolean }
     <>
       <section className="card money-card" data-testid="month-total">
         <h2>Total del mes</h2>
-        {totals.length === 0 ? (
+        {monthTotals.error && (
+          <div className="error-box" role="alert">
+            {monthTotals.error}{' '}
+            <button type="button" className="link" data-testid="retry-month-total" onClick={() => monthTotals.reload()}>
+              Reintentar
+            </button>
+          </div>
+        )}
+        {monthTotals.data === null ? (
+          /* Before the first load (or on error): Cargando… or the box above —
+             never a "—" that reads as a fake zero. */
+          monthTotals.loading ? <div className="empty">Cargando…</div> : null
+        ) : totals.length === 0 ? (
           <span className="total-empty">—</span>
         ) : (
           <div className="totals">
@@ -117,6 +129,14 @@ export default function TransactionsPage({ active = true }: { active?: boolean }
       </section>
       <section className="card">
         <h2>{editing ? 'Editar transacción' : 'Registrar transacción'}</h2>
+        {categories.error && (
+          <div className="error-box" role="alert" data-testid="form-categories-error">
+            {categories.error}{' '}
+            <button type="button" className="link" data-testid="retry-form-categories" onClick={() => categories.reload()}>
+              Reintentar
+            </button>
+          </div>
+        )}
         <TransactionForm
           key={editing?.id ?? 'create'}
           categories={categories.data ?? []}

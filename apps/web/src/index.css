@@ -11,12 +11,15 @@
   --card: #ffffff;
   --hairline: #e8e4dc;
   --shadow: 0 1px 3px rgba(26, 24, 21, 0.06);
+  /* Reversed Whisper for the bottom bar (DESIGN: Elevation). */
+  --shadow-reversed: 0 -1px 3px rgba(26, 24, 21, 0.06);
   --action: #0e7a3d;
   --action-hover: #0b6634;
   /* Action green for text/focus; flips lighter in dark so links stay AA. */
   --action-link: #0e7a3d;
   --action-link-hover: #0b6634;
   --danger: #b3261e;
+  --danger-hover: #8f1c16;
   --danger-bg: #fdecea;
   --error-border: #f5c6c0;
   --warn: #b45309;
@@ -25,6 +28,10 @@
   --ok: var(--ink);
   --ok-bg: #eef2ee;
   --disabled-bg: #d9d5cc;
+  /* Two-radius form language plus the pill (DESIGN: Shapes). */
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-full: 999px;
 }
 
 /* La billetera de noche: the same warm world after dark — warm paper becomes
@@ -38,6 +45,8 @@ html[data-theme='dark'] {
   --card: #2e2b27;
   --hairline: #3a352b;
   --shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+  /* Night Whisper reversed (DESIGN: Dark — Night Whisper). */
+  --shadow-reversed: 0 -1px 3px rgba(0, 0, 0, 0.45);
   --action: #0e7a3d;
   --action-hover: #0b6634;
   /* Filled buttons keep the saturated green; text/focus takes the lighter
@@ -45,6 +54,9 @@ html[data-theme='dark'] {
   --action-link: #58c46f;
   --action-link-hover: #7ed68f;
   --danger: #e57373;
+  /* Danger hover lightens (never darkens) after dark: #ef8a8a sits one
+     step above #e57373, holding the hover ladder's direction. */
+  --danger-hover: #ef8a8a;
   --danger-bg: #3a2320;
   --error-border: #6e3b35;
   --warn: #e0a458;
@@ -97,7 +109,7 @@ button.theme-toggle {
   height: 2rem;
   padding: 0;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: transparent;
   color: var(--muted-text);
   cursor: pointer;
@@ -146,7 +158,7 @@ main {
 .card {
   background: var(--card);
   border: 1px solid var(--hairline);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   padding: 1rem;
   margin-bottom: 1rem;
   box-shadow: var(--shadow);
@@ -156,7 +168,7 @@ button.primary {
   background: var(--action);
   color: #fff;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   padding: 0.5rem 1rem;
   cursor: pointer;
   font-weight: 600;
@@ -179,7 +191,7 @@ button.primary:disabled {
   color: var(--danger);
   background: var(--danger-bg);
   border: 1px solid var(--error-border);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   padding: 0.5rem;
   font-size: 0.85rem;
 }
@@ -192,7 +204,7 @@ main.login-gate {
 }
 
 .login-gate h1 {
-  font-size: 1.25rem;
+  font-size: 1.35rem;
   margin: 0 0 0.25rem;
   color: var(--ink);
 }
@@ -220,7 +232,7 @@ form.login-form label {
 form.login-form input[type='password'] {
   padding: 0.45rem;
   border: 1px solid var(--hairline);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   font-size: 0.95rem;
   background: var(--card);
   color: var(--ink);
@@ -246,7 +258,7 @@ form.login-form button.primary {
 .success-box {
   background: var(--ok-bg);
   color: var(--ok);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   padding: 0.5rem;
   font-size: 0.85rem;
   margin-top: 0.5rem;
@@ -269,7 +281,7 @@ form.transaction-form input,
 form.transaction-form select {
   padding: 0.45rem;
   border: 1px solid var(--hairline);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   font-size: 0.95rem;
   background: var(--card);
   color: var(--ink);
@@ -289,18 +301,36 @@ form.transaction-form .actions {
   align-items: center;
 }
 
+/* Form-level messages span the whole grid (V5). */
+form.transaction-form .error-box {
+  grid-column: 1 / -1;
+}
+
+/* Quiet hint beside a blocked control (F1 save gate). */
+.quiet-hint {
+  color: var(--muted-text);
+  font-size: 0.8rem;
+  margin: 0.25rem 0 0.5rem;
+}
+
+/* The rename commit button rides inside the tree row: keep it compact. */
+ul.tree .tree-row button.primary {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.85rem;
+}
+
 /* One consistent danger style everywhere (Borrar, category delete). */
 button.danger {
   background: var(--danger);
   color: #fff;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   padding: 0.35rem 0.8rem;
   cursor: pointer;
 }
 
 button.danger:hover:not(:disabled) {
-  background: #8f1c16;
+  background: var(--danger-hover);
 }
 
 table.data {
@@ -388,7 +418,7 @@ button.sort-reset {
 /* Semantic state chips: pill radius, 600, uppercase via CSS. */
 .badge {
   font-size: 0.75rem;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   padding: 0.1rem 0.5rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -484,6 +514,13 @@ button:disabled {
   cursor: default;
 }
 
+/* Disabled action links: quiet muted text, no underline — never a faded
+   green (One Green: the hue only marks something that CAN be done). */
+button.link:disabled {
+  color: var(--muted-text);
+  text-decoration: none;
+}
+
 .row-actions {
   display: flex;
   gap: 0.5rem;
@@ -512,17 +549,36 @@ button:disabled {
 .confirm-prompt {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.75rem;
   font-size: 0.8rem;
+  /* Stable desktop width: the cell must not jitter when the prompt swaps in. */
+  min-width: 15rem;
+}
+
+/* Left column: question over consequence note, no mid-phrase breaks. */
+.confirm-prompt .confirm-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
 }
 
 .confirm-prompt .confirm-question {
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .confirm-prompt .confirm-note {
   color: var(--muted-text);
   font-size: 0.75rem;
+  max-width: 14rem;
+}
+
+/* Right column: danger + cancel, centered against the text. */
+.confirm-prompt .confirm-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
 }
 
 .filters {
@@ -530,6 +586,22 @@ button:disabled {
   align-items: center;
   gap: 1rem;
   margin-bottom: 0.75rem;
+}
+
+/* V1: month/date pickers and filter fields share the field material — the
+   UA renders bare date controls in monospace outside the world. The ≤640px
+   16px/44px rules win later in the cascade. */
+.filters input,
+.filters select,
+input[type='date'],
+input[type='month'] {
+  font-family: inherit;
+  font-size: 0.95rem;
+  padding: 0.45rem;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  background: var(--card);
+  color: var(--ink);
 }
 
 /* Indicators page: plain header row on the ground, indicator cards directly
@@ -549,7 +621,7 @@ button:disabled {
 }
 
 .indicators-header h2 {
-  font-size: 1.05rem;
+  font-size: 1rem;
   margin: 0;
 }
 
@@ -562,7 +634,7 @@ button:disabled {
 .indicator-card {
   background: var(--card);
   border: 1px solid var(--hairline);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   padding: 0.75rem 1rem;
   display: flex;
   flex-direction: column;
@@ -607,7 +679,7 @@ button:disabled {
 .aged-badge {
   align-self: flex-start;
   font-size: 0.7rem;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   padding: 0.1rem 0.5rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -629,8 +701,8 @@ table.data input,
 ul.tree .tree-row input {
   padding: 0.4rem;
   border: 1px solid var(--hairline);
-  border-radius: 8px;
-  font-size: 0.9rem;
+  border-radius: var(--radius-md);
+  font-size: 0.95rem;
   background: var(--card);
   color: var(--ink);
 }
@@ -681,7 +753,7 @@ ul.tree .tree-row input {
   color: var(--ink);
   font-size: 0.75rem;
   font-weight: 600;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   padding: 0.2rem 0.7rem;
   cursor: pointer;
 }
@@ -714,7 +786,7 @@ ul.tree .tree-row input {
 .chart-tooltip {
   background: var(--card);
   border: 1px solid var(--hairline);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   padding: 0.4rem 0.6rem;
   box-shadow: var(--shadow);
   font-size: 0.75rem;
@@ -748,16 +820,25 @@ tr.asset-chart-row td {
 }
 
 @media (max-width: 640px) {
+  /* V7: one row — title left, toggle and Salir right (44px, no wrap). */
   header.app-header {
-    flex-direction: column;
-    align-items: flex-start;
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: nowrap;
     gap: 0.5rem;
     padding: 0.6rem 0.75rem;
   }
 
   header.app-header h1 {
-    font-size: 1rem;
-    margin-right: 0;
+    font-size: 1.1rem;
+    margin-right: auto;
+    min-width: 0;
+    white-space: nowrap;
+  }
+
+  /* The h1 owns the free space; a second auto margin would center the toggle. */
+  header.app-header .logout-button {
+    margin-left: 0;
   }
 
   /* Header tabs hide on mobile; the bottom bar owns navigation. */
@@ -790,24 +871,32 @@ tr.asset-chart-row td {
     z-index: 20;
     background: var(--card);
     border-top: 1px solid var(--hairline);
-    box-shadow: 0 -1px 3px rgba(26, 24, 21, 0.06);
+    box-shadow: var(--shadow-reversed);
     padding-bottom: env(safe-area-inset-bottom);
+    /* V8: six full labels cannot fit 390px — scroll, never ellipsize. */
+    overflow-x: auto;
+    justify-content: flex-start;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .bottom-bar::-webkit-scrollbar {
+    display: none;
   }
 
   .bottom-bar button {
-    flex: 1;
+    flex: 0 0 auto;
+    min-width: 64px;
     border: none;
     border-top: 2px solid transparent;
     background: transparent;
     color: var(--ink);
     font-size: 0.8rem;
-    font-weight: 500;
-    padding: 0.5rem 0.25rem;
+    font-weight: 600;
+    padding: 0.5rem 0.5rem;
     min-height: 44px;
     cursor: pointer;
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
   }
 
   /* Active nav item is a state, not an action: ink bold + 2px underline
@@ -836,12 +925,25 @@ tr.asset-chart-row td {
   }
 
   /* The actions column (Editar/Borrar + inline confirm) stays pinned while
-     the table scrolls; card white + hairline so it reads as part of the card. */
+     the table scrolls; a real hairline border keeps the Whisper-Only
+     divider honest over scrolled-under content. */
   .data .actions-cell {
     position: sticky;
     right: 0;
     background: var(--card);
-    box-shadow: -1px 0 0 var(--hairline);
+    border-left: 1px solid var(--hairline);
+  }
+
+  /* V2 on the phone: drop the stable desktop width and allow the two-line
+     stack inside the sticky cell (never wider than the viewport). */
+  .confirm-prompt {
+    min-width: 0;
+    flex-wrap: wrap;
+    white-space: normal;
+  }
+
+  .confirm-prompt .confirm-actions {
+    margin-left: 0;
   }
 
   /* Single-column form; 16px inputs prevent iOS focus-zoom (also covers the

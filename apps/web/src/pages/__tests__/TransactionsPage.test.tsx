@@ -174,7 +174,11 @@ describe('TransactionsPage', () => {
     const user = userEvent.setup();
     render(<TransactionsPage />);
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('red caída');
+    // V4: the money card owns its own error box now — the same failure
+    // surfaces in both alert boxes, never as a fake-zero "—".
+    const alerts = await screen.findAllByRole('alert');
+    expect(alerts.some((a) => a.textContent?.includes('red caída'))).toBe(true);
+    expect(within(screen.getByTestId('month-total')).getByRole('alert')).toBeInTheDocument();
     await user.click(screen.getByTestId('retry-transactions'));
     // Mount fetches twice (list + month card); the retry adds a third.
     await waitFor(() => expect(listSpy).toHaveBeenCalledTimes(3));

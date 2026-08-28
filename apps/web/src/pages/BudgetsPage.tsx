@@ -17,6 +17,9 @@ export default function BudgetsPage({ active = true }: { active?: boolean }): JS
   const budgets = useApi(() => api.getBudgets(), [], active);
   const status = useApi(() => api.getBudgetStatus(month), [month, budgets.data], active);
   const flatCategories = useMemo(() => flattenTree(categories.data ?? []), [categories.data]);
+  // Saving before the budgets have landed at least once would PUT a map that
+  // silently deletes every saved cap: gate the save on a successful load.
+  const budgetsLoaded = budgets.data !== null;
 
   return (
     <>
@@ -30,10 +33,19 @@ export default function BudgetsPage({ active = true }: { active?: boolean }): JS
             </button>
           </div>
         )}
+        {budgets.error && (
+          <div className="error-box" role="alert">
+            {budgets.error}{' '}
+            <button type="button" className="link" data-testid="retry-budgets" onClick={() => budgets.reload()}>
+              Reintentar
+            </button>
+          </div>
+        )}
         <BudgetEditor
           categories={flatCategories}
           initialCaps={budgets.data ?? {}}
           loading={categories.loading || budgets.loading}
+          canSave={budgetsLoaded}
           onSave={async (map) => {
             await api.putBudgets(map);
             budgets.reload();
@@ -42,7 +54,9 @@ export default function BudgetsPage({ active = true }: { active?: boolean }): JS
       </section>
       <section className="card">
         <h2>Estado — {formatMonth(month)}</h2>
-        <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} aria-label="Mes del estado" />
+        <div className="filters">
+          <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} aria-label="Mes del estado" />
+        </div>
         {status.error && (
           <div className="error-box" role="alert">
             {status.error}{' '}

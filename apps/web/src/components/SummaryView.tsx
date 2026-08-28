@@ -1,3 +1,4 @@
+import { formatPctEsAr } from '../amount';
 import { formatMonth } from '../dates';
 import type { PeriodSummary } from '../types';
 
@@ -31,7 +32,9 @@ export default function SummaryView({ summary }: SummaryViewProps): JSX.Element 
               <td className="money">{formatMinor(c.expense, c.currency)}</td>
               <td className="money">{formatMinor(c.income, c.currency)}</td>
               <td className="money">{formatMinor(c.netFlow, c.currency)}</td>
-              <td>{c.savingsRate === null ? '—' : `${(c.savingsRate * 100).toFixed(1)}%`}</td>
+              {/* S6: es-AR percent register (comma decimal) with the quiet
+                  tabular treatment the rate cells already use. */}
+              <td className="rate-cell">{c.savingsRate === null ? '—' : formatPctEsAr(c.savingsRate)}</td>
             </tr>
           ))}
         </tbody>

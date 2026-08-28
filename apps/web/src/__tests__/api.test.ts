@@ -11,7 +11,7 @@ describe('translateApiError (structured reason contract, issue #103)', () => {
       'TRADE_EXCEEDS_BALANCE',
       { type: 'sell', ticker: 'AAPL.BA', quantity: 10, date: '2026-08-10', balance: 5 },
     );
-    expect(translateApiError(err)).toBe('La venta de 10 AAPL.BA del 2026-08-10 supera el saldo de 5; corregí primero esa venta.');
+    expect(translateApiError(err)).toBe('La venta de 10 AAPL.BA del 2026-08-10 supera el saldo de 5; corrija primero esa venta.');
   });
 
   it('renders the buy wording for a rejected buy', () => {
@@ -23,7 +23,7 @@ describe('translateApiError (structured reason contract, issue #103)', () => {
       'TRADE_EXCEEDS_BALANCE',
       { type: 'buy', ticker: 'GGAL.BA', quantity: 3, date: '2026-08-01', balance: 0 },
     );
-    expect(translateApiError(err)).toBe('La compra de 3 GGAL.BA del 2026-08-01 supera el saldo de 0; corregí primero esa compra.');
+    expect(translateApiError(err)).toBe('La compra de 3 GGAL.BA del 2026-08-01 supera el saldo de 0; corrija primero esa compra.');
   });
 
   it('renders the lockout template with the remaining seconds', () => {

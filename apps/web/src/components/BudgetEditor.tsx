@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { translateApiMessage } from '../api';
 import type { BudgetStatus } from '../types';
-import { parseEsArAmount } from '../amount';
+import { inputValueEsAr, parseEsArAmount } from '../amount';
 
 export interface BudgetEditorProps {
   categories: Array<{ id: number; name: string }>;
@@ -9,6 +9,9 @@ export interface BudgetEditorProps {
   onSave: (caps: Record<string, number>) => Promise<void>;
   /** While the page fetches categories/budgets, never render the empty state. */
   loading?: boolean;
+  /** False until the budgets have loaded successfully: PUTting without them
+   * would silently delete every saved cap, so saving stays blocked (F1). */
+  canSave?: boolean;
 }
 
 /** ARS currency formatting for minor-unit amounts (same pattern as SummaryView). */
@@ -16,16 +19,17 @@ function formatMinor(minor: number): string {
   return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(minor / 100);
 }
 
-/** Maps category ids to their saved cap as a plain string ('500' = 50000 minor units), '' when unbudgeted. */
+/** Maps category ids to their saved cap as an es-AR input string ('500' or
+ * '500,5' — comma decimal, no thousands), '' when unbudgeted (S7). */
 function buildCaps(categories: Array<{ id: number }>, initialCaps: Record<string, number>): Record<string, string> {
   return Object.fromEntries(categories.map((c) => {
     const minor = initialCaps[String(c.id)];
-    return [String(c.id), minor ? String(minor / 100) : ''];
+    return [String(c.id), minor ? inputValueEsAr(minor, 'ARS') : ''];
   }));
 }
 
 /** Per-category monthly caps editor; saving PUTs the whole map in minor units (BM-3). */
-export default function BudgetEditor({ categories, initialCaps, onSave, loading = false }: BudgetEditorProps): JSX.Element {
+export default function BudgetEditor({ categories, initialCaps, onSave, loading = false, canSave = true }: BudgetEditorProps): JSX.Element {
   const [caps, setCaps] = useState<Record<string, string>>(buildCaps(categories, initialCaps));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -122,7 +126,12 @@ export default function BudgetEditor({ categories, initialCaps, onSave, loading 
           Presupuestos guardados.
         </div>
       )}
-      <button type="submit" className="primary" disabled={saving} data-testid="budget-save">
+      {!canSave && (
+        <div className="quiet-hint" data-testid="budget-save-hint">
+          Aún no se cargaron los topes guardados; todavía no se puede guardar.
+        </div>
+      )}
+      <button type="submit" className="primary" disabled={saving || !canSave} data-testid="budget-save">
         {saving ? 'Guardando…' : 'Guardar presupuestos'}
       </button>
     </form>

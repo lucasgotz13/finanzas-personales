@@ -57,7 +57,7 @@ const REASON_TEMPLATES: Partial<Record<ErrorReason, (meta: Record<string, unknow
     if (typeof type !== 'string' || typeof ticker !== 'string' || typeof date !== 'string') return undefined;
     const noun = type === 'sell' ? 'venta' : 'compra';
     const fix = type === 'sell' ? 'esa venta' : 'esa compra';
-    return `La ${noun} de ${quantity} ${ticker} del ${date} supera el saldo de ${balance}; corregí primero ${fix}.`;
+    return `La ${noun} de ${quantity} ${ticker} del ${date} supera el saldo de ${balance}; corrija primero ${fix}.`;
   },
   AUTH_LOCKED: (meta) =>
     typeof meta.seconds === 'number' ? `Demasiados intentos fallidos; espere ${meta.seconds} segundos.` : undefined,

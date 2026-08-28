@@ -24,7 +24,7 @@ describe('SummariesPage', () => {
     render(<SummariesPage />);
     expect(await screen.findByText('Julio 2026')).toBeInTheDocument();
     expect(screen.getByText('$ 9.000,00')).toBeInTheDocument(); // income
-    expect(screen.getByText('33.3%')).toBeInTheDocument(); // savings rate
+    expect(screen.getByText('33,3%')).toBeInTheDocument(); // savings rate (es-AR comma, S6)
     expect(screen.getByText('Food')).toBeInTheDocument();
     expect(screen.getByText('—')).toBeInTheDocument(); // USD savings rate undefined
   });

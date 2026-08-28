@@ -29,7 +29,9 @@ export default function SummariesPage({ active = true }: { active?: boolean }): 
           </button>
         </div>
       )}
-      {summary.loading ? (
+      {/* Stale-while-revalidate (S13): only flash Cargando… before the first
+          data of the session, never over an already-rendered period. */}
+      {summary.loading && summary.data === null ? (
         <div className="empty">Cargando…</div>
       ) : summary.data ? (
         <SummaryView summary={summary.data} />

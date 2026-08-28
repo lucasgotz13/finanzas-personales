@@ -1,5 +1,7 @@
-import { Fragment, lazy, Suspense, useEffect, useMemo, useState } from 'react';
+import { Fragment, lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { api, translateApiMessage } from '../api';
+import { formatDate } from '../dates';
+import ConfirmPrompt from '../components/ConfirmPrompt';
 import TradeForm from '../components/TradeForm';
 import { useApi } from '../hooks/useApi';
 import type { PositionView, SeriesCurrency, SeriesRange, Trade } from '../types';
@@ -29,6 +31,11 @@ function badgeClass(minor: number | null): string {
 
 function realizedLabel(minor: number | null): string {
   return minor !== null && minor < 0 ? 'Pérdida' : 'Ganancia';
+}
+
+/** Honest neutrality: no Ganancia/Pérdida badge rides an exact-zero result. */
+function showRealizedBadge(minor: number | null): boolean {
+  return minor !== null && minor !== 0;
 }
 
 function errorText(err: unknown): string {
@@ -67,6 +74,9 @@ export default function InvestmentsPage({ active = true }: { active?: boolean })
   const [activated, setActivated] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [refreshError, setRefreshError] = useState<string | null>(null);
+  // A background refresh failure is news, not an alarm: only errors the user
+  // caused by pressing Refrescar keep the assertive role="alert" (S12).
+  const [refreshErrorIsManual, setRefreshErrorIsManual] = useState(false);
   const [editing, setEditing] = useState<Trade | null>(null);
   const [confirmingId, setConfirmingId] = useState<number | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -107,7 +117,13 @@ export default function InvestmentsPage({ active = true }: { active?: boolean })
     const tickRefresh = (): void => {
       void api
         .refreshPortfolio(false)
-        .then(() => setRefreshError(null), (err: unknown) => setRefreshError(errorText(err)))
+        .then(
+          () => setRefreshError(null),
+          (err: unknown) => {
+            setRefreshErrorIsManual(false);
+            setRefreshError(errorText(err));
+          },
+        )
         .finally(() => setTick((t) => t + 1));
     };
     const start = (): void => {
@@ -141,6 +157,7 @@ export default function InvestmentsPage({ active = true }: { active?: boolean })
     try {
       await api.refreshPortfolio(true);
     } catch (err) {
+      setRefreshErrorIsManual(true);
       setRefreshError(errorText(err));
     } finally {
       setRefreshing(false);
@@ -160,6 +177,13 @@ export default function InvestmentsPage({ active = true }: { active?: boolean })
     }
   };
 
+  // Two-tap stays (same as TransactionList/CategoryTree): when the prompt
+  // opens, focus lands on Borrar so Enter confirms.
+  const confirmRef = useRef<HTMLButtonElement | null>(null);
+  useEffect(() => {
+    if (confirmingId !== null) confirmRef.current?.focus();
+  }, [confirmingId]);
+
   const totals = portfolio.data?.totals ?? null;
   const positions: PositionView[] = portfolio.data?.positions ?? [];
   const groups = useMemo(() => groupTrades(trades.data ?? []), [trades.data]);
@@ -173,14 +197,18 @@ export default function InvestmentsPage({ active = true }: { active?: boolean })
   };
 
   return (
-    <section className="investments-page">
+    <section>
       <div className="indicators-header">
         <h2>Inversiones — Mi cartera</h2>
         <button type="button" className="primary" onClick={() => void manualRefresh()} disabled={refreshing} data-testid="portfolio-refresh">
           {refreshing ? 'Actualizando…' : 'Refrescar'}
         </button>
       </div>
-      {refreshError && <div className="error-box" role="alert" data-testid="refresh-error">{refreshError}</div>}
+      {refreshError && (
+        <div className="error-box" role={refreshErrorIsManual ? 'alert' : 'status'} data-testid="refresh-error">
+          {refreshError}
+        </div>
+      )}
       {portfolio.error && (
         <div className="error-box" role="alert">
           {portfolio.error}{' '}
@@ -202,7 +230,10 @@ export default function InvestmentsPage({ active = true }: { active?: boolean })
             <h2>Valor de la cartera</h2>
             <div className="totals">
               <div className="total">
-                <span className="total-currency">{portfolio.data?.ccStatus === 'stale' ? 'ARS (CCL vencido)' : 'ARS (CCL)'}</span>
+                <span className="total-currency">
+                  ARS (CCL){' '}
+                  {portfolio.data?.ccStatus === 'stale' && <span className="stale-badge">Vencido</span>}
+                </span>
                 <span className="total-amount">{money(totals?.valueArsMinor ?? null, 'ARS')}</span>
               </div>
               <div className="total">
@@ -210,7 +241,7 @@ export default function InvestmentsPage({ active = true }: { active?: boolean })
                 <span className="total-amount">{money(totals?.valueUsdMinor ?? null, 'USD')}</span>
               </div>
               <div className="total">
-                <span className="total-currency">P&L</span>
+                <span className="total-currency">Resultados</span>
                 <span className="total-amount">
                   {money(totals?.pnlUsdMinor ?? null, 'USD')} <span className={badgeClass(totals?.pnlUsdMinor ?? null)}>{pct(totals?.pnlPct ?? null)}</span>
                 </span>
@@ -219,7 +250,9 @@ export default function InvestmentsPage({ active = true }: { active?: boolean })
                 <span className="total-currency">Realizado</span>
                 <span className="total-amount" data-testid="realized-total">
                   {money(totals?.realizedUsdMinor ?? 0, 'USD')}{' '}
-                  <span className={badgeClass(totals?.realizedUsdMinor ?? 0)}>{realizedLabel(totals?.realizedUsdMinor ?? 0)}</span>
+                  {showRealizedBadge(totals?.realizedUsdMinor ?? 0) && (
+                    <span className={badgeClass(totals?.realizedUsdMinor ?? 0)}>{realizedLabel(totals?.realizedUsdMinor ?? 0)}</span>
+                  )}
                 </span>
               </div>
             </div>
@@ -250,7 +283,7 @@ export default function InvestmentsPage({ active = true }: { active?: boolean })
             {trades.loading && trades.data === null ? (
               <div className="empty">Cargando…</div>
             ) : groups.length === 0 ? (
-              <div className="empty" data-testid="trades-empty">Aún no hay operaciones — registrá la primera con el formulario.</div>
+              <div className="empty" data-testid="trades-empty">Aún no hay operaciones — registre la primera con el formulario.</div>
             ) : (
               groups.map((group) => {
                 const realized = positions.find((p) => p.ticker === group.ticker)?.realizedUsdMinor ?? 0;
@@ -259,28 +292,32 @@ export default function InvestmentsPage({ active = true }: { active?: boolean })
                     <div className="trade-group-header">
                       <span className="trade-group-ticker">{group.ticker}</span>
                       <span className="money">
-                        Realizado: {money(realized, 'USD')} <span className={badgeClass(realized)}>{realizedLabel(realized)}</span>
+                        Realizado: {money(realized, 'USD')}{' '}
+                        {showRealizedBadge(realized) && <span className={badgeClass(realized)}>{realizedLabel(realized)}</span>}
                       </span>
                     </div>
                     <table className="data">
                       <thead>
-                        <tr><th>Tipo</th><th>Fecha</th><th>Cantidad</th><th>Precio</th><th>Acciones</th></tr>
+                        <tr><th>Tipo</th><th>Fecha</th><th>Cantidad</th><th>Precio</th><th>Opciones</th></tr>
                       </thead>
                       <tbody>
                         {group.rows.map((trade) => (
                           <tr key={trade.id} data-testid={`trade-${trade.id}`}>
                             <td>{trade.type === 'buy' ? 'Compra' : 'Venta'}</td>
-                            <td>{trade.date}</td>
+                            <td>{formatDate(trade.date)}</td>
                             <td className="money">{trade.quantity}</td>
                             <td className="money">{money(trade.priceMinor, 'USD')}</td>
                             <td className="row-actions actions-cell">
                               <button type="button" className="link muted" onClick={() => startEdit(trade)}>Editar</button>
                               {confirmingId === trade.id ? (
-                                <span className="confirm-prompt" role="alert">
-                                  <span className="confirm-question">¿Borrar la operación?</span>
-                                  <button type="button" className="danger" onClick={() => void confirmDelete()}>Borrar</button>
-                                  <button type="button" className="link muted" onClick={() => setConfirmingId(null)}>Cancelar</button>
-                                </span>
+                                <ConfirmPrompt
+                                  question="¿Borrar la operación?"
+                                  note="Se recalculan las posiciones y el resultado realizado."
+                                  confirmLabel="Borrar"
+                                  confirmRef={confirmRef}
+                                  onConfirm={() => void confirmDelete()}
+                                  onCancel={() => setConfirmingId(null)}
+                                />
                               ) : (
                                 <button type="button" className="danger" onClick={() => setConfirmingId(trade.id)}>Borrar</button>
                               )}
@@ -297,11 +334,11 @@ export default function InvestmentsPage({ active = true }: { active?: boolean })
           <section className="card">
             <h2>Posiciones</h2>
             {positions.length === 0 ? (
-              <div className="empty" data-testid="portfolio-empty">Aún no hay posiciones — registrá tu primera operación.</div>
+              <div className="empty" data-testid="portfolio-empty">Aún no hay posiciones — registre su primera operación.</div>
             ) : (
               <table className="data" data-testid="positions-table">
                 <thead>
-                  <tr><th>Ticker</th><th>Cantidad</th><th>Precio</th><th>Valor USD</th><th>Valor ARS</th><th>P&L</th><th>Estado</th></tr>
+                  <tr><th>Ticker</th><th>Cantidad</th><th>Precio</th><th>Valor USD</th><th>Valor ARS</th><th>Resultados</th><th>Estado</th></tr>
                 </thead>
                 <tbody>
                   {positions.map((v) => (
@@ -310,7 +347,14 @@ export default function InvestmentsPage({ active = true }: { active?: boolean })
                         className="positions-row"
                         data-testid={`position-${v.id}`}
                         aria-expanded={expandedId === v.id}
+                        tabIndex={0}
                         onClick={() => toggleExpand(v.id)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            toggleExpand(v.id);
+                          }
+                        }}
                       >
                         <td>{v.name}<div className="tx-direction">{v.ticker}</div></td>
                         <td className="money">{v.quantity}</td>

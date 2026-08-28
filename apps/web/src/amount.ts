@@ -51,3 +51,38 @@ export function parseEsArAmount(raw: string): number | null {
 
   return parseInt(input, 10);
 }
+
+/**
+ * es-AR percent for a 0..1 fraction with one decimal, e.g. 0.333 → '33,3%'.
+ * The register rule: numbers rendered for reading always go through Intl in
+ * the es-AR locale (comma decimal), never toFixed's dot output.
+ */
+export function formatPctEsAr(fraction: number): string {
+  return new Intl.NumberFormat('es-AR', {
+    style: 'percent',
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  }).format(fraction);
+}
+
+/**
+ * Prefill string for the es-AR amount text inputs from minor units.
+ *
+ * Plain decimal: comma as the decimal separator, NO thousands separators
+ * (a stored dot would re-parse as a thousands group), trailing zeros
+ * trimmed. Round-trips exactly through parseEsArAmount for any 2-decimal
+ * value. `currency` is signature-only for future precision: ARS/USD share 2.
+ */
+export function inputValueEsAr(minorUnits: number, currency: 'ARS' | 'USD' = 'ARS'): string {
+  // es-AR keeps two decimals for both currencies: the label documents intent.
+  void currency;
+  const rounded = Math.round(minorUnits);
+  const sign = rounded < 0 ? '-' : '';
+  const abs = Math.abs(rounded);
+  const whole = Math.floor(abs / 100);
+  const cents = abs % 100;
+  if (cents === 0) return `${sign}${whole}`;
+  // '05' | '50' → keep both, drop only a trailing zero: exact round-trip.
+  const frac = String(cents).padStart(2, '0').replace(/0$/, '');
+  return `${sign}${whole},${frac}`;
+}

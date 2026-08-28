@@ -1,6 +1,7 @@
 import { Money } from '@finanzas/domain';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { formatDate } from '../dates';
+import ConfirmPrompt from './ConfirmPrompt';
 import type { ApiTransaction } from '../types';
 
 export type TransactionSort = 'none' | 'ascending' | 'descending';
@@ -138,7 +139,7 @@ export default function TransactionList({
               </button>
             </th>
             <th>Tipo de cambio</th>
-            <th>Acciones</th>
+            <th>Opciones</th>
           </tr>
         </thead>
         <tbody>
@@ -160,22 +161,15 @@ export default function TransactionList({
                   Editar
                 </button>
                 {confirmingId === tx.id ? (
-                  <span className="confirm-prompt" role="alert">
-                    <span className="confirm-question">¿Borrar la transacción?</span>
-                    <span className="confirm-note">Se eliminará de presupuestos y resúmenes.</span>
-                    <button
-                      type="button"
-                      className="danger"
-                      ref={confirmRef}
-                      onClick={handleConfirm}
-                      disabled={busy}
-                    >
-                      Borrar
-                    </button>
-                    <button type="button" className="link muted" onClick={handleCancel} disabled={busy}>
-                      Cancelar
-                    </button>
-                  </span>
+                  <ConfirmPrompt
+                    question="¿Borrar la transacción?"
+                    note="Se eliminará de presupuestos y resúmenes."
+                    confirmLabel="Borrar"
+                    busy={busy}
+                    confirmRef={confirmRef}
+                    onConfirm={() => void handleConfirm()}
+                    onCancel={handleCancel}
+                  />
                 ) : (
                   <button
                     type="button"

@@ -65,7 +65,7 @@ export default function AssetChart({ positionId, ticker }: AssetChartProps): JSX
         </div>
       </div>
       {chart.error !== null && (
-        <div className="error-box" data-testid={`asset-chart-error-${positionId}`}>
+        <div className="error-box" role="alert" data-testid={`asset-chart-error-${positionId}`}>
           {chart.error}{' '}
           <button type="button" className="link" data-testid="retry-asset-chart" onClick={() => chart.reload()}>
             Reintentar
@@ -86,7 +86,7 @@ export default function AssetChart({ positionId, ticker }: AssetChartProps): JSX
           Sin datos históricos
         </div>
       ) : chart.data !== null ? (
-        <SeriesChart points={chart.data.points} currency={chart.data.currency} />
+        <SeriesChart points={chart.data.points} currency={chart.data.currency} range={chart.data.range} />
       ) : null}
     </section>
   );

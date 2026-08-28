@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { translateApiMessage } from '../api';
+import ConfirmPrompt from './ConfirmPrompt';
 import type { CategoryNode } from '../types';
 
 export interface CategoryTreeProps {
@@ -62,29 +63,45 @@ export default function CategoryTree({
     await run(onConfirmDelete, confirmingId ?? 0);
   }
 
+  // Keep the input open with the typed value until the rename actually
+  // succeeds; on failure the error surfaces in the error box and the user
+  // can correct and retry (P2). Shared by Enter and the Guardar button.
+  function commitRename(node: CategoryNode, name: string): void {
+    if (name.trim() === '') return;
+    void run(async () => {
+      await onRename(node.id, name.trim());
+      setRenaming(null);
+    }, node.id);
+  }
+
   function renderNodes(nodes: CategoryNode[], depth: number): JSX.Element[] {
     return nodes.map((node) => (
       <li key={node.id} style={{ marginLeft: depth * 16 }}>
         <span className="tree-row">
           {renaming?.id === node.id ? (
-            <input
-              aria-label={`Nuevo nombre de ${node.name}`}
-              data-testid={`rename-${node.id}`}
-              value={renaming.name}
-              onChange={(e) => setRenaming({ id: node.id, name: e.target.value })}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && renaming.name.trim() !== '') {
-                  // Keep the input open with the typed value until the rename
-                  // actually succeeds; on failure the error surfaces in the
-                  // error box and the user can correct and retry (P2).
-                  void run(async () => {
-                    await onRename(node.id, renaming.name.trim());
-                    setRenaming(null);
-                  }, node.id);
-                }
-                if (e.key === 'Escape') setRenaming(null);
-              }}
-            />
+            <>
+              <input
+                aria-label={`Nuevo nombre de ${node.name}`}
+                data-testid={`rename-${node.id}`}
+                value={renaming.name}
+                onChange={(e) => setRenaming({ id: node.id, name: e.target.value })}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') commitRename(node, renaming.name);
+                  if (e.key === 'Escape') setRenaming(null);
+                }}
+              />
+              {/* Pointer users get the same commit the Enter key performs;
+                  Escape still cancels. */}
+              <button
+                type="button"
+                className="primary"
+                data-testid={`rename-save-${node.id}`}
+                disabled={busyId === node.id}
+                onClick={() => commitRename(node, renaming.name)}
+              >
+                Guardar
+              </button>
+            </>
           ) : (
             <>
               <span>{node.name}</span>
@@ -94,27 +111,17 @@ export default function CategoryTree({
             </>
           )}
           {confirmingId === node.id ? (
-            <span className="confirm-prompt" role="alert">
-              <span className="confirm-question">¿Borrar la categoría?</span>
-              <span className="confirm-note">Se puede restaurar más tarde.</span>
-              <button
-                className="danger"
-                data-testid={`confirm-delete-${node.id}`}
-                ref={confirmRef}
-                disabled={busyId === node.id}
-                onClick={() => void handleConfirmDelete()}
-              >
-                Borrar
-              </button>
-              <button
-                className="link muted"
-                data-testid={`cancel-delete-${node.id}`}
-                disabled={busyId === node.id}
-                onClick={handleCancelDelete}
-              >
-                Cancelar
-              </button>
-            </span>
+            <ConfirmPrompt
+              question="¿Borrar la categoría?"
+              note="Se puede restaurar más tarde."
+              confirmLabel="Borrar"
+              busy={busyId === node.id}
+              confirmRef={confirmRef}
+              confirmTestId={`confirm-delete-${node.id}`}
+              cancelTestId={`cancel-delete-${node.id}`}
+              onConfirm={() => void handleConfirmDelete()}
+              onCancel={handleCancelDelete}
+            />
           ) : (
             <button
               className="danger"
