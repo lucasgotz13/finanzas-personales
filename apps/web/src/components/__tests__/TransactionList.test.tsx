@@ -238,9 +238,23 @@ describe('TransactionList', () => {
 
   it('keeps Borrar buttons visible on non-confirming rows', () => {
     render(<TransactionList transactions={transactions} {...baseProps} confirmingId={1} />);
-    // Row 1 shows the inline confirm; row 2 keeps its own Borrar button.
+    // Row 1 is the full-width confirming strip (its own Borrar); row 2 keeps
+    // its own Borrar. Only non-confirming rows still have an Editar button.
     expect(screen.getAllByRole('button', { name: 'Borrar' })).toHaveLength(2);
-    expect(screen.getAllByRole('button', { name: 'Editar' })).toHaveLength(2);
+    expect(screen.getAllByRole('button', { name: 'Editar' })).toHaveLength(1);
+  });
+
+  it('renders the confirming row as a single full-width cell outside the actions column (#115)', () => {
+    render(<TransactionList transactions={transactions} {...baseProps} confirmingId={1} />);
+
+    const prompt = screen.getByRole('alert');
+    const cell = prompt.closest('td');
+    expect(cell).not.toBeNull();
+    expect(cell).toHaveAttribute('colSpan', '7');
+    expect(cell).not.toHaveClass('actions-cell');
+    expect(cell?.closest('tr')).toHaveClass('confirming-row');
+    // The confirming strip replaces the whole row: no Editar inside it.
+    expect(within(cell as HTMLElement).queryByRole('button', { name: 'Editar' })).not.toBeInTheDocument();
   });
 
   it('moves focus to the confirm Borrar when the prompt opens and back to Editar on cancel (P3 #1)', async () => {
@@ -258,6 +272,10 @@ describe('TransactionList', () => {
 
     await user.click(screen.getByRole('button', { name: 'Cancelar' }));
     expect(onCancelDelete).toHaveBeenCalledTimes(1);
+
+    // The confirming strip replaced the row, so the Editar button only exists
+    // again after the parent clears confirmingId (as TransactionsPage does).
+    rerender(<TransactionList transactions={transactions} {...baseProps} confirmingId={null} onCancelDelete={onCancelDelete} />);
     expect(document.activeElement).toBe(screen.getAllByRole('button', { name: 'Editar' })[0]);
   });
 });
