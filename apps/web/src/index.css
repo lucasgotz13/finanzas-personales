@@ -509,20 +509,38 @@ button:disabled {
   color: var(--ink);
 }
 
+/* Delete confirmation strip (#115): the prompt takes over the whole row
+   (single colSpan cell) instead of the narrow actions cell, so it no longer
+   crams into the sticky mobile overlay or reflows the row on desktop.
+   Text left, actions right; everything stacks under ≤640px where the table
+   scrolls horizontally — content stays left-aligned and reachable without
+   scrolling. */
 .confirm-prompt {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 0.8rem;
+  flex-wrap: wrap;
+  gap: 0.35rem 1.25rem;
+  font-size: 0.85rem;
+}
+
+/* Text left, action buttons packed together on the right (space-between would
+   also stretch the gap between the two buttons). */
+.confirm-prompt button.danger {
+  margin-left: auto;
 }
 
 .confirm-prompt .confirm-question {
   font-weight: 600;
+  color: var(--ink);
 }
 
 .confirm-prompt .confirm-note {
   color: var(--muted-text);
   font-size: 0.75rem;
+}
+
+tr.confirming-row td {
+  background: var(--card);
 }
 
 .filters {
@@ -835,13 +853,30 @@ tr.asset-chart-row td {
     white-space: nowrap;
   }
 
-  /* The actions column (Editar/Borrar + inline confirm) stays pinned while
-     the table scrolls; card white + hairline so it reads as part of the card. */
+  /* The actions column (Editar/Borrar) stays pinned while the table scrolls;
+     card white + hairline so it reads as part of the card. The confirming row
+     is exempt: it renders as a full-width strip, not inside the actions cell. */
   .data .actions-cell {
     position: sticky;
     right: 0;
     background: var(--card);
     box-shadow: -1px 0 0 var(--hairline);
+  }
+
+  /* Confirm strip (#115): question and note each take a full line, left-aligned
+     within the visible area; the buttons wrap onto the line below, side by
+     side, reachable without horizontal scrolling. */
+  .confirm-prompt {
+    gap: 0.35rem 0.75rem;
+  }
+
+  .confirm-prompt button.danger {
+    margin-left: 0;
+  }
+
+  .confirm-prompt .confirm-question,
+  .confirm-prompt .confirm-note {
+    flex-basis: 100%;
   }
 
   /* Single-column form; 16px inputs prevent iOS focus-zoom (also covers the

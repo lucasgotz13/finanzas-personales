@@ -48,9 +48,12 @@ export default function TransactionList({
   const [sort, setSort] = useState<TransactionSort>('none');
   const [busy, setBusy] = useState(false);
   const confirmRef = useRef<HTMLButtonElement | null>(null);
-  // The row's Editar button keeps focus after the prompt is cancelled; the
-  // row stays mounted in both states, so the reference stays valid (P2/P3 #1).
-  const restoreRef = useRef<HTMLButtonElement | null>(null);
+  // Rows' Editar buttons by id: when a confirmation opens, the row is replaced
+  // by the full-width confirming strip and the Editar button unmounts, so the
+  // pending row id is stored at Borrar-click time and focus is restored to the
+  // re-mounted button after the prompt closes (P2/P3 #1, #115).
+  const editButtonRefs = useRef(new Map<number, HTMLButtonElement | null>());
+  const pendingRestoreIdRef = useRef<number | null>(null);
 
   useEffect(() => {
     setSort('none');
@@ -66,10 +69,19 @@ export default function TransactionList({
     });
   }, [sort, transactions]);
 
-  // Focus the confirm action when the prompt opens (two-tap stays: focus
-  // moves to Borrar, Enter confirms).
+  // Focus choreography (P3 #1): focus moves to the confirm Borrar when the
+  // prompt opens; when it closes, the row re-renders and focus returns to the
+  // re-mounted Editar button of the row that opened the prompt.
   useEffect(() => {
-    if (confirmingId !== null) confirmRef.current?.focus();
+    if (confirmingId !== null) {
+      confirmRef.current?.focus();
+      return;
+    }
+    const pendingId = pendingRestoreIdRef.current;
+    if (pendingId !== null) {
+      pendingRestoreIdRef.current = null;
+      editButtonRefs.current.get(pendingId)?.focus();
+    }
   }, [confirmingId]);
 
   async function handleConfirm(): Promise<void> {
@@ -81,14 +93,17 @@ export default function TransactionList({
     }
   }
 
-  function handleDeleteClick(tx: ApiTransaction, e: React.MouseEvent<HTMLButtonElement>): void {
-    restoreRef.current = e.currentTarget.closest('tr')?.querySelector('button.link') ?? null;
+  function handleDeleteClick(tx: ApiTransaction): void {
+    // The row becomes the confirming strip on re-render, unmounting its Editar
+    // button; remember the row so focus can be restored after cancel.
+    pendingRestoreIdRef.current = tx.id;
     onDelete(tx);
   }
 
   function handleCancel(): void {
+    // The parent clears confirmingId; the row re-renders and the focus effect
+    // restores focus to the re-mounted Editar button.
     onCancelDelete();
-    restoreRef.current?.focus();
   }
 
   const nextSort: TransactionSort = sort === 'none' || sort === 'descending' ? 'ascending' : 'descending';
@@ -142,7 +157,35 @@ export default function TransactionList({
           </tr>
         </thead>
         <tbody>
-          {visibleTransactions.map((tx) => (
+          {visibleTransactions.map((tx) => {
+            if (confirmingId === tx.id) {
+              // The confirmation takes over the whole row (#115): a single
+              // full-width cell instead of cramming the prompt into the
+              // narrow (sticky on mobile) actions cell.
+              return (
+                <tr key={tx.id} className="confirming-row">
+                  <td colSpan={7}>
+                    <span className="confirm-prompt" role="alert">
+                      <span className="confirm-question">¿Borrar la transacción?</span>
+                      <span className="confirm-note">Se eliminará de presupuestos y resúmenes.</span>
+                      <button
+                        type="button"
+                        className="danger"
+                        ref={confirmRef}
+                        onClick={handleConfirm}
+                        disabled={busy}
+                      >
+                        Borrar
+                      </button>
+                      <button type="button" className="link muted" onClick={handleCancel} disabled={busy}>
+                        Cancelar
+                      </button>
+                    </span>
+                  </td>
+                </tr>
+              );
+            }
+            return (
             <tr key={tx.id}>
               <td>{formatDate(tx.date)}</td>
               <td>{tx.note || '—'}</td>
@@ -156,39 +199,29 @@ export default function TransactionList({
               </td>
               <td className="rate-cell">{tx.currency === 'USD' ? formatRate(tx.rate) : '—'}</td>
               <td className="row-actions actions-cell">
-                <button type="button" className="link muted" onClick={() => onEdit(tx)} disabled={busy}>
+                <button
+                  type="button"
+                  className="link muted"
+                  ref={(el) => {
+                    editButtonRefs.current.set(tx.id, el);
+                  }}
+                  onClick={() => onEdit(tx)}
+                  disabled={busy}
+                >
                   Editar
                 </button>
-                {confirmingId === tx.id ? (
-                  <span className="confirm-prompt" role="alert">
-                    <span className="confirm-question">¿Borrar la transacción?</span>
-                    <span className="confirm-note">Se eliminará de presupuestos y resúmenes.</span>
-                    <button
-                      type="button"
-                      className="danger"
-                      ref={confirmRef}
-                      onClick={handleConfirm}
-                      disabled={busy}
-                    >
-                      Borrar
-                    </button>
-                    <button type="button" className="link muted" onClick={handleCancel} disabled={busy}>
-                      Cancelar
-                    </button>
-                  </span>
-                ) : (
-                  <button
-                    type="button"
-                    className="danger"
-                    onClick={(e) => handleDeleteClick(tx, e)}
-                    disabled={busy}
-                  >
-                    Borrar
-                  </button>
-                )}
+                <button
+                  type="button"
+                  className="danger"
+                  onClick={() => handleDeleteClick(tx)}
+                  disabled={busy}
+                >
+                  Borrar
+                </button>
               </td>
             </tr>
-          ))}
+            );
+          })}
         </tbody>
       </table>
     </>
