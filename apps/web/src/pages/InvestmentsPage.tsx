@@ -5,6 +5,7 @@ import { useApi } from '../hooks/useApi';
 import type { PositionView, SeriesCurrency, SeriesRange, Trade } from '../types';
 
 const PortfolioChart = lazy(() => import('../components/PortfolioChart'));
+const PortfolioAllocation = lazy(() => import('../components/PortfolioAllocation'));
 const AssetChart = lazy(() => import('../components/AssetChart'));
 
 /** PI-5: TTL-respecting auto-refresh cadence while the tab is active. */
@@ -224,6 +225,11 @@ export default function InvestmentsPage({ active = true }: { active?: boolean })
               </div>
             </div>
           </section>
+          {portfolio.data !== null && (
+            <Suspense fallback={<div className="empty">Cargando distribución…</div>}>
+              <PortfolioAllocation positions={positions} />
+            </Suspense>
+          )}
           <section className="card">
             <h2>{editing ? 'Editar operación' : 'Registrar operación'}</h2>
             <TradeForm
