@@ -80,6 +80,63 @@ describe('InvestmentsPage (PI-6, TH-6)', () => {
     expect(ggal).toHaveTextContent('Pérdida');
   });
 
+  it('shows allocation by current USD value, not quantities or cost, with a readable legend', async () => {
+    const data = summary();
+    data.positions[1] = { ...data.positions[1], quantity: 100, status: 'fresh', priceMinor: 6000, valueUsdMinor: 600000 };
+    vi.spyOn(api, 'getPortfolio').mockResolvedValue(data);
+    vi.spyOn(api, 'listTrades').mockResolvedValue([]);
+    vi.spyOn(api, 'getPortfolioHistory').mockResolvedValue(history());
+
+    render(<InvestmentsPage />);
+
+    const chart = await screen.findByRole('region', { name: 'Distribución de la cartera' });
+    expect(within(chart).getByRole('img', { name: 'Distribución por activo en USD' })).toBeInTheDocument();
+    const entries = within(chart).getAllByRole('listitem');
+    expect(entries[0]).toHaveTextContent('GGAL.BA');
+    expect(entries[0]).toHaveTextContent('75%');
+    expect(entries[0]).toHaveTextContent('US$ 6.000,00');
+    expect(entries[1]).toHaveTextContent('AAPL.BA');
+    expect(entries[1]).toHaveTextContent('25%');
+    expect(entries[1]).toHaveTextContent('US$ 2.000,00');
+  });
+
+  it('discloses partial allocation and stale prices without requiring CCL or including closed holdings', async () => {
+    const data = summary();
+    data.ccStatus = 'absent';
+    data.positions[0] = { ...data.positions[0], status: 'stale', valueArsMinor: null };
+    data.positions.push({ ...data.positions[0], id: 3, ticker: 'SOLD', quantity: 0, valueUsdMinor: 0 });
+    vi.spyOn(api, 'getPortfolio').mockResolvedValue(data);
+    vi.spyOn(api, 'listTrades').mockResolvedValue([]);
+    vi.spyOn(api, 'getPortfolioHistory').mockResolvedValue(history());
+
+    render(<InvestmentsPage />);
+
+    const chart = await screen.findByRole('region', { name: 'Distribución de la cartera' });
+    expect(within(chart).getAllByRole('listitem')).toHaveLength(1);
+    expect(within(chart).getByRole('listitem')).toHaveTextContent('100%');
+    expect(chart).toHaveTextContent('Sin cotización en USD: GGAL.BA. Los porcentajes solo incluyen activos valuados.');
+    expect(chart).toHaveTextContent('Cotizaciones vencidas: AAPL.BA.');
+    expect(chart).not.toHaveTextContent('SOLD');
+  });
+
+  it.each(['empty', 'unpriced', 'zero'] as const)('shows an honest empty allocation for an %s portfolio', async (state) => {
+    const data = summary();
+    data.positions = state === 'empty' ? [] : [
+      { ...data.positions[0], valueUsdMinor: state === 'unpriced' ? null : 0, status: state === 'unpriced' ? 'absent' : 'fresh' },
+    ];
+    vi.spyOn(api, 'getPortfolio').mockResolvedValue(data);
+    vi.spyOn(api, 'listTrades').mockResolvedValue([]);
+    vi.spyOn(api, 'getPortfolioHistory').mockResolvedValue(history());
+
+    render(<InvestmentsPage />);
+
+    const chart = await screen.findByRole('region', { name: 'Distribución de la cartera' });
+    expect(chart).toHaveTextContent('Sin posiciones con valor en USD para mostrar la distribución.');
+    expect(within(chart).queryByRole('img')).not.toBeInTheDocument();
+    expect(within(chart).queryByRole('list')).not.toBeInTheDocument();
+    expect(chart).not.toHaveTextContent('NaN');
+  });
+
   it('shows empty states when there are no trades and no positions', async () => {
     vi.spyOn(api, 'getPortfolio').mockResolvedValue({ ccStatus: 'absent', totals: { valueUsdMinor: 0, valueArsMinor: null, pnlUsdMinor: 0, pnlPct: null, pnlArsMinor: null, realizedUsdMinor: 0 }, positions: [] });
     vi.spyOn(api, 'listTrades').mockResolvedValue([]);

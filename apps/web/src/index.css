@@ -714,6 +714,63 @@ ul.tree .tree-row input {
   width: 100%;
 }
 
+.allocation-layout {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.5rem;
+  margin-top: 0.75rem;
+}
+
+.allocation-plot {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.allocation-legend {
+  flex: 2 1 280px;
+  min-width: 0;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.allocation-legend li {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 0;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.allocation-legend li:last-child {
+  border-bottom: 0;
+}
+
+.allocation-swatch {
+  width: 0.75rem;
+  height: 0.75rem;
+  flex-shrink: 0;
+}
+
+.allocation-asset {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.allocation-asset span,
+.allocation-value span {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--muted-text);
+}
+
+.allocation-value {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
 /* Charts flip with the theme: recharts paints SVG presentation attributes,
    and CSS custom-property rules override them (PC-5 palette on both themes). */
 .recharts-line-curve {
