@@ -19,7 +19,9 @@ export default function IndicatorsPage({ active = true }: { active?: boolean }):
 
   // Auto-refresh every 5 min while the document is visible AND the tab is
   // active. Panels stay mounted (P1), so the interval pauses in hidden tabs
-  // and on tab switches, and fires once on visibilitychange back to visible.
+  // and on tab switches. A non-forced tick also runs on entry (mount or
+  // re-activation) and on visibilitychange back to visible, so entering the
+  // tab updates stale indicators without waiting for the interval.
   // The refresh is never forced: the server TTL gates the fetch, then the
   // views reload (EI-6).
   useEffect(() => {
@@ -54,7 +56,10 @@ export default function IndicatorsPage({ active = true }: { active?: boolean }):
         stop();
       }
     };
-    if (!document.hidden) start();
+    if (!document.hidden) {
+      start();
+      tick(); // entry tick: refresh once non-forced on mount/activation
+    }
     document.addEventListener('visibilitychange', onVisibilityChange);
     return () => {
       stop();

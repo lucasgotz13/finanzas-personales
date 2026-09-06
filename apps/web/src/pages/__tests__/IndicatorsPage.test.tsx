@@ -158,7 +158,7 @@ describe('IndicatorsPage (EI-6)', () => {
     await user.click(screen.getByTestId('indicators-refresh'));
 
     expect(api.refreshIndicators).toHaveBeenCalledWith(true);
-    await vi.waitFor(() => expect(api.getIndicators).toHaveBeenCalledTimes(2));
+    await vi.waitFor(() => expect(api.getIndicators).toHaveBeenCalledTimes(3));
   });
 
   it('surfaces the refresh error in a role=alert box (P2)', async () => {
@@ -183,14 +183,18 @@ describe('IndicatorsPage (EI-6)', () => {
     await act(async () => {
       await vi.advanceTimersByTimeAsync(0);
     });
-    expect(api.getIndicators).toHaveBeenCalledTimes(1);
+    // Entry tick: one non-forced refresh on mount/entry, then the views reload.
+    expect(api.refreshIndicators).toHaveBeenCalledTimes(1);
+    expect(api.refreshIndicators).toHaveBeenCalledWith(false);
+    expect(api.getIndicators).toHaveBeenCalledTimes(2);
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(FIVE_MINUTES);
     });
 
     expect(api.refreshIndicators).toHaveBeenCalledWith(false);
-    expect(api.getIndicators).toHaveBeenCalledTimes(2);
+    expect(api.refreshIndicators).toHaveBeenCalledTimes(2);
+    expect(api.getIndicators).toHaveBeenCalledTimes(3);
   });
 
   it('cleans up the auto-refresh interval on unmount', () => {
@@ -220,13 +224,15 @@ describe('IndicatorsPage (EI-6)', () => {
     await act(async () => {
       await vi.advanceTimersByTimeAsync(0);
     });
-    expect(api.getIndicators).toHaveBeenCalledTimes(1);
+    // Entry tick on mount: one non-forced refresh plus the reload.
+    expect(refresh).toHaveBeenCalledTimes(1);
+    expect(api.getIndicators).toHaveBeenCalledTimes(2);
 
     // Visible cadence: one refresh per 5 minutes.
     await act(async () => {
       await vi.advanceTimersByTimeAsync(FIVE_MINUTES);
     });
-    expect(refresh).toHaveBeenCalledTimes(1);
+    expect(refresh).toHaveBeenCalledTimes(2);
 
     // Tab hidden: the interval pauses.
     visibility.hidden = true;
@@ -236,28 +242,29 @@ describe('IndicatorsPage (EI-6)', () => {
     await act(async () => {
       await vi.advanceTimersByTimeAsync(3 * FIVE_MINUTES);
     });
-    expect(refresh).toHaveBeenCalledTimes(1);
+    expect(refresh).toHaveBeenCalledTimes(2);
 
     // Back to visible: exactly one catch-up refresh, then the cadence resumes.
     visibility.hidden = false;
     await act(async () => {
       document.dispatchEvent(new Event('visibilitychange'));
     });
-    expect(refresh).toHaveBeenCalledTimes(2);
+    expect(refresh).toHaveBeenCalledTimes(3);
     await act(async () => {
       await vi.advanceTimersByTimeAsync(FIVE_MINUTES);
     });
-    expect(refresh).toHaveBeenCalledTimes(3);
+    expect(refresh).toHaveBeenCalledTimes(4);
   });
 
   it('shows the fetch error in a role=alert box and Reintentar reloads the views (P3 #4, #9)', async () => {
     const getIndicators = vi.spyOn(api, 'getIndicators').mockRejectedValue(new Error('panel caído'));
+    vi.spyOn(api, 'refreshIndicators').mockResolvedValue({ results: [] });
     const user = userEvent.setup();
 
     render(<IndicatorsPage />);
 
     expect(await screen.findByRole('alert')).toHaveTextContent('panel caído');
     await user.click(screen.getByTestId('retry-indicators'));
-    await vi.waitFor(() => expect(getIndicators).toHaveBeenCalledTimes(2));
+    await vi.waitFor(() => expect(getIndicators).toHaveBeenCalledTimes(3));
   });
 });
