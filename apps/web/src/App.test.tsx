@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import App from './App';
@@ -66,16 +66,23 @@ describe('App tab switching', () => {
     expect(screen.getByTestId('note')).toBeInTheDocument();
   });
 
-  it('exposes the navs as tablists with role=tab and aria-selected on each tab (P3 #14)', async () => {
+  it('exposes the desktop tablist with role=tab and aria-selected on each tab, plus a mobile menu button (P3 #14)', async () => {
     mockAllApis();
     render(<App />);
     await screen.findByTestId('note');
 
     // The desktop tablist is visible to the a11y tree; the mobile bottom bar
-    // carries the same roles but is display:none at desktop widths.
+    // holds a single menu button (display:none at desktop widths) and the
+    // sheet mounts only while open.
     expect(screen.getByRole('tablist', { name: 'Secciones' })).toBeInTheDocument();
-    expect(document.querySelector('.bottom-bar')?.getAttribute('role')).toBe('tablist');
+    expect(document.querySelector('.bottom-bar')?.getAttribute('role')).not.toBe('tablist');
     expect(document.querySelector('.desktop-tabs')?.getAttribute('role')).toBe('tablist');
+
+    // The menu button is hidden at desktop widths, so query it as hidden.
+    const menuButton = screen.getByRole('button', { name: 'Menú', hidden: true });
+    expect(menuButton).toHaveAttribute('aria-expanded', 'false');
+    expect(menuButton).toHaveAttribute('aria-controls', 'mobile-nav-sheet');
+    expect(screen.queryByRole('dialog', { name: 'Menú de secciones' })).not.toBeInTheDocument();
 
     const transactionsTab = screen.getByRole('tab', { name: 'Transacciones' });
     const categoriesTab = screen.getByRole('tab', { name: 'Categorías' });
@@ -88,7 +95,7 @@ describe('App tab switching', () => {
     expect(transactionsTab).toHaveAttribute('aria-selected', 'false');
   });
 
-  it('switches tabs from the mobile bottom bar, sharing state with the header tabs', async () => {
+  it('opens the mobile sheet from the menu button and switches tabs, sharing state with the header tabs', async () => {
     mockAllApis();
     render(<App />);
     await screen.findByTestId('note');
@@ -96,10 +103,19 @@ describe('App tab switching', () => {
     const bottomBar = document.querySelector('.bottom-bar');
     expect(bottomBar).not.toBeNull();
 
-    const indicatorsButton = Array.from(bottomBar!.querySelectorAll('button')).find((b) => b.textContent === 'Indicadores');
-    expect(indicatorsButton).toBeDefined();
-    fireEvent.click(indicatorsButton!);
-    const clickedIndicator = indicatorsButton!;
+    const menuButton = screen.getByRole('button', { name: 'Menú', hidden: true });
+    fireEvent.click(menuButton);
+
+    const dialog = await screen.findByRole('dialog', { name: 'Menú de secciones' });
+    expect(menuButton).toHaveAttribute('aria-expanded', 'true');
+    // The sheet lists all 7 tabs.
+    expect(within(dialog).getAllByRole('tab')).toHaveLength(7);
+
+    fireEvent.click(within(dialog).getByRole('tab', { name: 'Indicadores' }));
+
+    // Selecting a tab navigates AND closes the sheet.
+    expect(screen.queryByRole('dialog', { name: 'Menú de secciones' })).not.toBeInTheDocument();
+    expect(menuButton).toHaveAttribute('aria-expanded', 'false');
 
     // The Indicators panel is now the visible one.
     const visiblePanel = Array.from(document.querySelectorAll('.tab-panel')).find((p) => !p.classList.contains('hidden'));
@@ -108,7 +124,57 @@ describe('App tab switching', () => {
     // The same state drives the desktop header tabs.
     const desktopButton = Array.from(document.querySelectorAll('nav.tabs.desktop-tabs button')).find((b) => b.textContent === 'Indicadores');
     expect(desktopButton?.classList.contains('active')).toBe(true);
-    expect(clickedIndicator.classList.contains('active')).toBe(true);
+  });
+
+  it('closes the mobile sheet on backdrop tap', async () => {
+    mockAllApis();
+    render(<App />);
+    await screen.findByTestId('note');
+
+    const menuButton = screen.getByRole('button', { name: 'Menú', hidden: true });
+    fireEvent.click(menuButton);
+    expect(await screen.findByRole('dialog', { name: 'Menú de secciones' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('mobile-nav-backdrop'));
+
+    expect(screen.queryByRole('dialog', { name: 'Menú de secciones' })).not.toBeInTheDocument();
+    expect(menuButton).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('closes the mobile sheet on Escape', async () => {
+    mockAllApis();
+    render(<App />);
+    await screen.findByTestId('note');
+
+    const menuButton = screen.getByRole('button', { name: 'Menú', hidden: true });
+    fireEvent.click(menuButton);
+    expect(await screen.findByRole('dialog', { name: 'Menú de secciones' })).toBeInTheDocument();
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+
+    expect(screen.queryByRole('dialog', { name: 'Menú de secciones' })).not.toBeInTheDocument();
+    expect(menuButton).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('locks body scroll while the sheet is open and moves focus sensibly', async () => {
+    mockAllApis();
+    render(<App />);
+    await screen.findByTestId('note');
+
+    const menuButton = screen.getByRole('button', { name: 'Menú', hidden: true });
+    fireEvent.click(menuButton);
+    const dialog = await screen.findByRole('dialog', { name: 'Menú de secciones' });
+
+    expect(document.body.style.overflow).toBe('hidden');
+    // Focus moves into the sheet on open (the active tab).
+    expect(dialog.contains(document.activeElement)).toBe(true);
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+
+    expect(document.body.style.overflow).toBe('');
+    expect(screen.queryByRole('dialog', { name: 'Menú de secciones' })).not.toBeInTheDocument();
+    // Focus returns to the menu button on close.
+    expect(document.activeElement).toBe(menuButton);
   });
 
   it('defers budgets/indicators/portfolio fetches until their tab is opened (optimize batch)', async () => {
