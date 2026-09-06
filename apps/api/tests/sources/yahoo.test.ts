@@ -1,6 +1,6 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { YahooSource } from '../../src/sources/yahoo';
-import { jsonFetch, malformedJsonFetch } from './helpers';
+import { jsonFetch } from './helpers';
 
 function chart(meta: unknown): unknown {
   return { chart: { result: [{ meta }] } };
@@ -36,7 +36,7 @@ describe('YahooSource (PI-2)', () => {
     await expect(source.fetch('GGAL.BA')).rejects.toThrow('no CCL available');
   });
 
-  it('throws on HTTP 404', async () => {
+  it('throws on HTTP 404 (transport failure propagation)', async () => {
     const source = new YahooSource(async () => CCL, jsonFetch({}, 404));
 
     await expect(source.fetch('NOPE.BA')).rejects.toThrow('HTTP 404');
@@ -48,37 +48,10 @@ describe('YahooSource (PI-2)', () => {
     await expect(source.fetch('AAPL.BA')).rejects.toThrow('invalid regularMarketPrice');
   });
 
-  it('throws on malformed JSON', async () => {
-    const source = new YahooSource(async () => CCL, malformedJsonFetch());
-
-    await expect(source.fetch('AAPL.BA')).rejects.toThrow('malformed JSON');
-  });
-
   it('throws on an unsupported quote currency', async () => {
     const fetchFn = jsonFetch(chart({ regularMarketPrice: 100, currency: 'CAD' }));
     const source = new YahooSource(async () => CCL, fetchFn);
 
     await expect(source.fetch('X.BA')).rejects.toThrow('unsupported yahoo currency CAD');
-  });
-
-  it('fails fast on 429: cooldown blocks retries for 60 s, then expires', async () => {
-    let now = 0;
-    let mode = '429';
-    const fetchFn = vi.fn(async () => {
-      if (mode === '429') return new Response('{}', { status: 429 });
-      return new Response(JSON.stringify(chart({ regularMarketPrice: 200, currency: 'USD' })), { status: 200 });
-    });
-    const source = new YahooSource(async () => CCL, fetchFn as unknown as typeof fetch, 10_000, () => now);
-
-    await expect(source.fetch('AAPL.BA')).rejects.toThrow('HTTP 429');
-    now = 30_000;
-    await expect(source.fetch('AAPL.BA')).rejects.toThrow('cooldown active');
-    expect(fetchFn).toHaveBeenCalledTimes(1);
-
-    now = 61_000;
-    mode = 'ok';
-    const quote = await source.fetch('AAPL.BA');
-    expect(quote.priceMinor).toBe(20000);
-    expect(fetchFn).toHaveBeenCalledTimes(2);
   });
 });

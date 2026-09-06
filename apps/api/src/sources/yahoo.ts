@@ -1,9 +1,5 @@
 import type { PriceQuote, PriceSource } from '@finanzas/domain';
-
-const BASE_URL = 'https://query1.finance.yahoo.com/v8/finance/chart';
-const DEFAULT_TIMEOUT_MS = 10_000;
-/** 429 safety: fail fast per ticker for 60 s instead of hammering Yahoo (PI-2). */
-const COOLDOWN_MS = 60_000;
+import { YahooTransport } from './yahoo-transport';
 
 interface ChartBody {
   chart?: { result?: Array<{ meta?: { regularMarketPrice?: unknown; currency?: unknown } }> };
@@ -17,42 +13,21 @@ interface ChartBody {
  * the domain keeps the prior snapshot.
  */
 export class YahooSource implements PriceSource {
-  private cooldownUntil = new Map<string, number>();
+  private transport: YahooTransport;
 
   constructor(
     private getCcl: () => Promise<{ value: number; fetchedAt: string } | null>,
-    private fetchFn: typeof fetch = fetch,
-    private timeoutMs: number = DEFAULT_TIMEOUT_MS,
-    private now: () => number = Date.now,
-  ) {}
+    fetchFn: typeof fetch = fetch,
+    timeoutMs = 10_000,
+    now: () => number = Date.now,
+  ) {
+    // Own transport instance: quote cooldown state stays separate from the
+    // history adapter (sharing it would change failure behavior).
+    this.transport = new YahooTransport(fetchFn, timeoutMs, now);
+  }
 
   async fetch(ticker: string): Promise<PriceQuote> {
-    const cooldown = this.cooldownUntil.get(ticker);
-    if (cooldown !== undefined && this.now() < cooldown) {
-      throw new Error(`yahoo cooldown active for ${ticker}`);
-    }
-    const url = `${BASE_URL}/${encodeURIComponent(ticker)}?interval=1d&range=1d`;
-    // Yahoo's edge throttles headerless requests from datacenter IPs (HTTP 429);
-    // a browser-like User-Agent + Accept keeps the keyless v8 chart endpoint usable.
-    const res = await this.fetchFn(url, {
-      signal: AbortSignal.timeout(this.timeoutMs),
-      headers: {
-        'User-Agent':
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
-        Accept: 'application/json',
-        'Accept-Language': 'en-US,en;q=0.9',
-      },
-    });
-    if (!res.ok) {
-      if (res.status === 429) this.cooldownUntil.set(ticker, this.now() + COOLDOWN_MS);
-      throw new Error(`yahoo returned HTTP ${res.status}`);
-    }
-    let body: unknown;
-    try {
-      body = await res.json();
-    } catch {
-      throw new Error('yahoo returned malformed JSON');
-    }
+    const body = await this.transport.getJson(ticker, 'interval=1d&range=1d');
     const result = (body as ChartBody).chart?.result;
     const raw = result?.[0]?.meta?.regularMarketPrice;
     const price = raw === null || raw === undefined ? Number.NaN : Number(raw);

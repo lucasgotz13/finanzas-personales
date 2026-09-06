@@ -247,6 +247,47 @@ describe('TradeService realized totals (TH-4)', () => {
   });
 });
 
+describe('TradeService portfolio snapshot (Item 6)', () => {
+  it('computes positions and realized totals from a single ledger read', async () => {
+    const { service, repo } = makeService();
+    await service.create(buy('AAPL.BA', '2026-08-01', 10.5, 18000));
+    await service.create(buy('AAPL.BA', '2026-08-01', 4.5, 22000));
+    await service.create(sell('AAPL.BA', '2026-08-02', 5, 25000));
+    await service.create(buy('GGAL.BA', '2026-08-01', 20, 6000));
+    await service.create(sell('GGAL.BA', '2026-08-02', 20, 7000));
+
+    let reads = 0;
+    const baseList = repo.list.bind(repo);
+    repo.list = async () => {
+      reads++;
+      return baseList();
+    };
+
+    const snapshot = await service.portfolioSnapshot();
+
+    expect(reads).toBe(1);
+    // avg = (10.5 * 18000 + 4.5 * 22000) / 15 = 19200; qty = 15 - 5
+    expect(snapshot.positions).toHaveLength(1);
+    expect(snapshot.positions[0]).toMatchObject({ ticker: 'AAPL.BA', quantity: 10, avgCostMinor: 19200 });
+    // Fully sold GGAL.BA has no position but keeps its realized P&L.
+    expect(snapshot.totals.perTicker['AAPL.BA']).toBe((25000 - 19200) * 5);
+    expect(snapshot.totals.perTicker['GGAL.BA']).toBe((7000 - 6000) * 20);
+    expect(snapshot.totals.total).toBe(29000 + 20000);
+  });
+
+  it('agrees with the separate derivedPositions and realizedTotals outputs', async () => {
+    const { service } = makeService();
+    await service.create(buy('AAPL.BA', '2026-08-01', 10, 18000));
+    await service.create(sell('AAPL.BA', '2026-08-02', 4, 25000));
+    await service.create(buy('MELI.BA', '2026-08-01', 2.5, 50000));
+
+    const snapshot = await service.portfolioSnapshot();
+
+    await expect(service.derivedPositions()).resolves.toEqual(snapshot.positions);
+    await expect(service.realizedTotals()).resolves.toEqual(snapshot.totals);
+  });
+});
+
 describe('DerivedPositionRepository (PI-1, D2, D3)', () => {
   function legacyPosition(id: number, ticker: string, name: string): Position {
     return { id, ticker, name, quantity: 0, avgCostMinor: 0, currency: 'USD', createdAt: '2026-08-01T00:00:00.000Z' };

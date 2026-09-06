@@ -37,6 +37,20 @@ export interface RealizedLedgerPort {
   realizedTotals(): Promise<RealizedTotals>;
 }
 
+/** One request-scoped ledger snapshot: derived positions plus cumulative
+ * realized P&L computed from a single ledger read. The snapshot is a plain
+ * local value — never a shared cache — so no invalidation is needed. */
+export interface PortfolioSnapshot {
+  positions: Position[];
+  totals: RealizedTotals;
+}
+
+/** Combined portfolio read: positions + realized totals from one
+ * request-scoped ledger snapshot instead of two separate ledger scans. */
+export interface PortfolioSnapshotPort {
+  portfolioSnapshot(): Promise<PortfolioSnapshot>;
+}
+
 /** Read-only CCL access for ARS valuation (PI-4). The portfolio never
  * fetches FX; it reuses the existing indicator cache. */
 export interface PortfolioFxPort {

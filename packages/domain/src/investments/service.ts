@@ -1,5 +1,5 @@
 import { PRICE_TTL_MS } from './catalog';
-import type { PositionRepository, PortfolioFxPort, PriceCache, PriceSource, RealizedLedgerPort } from './ports';
+import type { PortfolioSnapshot, PortfolioSnapshotPort, PositionRepository, PortfolioFxPort, PriceCache, PriceSource, RealizedLedgerPort } from './ports';
 import type { CcStatus, PortfolioRefreshResult, PortfolioSummary, PositionView } from './types';
 import { TTL_BY_CLASS } from '../indicators/catalog';
 
@@ -25,17 +25,30 @@ const CCL_TTL_MS = TTL_BY_CLASS.fx;
 export class PortfolioService {
   constructor(private deps: PortfolioServiceDeps) {}
 
-  /** Cache-first views + CCL-aware totals; absent/stale degrade, never blank (PI-4). */
+  /** Cache-first views + CCL-aware totals; absent/stale degrade, never blank (PI-4).
+   * Positions and realized totals come from one request-scoped ledger snapshot
+   * when the repository supports it — a local value, not a shared cache. */
   async getPortfolio(): Promise<PortfolioSummary> {
-    const positions = await this.deps.repo.list();
+    const { positions, totals: realized } = await this.portfolioSnapshot();
     const fx = await this.deps.fx.getCcl();
-    const realized = await this.deps.ledger.realizedTotals();
     const ccStatus = this.ccStatusOf(fx);
     const views: PositionView[] = [];
     for (const position of positions) {
       views.push(await this.toView(position, fx, realized.perTicker[position.ticker] ?? 0));
     }
     return { ccStatus, totals: this.totalsOf(views, fx, realized.total), positions: views };
+  }
+
+  /** Single-snapshot read when the repository exposes it; otherwise the
+   * legacy two-path read (positions, then realized totals). */
+  private async portfolioSnapshot(): Promise<PortfolioSnapshot> {
+    const repo = this.deps.repo as Partial<PortfolioSnapshotPort>;
+    if (typeof repo.portfolioSnapshot === 'function') {
+      return repo.portfolioSnapshot();
+    }
+    const positions = await this.deps.repo.list();
+    const totals = await this.deps.ledger.realizedTotals();
+    return { positions, totals };
   }
 
   /** Refresh every position sequentially; within-TTL positions are skipped
