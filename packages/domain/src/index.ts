@@ -23,7 +23,7 @@ export type { PortfolioServiceDeps } from './investments/service';
 export { TradeService, derivedPositionId } from './investments/trades';
 export type { TradeServiceDeps } from './investments/trades';
 export { DerivedPositionRepository } from './investments/derived-repo';
-export type { PriceSource, PriceCache, PositionRepository, PortfolioFxPort, TradeRepository, LegacyPositionPort, RealizedLedgerPort } from './investments/ports';
+export type { PriceSource, PriceCache, PositionRepository, PortfolioFxPort, TradeRepository, LegacyPositionPort, RealizedLedgerPort, PortfolioSnapshot, PortfolioSnapshotPort } from './investments/ports';
 export type {
   PriceStatus,
   CcStatus,

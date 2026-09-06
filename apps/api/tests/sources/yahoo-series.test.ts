@@ -1,6 +1,6 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { YahooSeriesSource } from '../../src/sources/yahoo-series';
-import { jsonFetch, malformedJsonFetch } from './helpers';
+import { jsonFetch } from './helpers';
 
 const DAY = 86_400;
 
@@ -69,7 +69,7 @@ describe('YahooSeriesSource (PC-1, PC-2)', () => {
     ]);
   });
 
-  it('throws on HTTP 404', async () => {
+  it('throws on HTTP 404 (transport failure propagation)', async () => {
     const source = new YahooSeriesSource(jsonFetch({ chart: { error: 'Not found' } }, 404));
 
     await expect(source.fetchSeries('NOPE.BA', '3m')).rejects.toThrow('HTTP 404');
@@ -93,28 +93,4 @@ describe('YahooSeriesSource (PC-1, PC-2)', () => {
     );
   });
 
-  it('throws on malformed JSON', async () => {
-    await expect(new YahooSeriesSource(malformedJsonFetch()).fetchSeries('AAPL', '3m')).rejects.toThrow('malformed JSON');
-  });
-
-  it('fails fast on 429: cooldown blocks retries for 60 s, then expires', async () => {
-    let now = 0;
-    let mode = '429';
-    const fetchFn = vi.fn(async () => {
-      if (mode === '429') return new Response('{}', { status: 429 });
-      return new Response(JSON.stringify(chart('USD', [ts('2026-08-05')], [200])), { status: 200 });
-    });
-    const source = new YahooSeriesSource(fetchFn as unknown as typeof fetch, 10_000, () => now);
-
-    await expect(source.fetchSeries('AAPL', '3m')).rejects.toThrow('HTTP 429');
-    now = 30_000;
-    await expect(source.fetchSeries('AAPL', '3m')).rejects.toThrow('cooldown active');
-    expect(fetchFn).toHaveBeenCalledTimes(1);
-
-    now = 61_000;
-    mode = 'ok';
-    const series = await source.fetchSeries('AAPL', '3m');
-    expect(series.points).toEqual([{ date: '2026-08-05', valueMinor: 20000 }]);
-    expect(fetchFn).toHaveBeenCalledTimes(2);
-  });
 });

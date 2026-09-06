@@ -1,11 +1,6 @@
-import { useRef, useState } from 'react';
 import { api } from '../api';
-import { useApi } from '../hooks/useApi';
-import type { SeriesCurrency, SeriesRange } from '../types';
+import { HISTORY_CURRENCIES, HISTORY_RANGES, useHistoryChart } from '../hooks/useHistoryChart';
 import SeriesChart from './SeriesChart';
-
-const RANGES: SeriesRange[] = ['1m', '3m', '6m', '1y'];
-const CURRENCIES: SeriesCurrency[] = ['ARS', 'USD'];
 
 interface AssetChartProps {
   positionId: number;
@@ -15,21 +10,13 @@ interface AssetChartProps {
 /** Per-asset chart (PC-2, PC-5): inline expansion below the tapped position
  * row; the page keeps a single one open at a time. Cache-first reads. */
 export default function AssetChart({ positionId, ticker }: AssetChartProps): JSX.Element {
-  const [range, setRange] = useState<SeriesRange>('3m');
-  const [currency, setCurrency] = useState<SeriesCurrency>('ARS');
-  const forcedPairs = useRef(new Set<string>());
-  const chart = useApi(() => api.getPositionHistory(positionId, range, currency), [positionId, range, currency]);
-
-  // PC-4: same toggle-time force-once policy as the portfolio chart — one
-  // force per (range, currency) pair per session, covering the warm-up race.
-  const selectCurrency = (next: SeriesCurrency): void => {
-    setCurrency(next);
-    const key = `${range}:${next}`;
-    if (!forcedPairs.current.has(key)) {
-      forcedPairs.current.add(key);
-      void api.getPositionHistory(positionId, range, next, true).catch(() => undefined);
-    }
-  };
+  const { range, setRange, currency, selectCurrency, chart } = useHistoryChart({
+    fetchHistory: (fetchRange, fetchCurrency, force) =>
+      force === true
+        ? api.getPositionHistory(positionId, fetchRange, fetchCurrency, true)
+        : api.getPositionHistory(positionId, fetchRange, fetchCurrency),
+    extraDeps: [positionId],
+  });
 
   return (
     <section className="card asset-chart" data-testid={`asset-chart-${positionId}`}>
@@ -38,7 +25,7 @@ export default function AssetChart({ positionId, ticker }: AssetChartProps): JSX
       </div>
       <div className="chart-controls">
         <div className="chip-group" role="group" aria-label="Período">
-          {RANGES.map((r) => (
+          {HISTORY_RANGES.map((r) => (
             <button
               key={r}
               type="button"
@@ -51,7 +38,7 @@ export default function AssetChart({ positionId, ticker }: AssetChartProps): JSX
           ))}
         </div>
         <div className="chip-group" role="group" aria-label="Moneda">
-          {CURRENCIES.map((c) => (
+          {HISTORY_CURRENCIES.map((c) => (
             <button
               key={c}
               type="button"

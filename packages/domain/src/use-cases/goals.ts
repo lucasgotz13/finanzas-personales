@@ -1,8 +1,7 @@
 import { Goal, GoalAdjustment } from '../entities/goal';
 import { NotFoundError, ValidationError } from '../errors';
-import { isSupportedCurrency } from '../vo/money';
 import type { Currency } from '../vo/money';
-import { arDateString, isArDateString } from '../vo/period-key';
+import { arDateString } from '../vo/period-key';
 import type { Clock, GoalAdjustmentRepository, GoalRepository, TransactionRepository } from '../ports/repositories';
 import { netFlowByCurrency } from './surplus';
 
@@ -323,19 +322,5 @@ export class GoalService {
         requiredPaceMinor,
       };
     });
-  }
-}
-
-/** Validates a currency string for goal inputs (create/update share it). */
-export function assertGoalCurrency(currency: unknown): asserts currency is Currency {
-  if (!isSupportedCurrency(currency)) {
-    throw new ValidationError('Invalid goal', ['currency must be one of ARS, USD']);
-  }
-}
-
-/** Validates an optional deadline (null clears it on update). */
-export function assertGoalDeadline(deadline: unknown): asserts deadline is string | null {
-  if (deadline !== null && !isArDateString(deadline)) {
-    throw new ValidationError('Invalid goal', ['deadline must be a valid YYYY-MM-DD date or null']);
   }
 }

@@ -1,6 +1,8 @@
-import type { Client, Row } from '@libsql/client';
+import type { Client } from '@libsql/client';
 import { Goal, GoalAdjustment } from '@finanzas/domain';
 import type { GoalAdjustmentRepository, GoalRepository } from '@finanzas/domain';
+
+import { toObject } from './row';
 
 interface GoalRow {
   id: number;
@@ -17,15 +19,6 @@ interface GoalAdjustmentRow {
   goal_id: number;
   amount_minor: number;
   created_at: string;
-}
-
-/** Map a positional result row to an object keyed by the result columns. */
-function toObject(row: Row, columns: string[]): Record<string, unknown> {
-  const obj: Record<string, unknown> = {};
-  for (let i = 0; i < columns.length; i++) {
-    obj[columns[i]] = row[i];
-  }
-  return obj;
 }
 
 function toGoal(row: GoalRow): Goal {
@@ -99,14 +92,6 @@ export class SqliteGoalAdjustmentRepository implements GoalAdjustmentRepository 
       args: [adj.goalId, adj.amountMinor, adj.createdAt],
     });
     return new GoalAdjustment({ ...adj, id: Number(result.lastInsertRowid) });
-  }
-
-  async listByGoal(goalId: number): Promise<GoalAdjustment[]> {
-    const result = await this.db.execute({
-      sql: 'SELECT * FROM goal_adjustments WHERE goal_id = ? ORDER BY created_at, id',
-      args: [goalId],
-    });
-    return result.rows.map((row) => toAdjustment(toObject(row, result.columns) as unknown as GoalAdjustmentRow));
   }
 
   async listAll(): Promise<GoalAdjustment[]> {

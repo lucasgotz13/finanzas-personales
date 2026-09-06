@@ -404,16 +404,24 @@ describe('Price charts (PC-5, PC-6)', () => {
     expect(await screen.findByTestId('chart-empty')).toBeInTheDocument();
   });
 
-  it('shows a chart error with Reintentar that reloads', async () => {
+  it('recovers the chart after a failed load when retry succeeds', async () => {
     mockPortfolioAndTrades();
-    const getHistory = vi.spyOn(api, 'getPortfolioHistory').mockRejectedValue(new Error('sin datos'));
+    let shouldFail = true;
+    vi.spyOn(api, 'getPortfolioHistory').mockImplementation(async (_range, _currency, force) => {
+      if (force === true) return history(points);
+      if (shouldFail) throw new Error('sin datos');
+      return history(points);
+    });
     const user = userEvent.setup();
 
     render(<InvestmentsPage />);
 
     expect(await screen.findByTestId('chart-error')).toBeInTheDocument();
+    shouldFail = false;
     await user.click(screen.getByTestId('retry-chart'));
-    await vi.waitFor(() => expect(getHistory).toHaveBeenCalledTimes(10)); // 8 warm-up + 1 mount + 1 retry
+    await vi.waitFor(() => expect(screen.queryByTestId('chart-error')).not.toBeInTheDocument());
+    expect(screen.getByTestId('portfolio-chart')).toBeInTheDocument();
+    await vi.waitFor(() => expect(document.querySelector('.recharts-line path')).not.toBeNull());
   });
 
   it('expands one inline asset chart per tapped row, swapping on the next tap', async () => {

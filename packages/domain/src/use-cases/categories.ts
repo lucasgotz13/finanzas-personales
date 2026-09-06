@@ -1,10 +1,9 @@
 import { Category } from '../entities/category';
 import { ConflictError, NotFoundError, ValidationError } from '../errors';
-import type { CategoryRepository, Clock } from '../ports/repositories';
+import type { CategoryRepository } from '../ports/repositories';
 
 export interface CategoryServiceDeps {
   categories: CategoryRepository;
-  clock: Clock;
 }
 
 /**

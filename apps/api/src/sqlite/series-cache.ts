@@ -1,5 +1,7 @@
-import type { Client, Row } from '@libsql/client';
+import type { Client } from '@libsql/client';
 import type { CclPoint, ChartCacheEntry, PricePoint, SeriesCache, SeriesCurrency, SeriesRange } from '@finanzas/domain';
+
+import { toObject } from './row';
 
 interface SeriesRow {
   key: string;
@@ -7,15 +9,6 @@ interface SeriesRow {
   native_currency: string;
   points_json: string;
   fetched_at: string;
-}
-
-/** Map a positional result row to an object keyed by the result columns. */
-function toObject(row: Row, columns: string[]): Record<string, unknown> {
-  const obj: Record<string, unknown> = {};
-  for (let i = 0; i < columns.length; i++) {
-    obj[columns[i]] = row[i];
-  }
-  return obj;
 }
 
 /** `ccl:{range}` → range; `series:{ticker}:{range}` → ticker + range (PC-4 keys). */

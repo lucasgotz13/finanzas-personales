@@ -174,10 +174,6 @@ export class InMemoryGoalAdjustmentRepository implements GoalAdjustmentRepositor
     return stored;
   }
 
-  async listByGoal(goalId: number): Promise<GoalAdjustment[]> {
-    return [...this.rows.values()].filter((a) => a.goalId === goalId);
-  }
-
   async listAll(): Promise<GoalAdjustment[]> {
     return [...this.rows.values()];
   }

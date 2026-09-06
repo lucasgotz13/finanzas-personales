@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { Position, PriceQuote, PriceSnapshot } from '../../src/investments/types';
-import type { PositionRepository, PortfolioFxPort, PriceCache, PriceSource } from '../../src/investments/ports';
+import type { LegacyPositionPort, PositionRepository, PortfolioFxPort, PriceCache, PriceSource, TradeRepository } from '../../src/investments/ports';
+import type { Trade, TradeInput } from '../../src/investments/types';
 import { PortfolioService } from '../../src/investments/service';
+import { DerivedPositionRepository } from '../../src/investments/derived-repo';
+import { TradeService } from '../../src/investments/trades';
 import { PRICE_TTL_MS } from '../../src/investments/catalog';
 import { TTL_BY_CLASS } from '../../src/indicators/catalog';
 import { FakeClock } from '../helpers/fakes';
@@ -17,22 +20,12 @@ class InMemoryPriceCache implements PriceCache {
   stored(ticker: string): PriceSnapshot | null { return this.rows.get(ticker) ?? null; }
 }
 
-class InMemoryPositionRepository implements PositionRepository {
-  private rows = new Map<number, Position>();
-  private nextId = 1;
-  async create(p: Position): Promise<Position> {
-    const stored = { ...p, id: this.nextId++ };
-    this.rows.set(stored.id as number, stored);
-    return stored;
+class SeededPositionRepository implements PositionRepository {
+  private rows: Position[] = [];
+  seed(rows: Position[]): void {
+    this.rows = [...rows];
   }
-  async update(id: number, p: Position): Promise<Position | null> {
-    if (!this.rows.has(id)) return null;
-    const stored = { ...p, id };
-    this.rows.set(id, stored);
-    return stored;
-  }
-  async list(): Promise<Position[]> { return [...this.rows.values()]; }
-  async delete(id: number): Promise<boolean> { return this.rows.delete(id); }
+  async list(): Promise<Position[]> { return [...this.rows]; }
 }
 
 class StubSource implements PriceSource {
@@ -47,7 +40,7 @@ class StubFx implements PortfolioFxPort {
 }
 
 interface Harness {
-  repo: InMemoryPositionRepository;
+  repo: SeededPositionRepository;
   cache: InMemoryPriceCache;
   source: StubSource;
   fx: StubFx;
@@ -55,7 +48,7 @@ interface Harness {
 }
 
 function harness(now = T0): Harness {
-  const repo = new InMemoryPositionRepository();
+  const repo = new SeededPositionRepository();
   const cache = new InMemoryPriceCache();
   const source = new StubSource(async () => {
     throw new Error('source not configured');
@@ -74,8 +67,10 @@ function harness(now = T0): Harness {
 
 /** Seed two positions: AAPL.BA (qty 10 @ 180 USD) and GGAL.BA (qty 5 @ 60 USD). */
 async function seedPositions(h: Harness): Promise<void> {
-  await h.repo.create({ ticker: 'AAPL.BA', name: 'Apple', quantity: 10, avgCostMinor: 18000, currency: 'USD', createdAt: iso(0) });
-  await h.repo.create({ ticker: 'GGAL.BA', name: 'Galicia', quantity: 5, avgCostMinor: 6000, currency: 'USD', createdAt: iso(0) });
+  h.repo.seed([
+    { id: 1, ticker: 'AAPL.BA', name: 'Apple', quantity: 10, avgCostMinor: 18000, currency: 'USD', createdAt: iso(0) },
+    { id: 2, ticker: 'GGAL.BA', name: 'Galicia', quantity: 5, avgCostMinor: 6000, currency: 'USD', createdAt: iso(0) },
+  ]);
 }
 
 function seedPrice(h: Harness, ticker: string, priceMinor: number, fetchedAt: string): void {
@@ -180,6 +175,81 @@ describe('PortfolioService.getPortfolio (PI-4)', () => {
     expect(summary.totals.pnlArsMinor).toBeNull();
     expect(summary.positions.find((v) => v.ticker === 'AAPL.BA')?.valueUsdMinor).toBe(200000);
     expect(h.source.calls).toBe(0);
+  });
+});
+
+class StubLegacyPositions implements LegacyPositionPort {
+  constructor(private rows: Position[] = []) {}
+  async list(): Promise<Position[]> {
+    return [...this.rows];
+  }
+}
+
+class CountingTradeRepository implements TradeRepository {
+  reads = 0;
+  private rows = new Map<number, Trade>();
+  private nextId = 1;
+  async list(): Promise<Trade[]> {
+    this.reads++;
+    return [...this.rows.values()];
+  }
+  async create(input: TradeInput): Promise<Trade> {
+    const stored: Trade = { ...input, id: this.nextId++ };
+    this.rows.set(stored.id, stored);
+    return stored;
+  }
+  async update(id: number, input: TradeInput): Promise<Trade | null> {
+    if (!this.rows.has(id)) return null;
+    const stored: Trade = { ...input, id };
+    this.rows.set(id, stored);
+    return stored;
+  }
+  async delete(id: number): Promise<boolean> {
+    return this.rows.delete(id);
+  }
+}
+
+describe('PortfolioService.getPortfolio single ledger snapshot (Item 6)', () => {
+  it('reads the trade ledger once and returns coherent positions + realized P&L', async () => {
+    const trades = new CountingTradeRepository();
+    const tradeService = new TradeService({ trades });
+    const repo = new DerivedPositionRepository(
+      tradeService,
+      new StubLegacyPositions([
+        { id: 7, ticker: 'AAPL.BA', name: 'Apple', quantity: 0, avgCostMinor: 0, currency: 'USD', createdAt: iso(0) },
+      ]),
+    );
+    const cache = new InMemoryPriceCache();
+    const fx = new StubFx();
+    fx.ccl = { value: 1345, fetchedAt: iso(0) };
+    const service = new PortfolioService({
+      repo,
+      cache,
+      source: new StubSource(async () => ({ priceMinor: 20000, currency: 'USD' })),
+      fx,
+      ledger: tradeService,
+      clock: new FakeClock(T0),
+    });
+    await tradeService.create({ ticker: 'AAPL.BA', type: 'buy', date: '2026-08-01', quantity: 10, priceMinor: 18000, currency: 'USD' });
+    await tradeService.create({ ticker: 'AAPL.BA', type: 'sell', date: '2026-08-02', quantity: 4, priceMinor: 25000, currency: 'USD' });
+    await cache.set({ ticker: 'AAPL.BA', priceMinor: 20000, currency: 'USD', fetchedAt: iso(0), source: 'yahoo' });
+
+    trades.reads = 0;
+    const summary = await service.getPortfolio();
+
+    expect(trades.reads).toBe(1);
+    expect(summary.positions).toHaveLength(1);
+    // Legacy id/name merge is preserved on the single-snapshot path.
+    expect(summary.positions[0]).toMatchObject({
+      id: 7,
+      name: 'Apple',
+      ticker: 'AAPL.BA',
+      quantity: 6,
+      avgCostMinor: 18000,
+      realizedUsdMinor: (25000 - 18000) * 4,
+    });
+    expect(summary.totals.realizedUsdMinor).toBe((25000 - 18000) * 4);
+    expect(summary.totals.valueUsdMinor).toBe(20000 * 6);
   });
 });
 

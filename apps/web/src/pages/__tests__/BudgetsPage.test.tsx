@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { api } from '../../api';
@@ -18,6 +18,7 @@ const status: BudgetStatus = {
 
 describe('BudgetsPage', () => {
   afterEach(() => {
+    vi.useRealTimers();
     vi.restoreAllMocks();
   });
 
@@ -77,22 +78,36 @@ describe('BudgetsPage', () => {
     const putBudgets = vi.spyOn(api, 'putBudgets').mockResolvedValue({ 1: 100000 });
     vi.spyOn(api, 'getBudgetStatus').mockResolvedValue(status);
 
-    const user = userEvent.setup();
-    render(<BudgetsPage />);
-    await screen.findByTestId('cap-1');
+    // Controlled timers for the transient ~2s message: the clock auto-advances
+    // (user-event's timer waits resolve in real time) while the disappearance
+    // is driven by an explicit jump instead of a real wait.
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      render(<BudgetsPage />);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0);
+      });
+      expect(screen.getByTestId('cap-1')).toBeInTheDocument();
 
-    // Cap inputs are reachable by their Spanish aria-labels
-    expect(screen.getByLabelText('Tope mensual de Food')).toBeInTheDocument();
-    expect(screen.getByLabelText('Tope mensual de Transport')).toBeInTheDocument();
+      // Cap inputs are reachable by their Spanish aria-labels
+      expect(screen.getByLabelText('Tope mensual de Food')).toBeInTheDocument();
+      expect(screen.getByLabelText('Tope mensual de Transport')).toBeInTheDocument();
 
-    await user.type(screen.getByTestId('cap-1'), '1000{Enter}');
+      await user.type(screen.getByTestId('cap-1'), '1000{Enter}');
 
-    await waitFor(() => expect(putBudgets).toHaveBeenCalledWith({ 1: 100000 }));
-    expect(await screen.findByText('Presupuestos guardados.')).toBeInTheDocument();
+      expect(putBudgets).toHaveBeenCalledWith({ 1: 100000 });
+      expect(await screen.findByText('Presupuestos guardados.')).toBeInTheDocument();
 
-    // Transient success: clears on its own after ~2s
-    await waitFor(() => expect(screen.queryByText('Presupuestos guardados.')).not.toBeInTheDocument(), { timeout: 3000 });
-    await vi.waitFor(() => expect(getBudgets).toHaveBeenCalledTimes(2));
+      // Transient success: clears on its own after ~2s (controlled jump, no real wait)
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(2100);
+      });
+      expect(screen.queryByText('Presupuestos guardados.')).not.toBeInTheDocument();
+      expect(getBudgets).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('rejects a scientific-notation cap (1e3) with a validation error and does not save (P2)', async () => {

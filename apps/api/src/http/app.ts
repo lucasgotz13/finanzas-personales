@@ -77,7 +77,7 @@ export function buildApp(deps: AppDeps): express.Express {
   const transactionsRepo = new SqliteTransactionRepository(db);
   const budgetsRepo = new SqliteBudgetRepository(db);
   const transactionService = new TransactionService({ transactions: transactionsRepo, categories: categoriesRepo });
-  const categoryService = new CategoryService({ categories: categoriesRepo, clock });
+  const categoryService = new CategoryService({ categories: categoriesRepo });
   const budgetService = new BudgetService({ budgets: budgetsRepo, categories: categoriesRepo, transactions: transactionsRepo });
   const summaryService = new SummaryService({ transactions: transactionsRepo, categories: categoriesRepo });
   const goalService = new GoalService({

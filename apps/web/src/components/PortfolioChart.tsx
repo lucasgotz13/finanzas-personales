@@ -1,32 +1,17 @@
-import { useRef, useState } from 'react';
 import { api } from '../api';
-import { useApi } from '../hooks/useApi';
-import type { SeriesCurrency, SeriesRange } from '../types';
+import { HISTORY_CURRENCIES, HISTORY_RANGES, useHistoryChart } from '../hooks/useHistoryChart';
 import SeriesChart from './SeriesChart';
-
-const RANGES: SeriesRange[] = ['1m', '3m', '6m', '1y'];
-const CURRENCIES: SeriesCurrency[] = ['ARS', 'USD'];
 
 /** Portfolio curve card (PC-5, PC-6): range chips + ARS/USD toggle, ink line,
  * es-AR tooltip and the always-visible honesty note. Cache-first reads only;
  * the page runs the force=true warm-up. */
 export default function PortfolioChart(): JSX.Element {
-  const [range, setRange] = useState<SeriesRange>('3m');
-  const [currency, setCurrency] = useState<SeriesCurrency>('ARS');
-  const forcedPairs = useRef(new Set<string>());
-  const chart = useApi(() => api.getPortfolioHistory(range, currency), [range, currency]);
-
-  // PC-4: the first time the user lands on a (range, currency) pair, force one
-  // fetch so the CCL-dependent series gets cached even if the warm-up has not
-  // completed. The Set bounds it to a single force per pair per session.
-  const selectCurrency = (next: SeriesCurrency): void => {
-    setCurrency(next);
-    const key = `${range}:${next}`;
-    if (!forcedPairs.current.has(key)) {
-      forcedPairs.current.add(key);
-      void api.getPortfolioHistory(range, next, true).catch(() => undefined);
-    }
-  };
+  const { range, setRange, currency, selectCurrency, chart } = useHistoryChart({
+    fetchHistory: (fetchRange, fetchCurrency, force) =>
+      force === true
+        ? api.getPortfolioHistory(fetchRange, fetchCurrency, true)
+        : api.getPortfolioHistory(fetchRange, fetchCurrency),
+  });
 
   return (
     <section className="card chart-card" data-testid="portfolio-chart">
@@ -38,7 +23,7 @@ export default function PortfolioChart(): JSX.Element {
       </div>
       <div className="chart-controls">
         <div className="chip-group" role="group" aria-label="Período">
-          {RANGES.map((r) => (
+          {HISTORY_RANGES.map((r) => (
             <button
               key={r}
               type="button"
@@ -51,7 +36,7 @@ export default function PortfolioChart(): JSX.Element {
           ))}
         </div>
         <div className="chip-group" role="group" aria-label="Moneda">
-          {CURRENCIES.map((c) => (
+          {HISTORY_CURRENCIES.map((c) => (
             <button
               key={c}
               type="button"

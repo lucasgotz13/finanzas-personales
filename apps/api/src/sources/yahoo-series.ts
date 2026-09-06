@@ -1,9 +1,5 @@
 import type { NativeSeries, PricePoint, PriceSeriesSource, SeriesRange } from '@finanzas/domain';
-
-const BASE_URL = 'https://query1.finance.yahoo.com/v8/finance/chart';
-const DEFAULT_TIMEOUT_MS = 10_000;
-/** 429 safety: fail fast per ticker for 60 s instead of hammering Yahoo (PC-4). */
-const COOLDOWN_MS = 60_000;
+import { YahooTransport } from './yahoo-transport';
 
 /** Our range windows map to Yahoo v8 chart range params ('1m' → '1mo'). */
 const RANGE_TO_YAHOO: Record<SeriesRange, string> = { '1m': '1mo', '3m': '3mo', '6m': '6mo', '1y': '1y' };
@@ -28,39 +24,20 @@ interface ChartBody {
  * throw so the domain keeps the last cached row.
  */
 export class YahooSeriesSource implements PriceSeriesSource {
-  private cooldownUntil = new Map<string, number>();
+  private transport: YahooTransport;
 
   constructor(
-    private fetchFn: typeof fetch = fetch,
-    private timeoutMs: number = DEFAULT_TIMEOUT_MS,
-    private now: () => number = Date.now,
-  ) {}
+    fetchFn: typeof fetch = fetch,
+    timeoutMs = 10_000,
+    now: () => number = Date.now,
+  ) {
+    // Own transport instance: series cooldown state stays separate from the
+    // quote adapter (sharing it would change failure behavior).
+    this.transport = new YahooTransport(fetchFn, timeoutMs, now);
+  }
 
   async fetchSeries(ticker: string, range: SeriesRange): Promise<NativeSeries> {
-    const cooldown = this.cooldownUntil.get(ticker);
-    if (cooldown !== undefined && this.now() < cooldown) {
-      throw new Error(`yahoo cooldown active for ${ticker}`);
-    }
-    const url = `${BASE_URL}/${encodeURIComponent(ticker)}?interval=1d&range=${RANGE_TO_YAHOO[range]}`;
-    const res = await this.fetchFn(url, {
-      signal: AbortSignal.timeout(this.timeoutMs),
-      headers: {
-        'User-Agent':
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
-        Accept: 'application/json',
-        'Accept-Language': 'en-US,en;q=0.9',
-      },
-    });
-    if (!res.ok) {
-      if (res.status === 429) this.cooldownUntil.set(ticker, this.now() + COOLDOWN_MS);
-      throw new Error(`yahoo returned HTTP ${res.status}`);
-    }
-    let body: unknown;
-    try {
-      body = await res.json();
-    } catch {
-      throw new Error('yahoo returned malformed JSON');
-    }
+    const body = await this.transport.getJson(ticker, `interval=1d&range=${RANGE_TO_YAHOO[range]}`);
     const chart = (body as ChartBody).chart;
     if (chart?.error !== undefined && chart?.error !== null) {
       throw new Error(`yahoo chart error: ${String(chart.error)}`);

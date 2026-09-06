@@ -77,15 +77,18 @@ describe('GoalsPage', () => {
     expect(await screen.findByTestId('goals-empty')).toHaveTextContent('Aún no hay metas');
   });
 
-  it('shows the fetch error with role=alert and Reintentar reloads', async () => {
-    const listGoals = vi.spyOn(api, 'listGoals').mockRejectedValue(new Error('metas caídas'));
+  it('replaces the fetch error with the goals list after a successful retry', async () => {
+    const listGoals = vi.spyOn(api, 'listGoals').mockRejectedValueOnce(new Error('metas caídas')).mockResolvedValue([goalA, goalB]);
     const user = userEvent.setup();
     render(<GoalsPage />);
 
     expect(await screen.findByRole('alert')).toHaveTextContent('metas caídas');
     expect(screen.queryByTestId('goals-empty')).not.toBeInTheDocument();
     await user.click(screen.getByTestId('retry-goals'));
-    await waitFor(() => expect(listGoals).toHaveBeenCalledTimes(2));
+    expect(await screen.findByTestId('goal-1')).toBeInTheDocument();
+    expect(screen.getByTestId('goal-1')).toHaveTextContent('Viaje');
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(listGoals).toHaveBeenCalledTimes(2);
   });
 
   it('creates a goal through the API with minor units (es-AR decimal comma)', async () => {

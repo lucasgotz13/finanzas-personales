@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ApiError, api, translateApiError, translateApiMessage } from '../api';
+import { api, translateActionError } from '../api';
 import { parseEsArAmount } from '../amount';
 import type { CreateGoalInput, GoalView, UpdateGoalInput } from '../types';
 
@@ -38,8 +38,7 @@ export default function GoalForm({ initial, onSaved, onCancel }: GoalFormProps):
   }
 
   function errorText(err: unknown): string {
-    if (err instanceof ApiError) return translateApiError(err);
-    return translateApiMessage(err instanceof Error ? err.message : 'No se pudo guardar la meta.');
+    return translateActionError(err, 'No se pudo guardar la meta.');
   }
 
   async function handleSubmit(e: React.FormEvent): Promise<void> {

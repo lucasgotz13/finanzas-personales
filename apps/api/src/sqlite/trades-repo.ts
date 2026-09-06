@@ -1,5 +1,7 @@
-import type { Client, Row } from '@libsql/client';
+import type { Client } from '@libsql/client';
 import type { LegacyPositionPort, Position, Trade, TradeInput, TradeRepository } from '@finanzas/domain';
+
+import { toObject } from './row';
 
 interface TradeRow {
   id: number;
@@ -18,15 +20,6 @@ interface PositionRow {
   quantity: number;
   avg_cost_minor: number;
   created_at: string;
-}
-
-/** Map a positional result row to an object keyed by the result columns. */
-function toObject(row: Row, columns: string[]): Record<string, unknown> {
-  const obj: Record<string, unknown> = {};
-  for (let i = 0; i < columns.length; i++) {
-    obj[columns[i]] = row[i];
-  }
-  return obj;
 }
 
 function toTrade(row: TradeRow): Trade {

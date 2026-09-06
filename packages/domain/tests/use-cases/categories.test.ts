@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeEach } from 'vitest';
 import { CategoryService } from '../../src/use-cases/categories';
-import { InMemoryCategoryRepository, FakeClock } from '../helpers/fakes';
+import { InMemoryCategoryRepository } from '../helpers/fakes';
 import { ConflictError, NotFoundError, ValidationError } from '../../src/errors';
 
 const NOW = new Date('2026-08-08T12:00:00.000Z');
@@ -8,8 +8,7 @@ const NOW = new Date('2026-08-08T12:00:00.000Z');
 function build() {
   const categories = new InMemoryCategoryRepository();
   categories.reset();
-  const clock = new FakeClock(NOW);
-  const service = new CategoryService({ categories, clock });
+  const service = new CategoryService({ categories });
   return { categories, service };
 }
 

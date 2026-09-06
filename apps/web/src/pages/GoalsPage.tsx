@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ApiError, api, translateApiError, translateApiMessage } from '../api';
+import { api, translateActionError } from '../api';
 import { parseEsArAmount } from '../amount';
 import { formatDate } from '../dates';
 import { useApi } from '../hooks/useApi';
@@ -11,8 +11,7 @@ function money(minor: number, currency: 'ARS' | 'USD'): string {
 }
 
 function errorText(err: unknown): string {
-  if (err instanceof ApiError) return translateApiError(err);
-  return translateApiMessage(err instanceof Error ? err.message : 'No se pudo completar la acción.');
+  return translateActionError(err, 'No se pudo completar la acción.');
 }
 
 /** Factual deadline line: days remaining plus the required monthly pace. Never a verdict. */

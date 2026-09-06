@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { Client } from '@libsql/client';
 import { afterEach, describe, expect, it } from 'vitest';
-import { createDbClient, MIGRATIONS_DIR, migrate } from '../../../scripts/migrate';
+import { createLocalClient, MIGRATIONS_DIR, migrate } from '../../../scripts/migrate';
 import { SqliteLegacyPositionRepository, SqliteTradeRepository } from '../src/sqlite/trades-repo';
 import type { TradeInput } from '@finanzas/domain';
 
@@ -25,7 +25,7 @@ async function tempDb(): Promise<{ db: Client; path: string }> {
   dirs.push(dir);
   const dbPath = join(dir, 'test.db');
   await migrate(dbPath, MIGRATIONS_DIR);
-  const db = await createDbClient(dbPath);
+  const db = await createLocalClient(dbPath);
   clients.push(db);
   return { db, path: dbPath };
 }
@@ -73,7 +73,7 @@ describe('Migration 006 seed (TH-5)', () => {
     const dbPath = join(dir, 'test.db');
     expect(await migrate(dbPath, partialDir)).not.toContain('006_trades');
 
-    const db = await createDbClient(dbPath);
+    const db = await createLocalClient(dbPath);
     clients.push(db);
     await db.execute({
       sql: 'INSERT INTO positions (ticker, name, quantity, avg_cost_minor, created_at) VALUES (?, ?, ?, ?, ?)',

@@ -2,6 +2,7 @@ import { Fragment, lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { api, translateApiMessage } from '../api';
 import TradeForm from '../components/TradeForm';
 import { useApi } from '../hooks/useApi';
+import { useVisibleRefresh } from '../hooks/useVisibleRefresh';
 import type { PositionView, SeriesCurrency, SeriesRange, Trade } from '../types';
 
 const PortfolioChart = lazy(() => import('../components/PortfolioChart'));
@@ -101,40 +102,18 @@ export default function InvestmentsPage({ active = true }: { active?: boolean })
 
   // Auto-refresh every 5 min while the document is visible and the tab is
   // active (PI-5): pauses in hidden tabs and on tab switches, catches up once
-  // on visibilitychange back to visible.
-  useEffect(() => {
-    if (!active) return;
-    let intervalId: ReturnType<typeof setInterval> | undefined;
-    const tickRefresh = (): void => {
+  // on visibilitychange back to visible. No immediate refresh on entry: the
+  // mount/activation reads are already fresh.
+  useVisibleRefresh({
+    active,
+    intervalMs: AUTO_REFRESH_MS,
+    onRefresh: () => {
       void api
         .refreshPortfolio(false)
         .then(() => setRefreshError(null), (err: unknown) => setRefreshError(errorText(err)))
         .finally(() => setTick((t) => t + 1));
-    };
-    const start = (): void => {
-      if (intervalId === undefined) intervalId = setInterval(tickRefresh, AUTO_REFRESH_MS);
-    };
-    const stop = (): void => {
-      if (intervalId !== undefined) {
-        clearInterval(intervalId);
-        intervalId = undefined;
-      }
-    };
-    const onVisibilityChange = (): void => {
-      if (document.visibilityState === 'visible') {
-        start();
-        tickRefresh();
-      } else {
-        stop();
-      }
-    };
-    if (!document.hidden) start();
-    document.addEventListener('visibilitychange', onVisibilityChange);
-    return () => {
-      stop();
-      document.removeEventListener('visibilitychange', onVisibilityChange);
-    };
-  }, [active]);
+    },
+  });
 
   const manualRefresh = async (): Promise<void> => {
     setRefreshing(true);

@@ -1,6 +1,7 @@
 import { NotFoundError, ValidationError } from '../errors';
 import { normalizeTicker } from './catalog';
 import { isArDateString } from '../vo/period-key';
+import type { PortfolioSnapshot } from './ports';
 import type { TradeRepository } from './ports';
 import type { Position, RealizedTotals, Trade, TradeInput } from './types';
 
@@ -83,13 +84,19 @@ export class TradeService {
     if (!deleted) throw new NotFoundError('Trade not found', [`no trade with id ${id}`]);
   }
 
-  /** Derived positions from the ledger (TH-3, PI-1): quantity = Σbuys − Σsells,
-   * avgCostMinor = moving average; fully sold tickers disappear. */
-  async derivedPositions(): Promise<Position[]> {
+  /** Derived positions plus realized totals from ONE ledger read (TH-3, TH-4):
+   * a single chronological fold per ticker computes both, so one portfolio
+   * read costs one ledger scan. Fully sold tickers contribute realized P&L
+   * but no position — identical to the separate methods below. */
+  async portfolioSnapshot(): Promise<PortfolioSnapshot> {
     const rows = await this.list();
     const positions: Position[] = [];
+    const perTicker: Record<string, number> = {};
+    let total = 0;
     for (const [ticker, trades] of groupByTicker(rows)) {
-      const { quantity, avg } = foldTimeline(trades);
+      const { quantity, avg, realized } = foldTimeline(trades);
+      perTicker[ticker] = realized;
+      total += realized;
       if (quantity <= EPSILON) continue; // fully sold → no position
       positions.push({
         id: derivedPositionId(ticker),
@@ -101,21 +108,20 @@ export class TradeService {
         createdAt: '',
       });
     }
-    return positions.sort((a, b) => (a.ticker < b.ticker ? -1 : 1));
+    positions.sort((a, b) => (a.ticker < b.ticker ? -1 : 1));
+    return { positions, totals: { perTicker, total } };
+  }
+
+  /** Derived positions from the ledger (TH-3, PI-1): quantity = Σbuys − Σsells,
+   * avgCostMinor = moving average; fully sold tickers disappear. */
+  async derivedPositions(): Promise<Position[]> {
+    return (await this.portfolioSnapshot()).positions;
   }
 
   /** Cumulative realized P&L per ticker and portfolio (TH-4), minor units;
    * each sell realizes (price − moving avg at sell time) × quantity. */
   async realizedTotals(): Promise<RealizedTotals> {
-    const rows = await this.list();
-    const perTicker: Record<string, number> = {};
-    let total = 0;
-    for (const [ticker, trades] of groupByTicker(rows)) {
-      const { realized } = foldTimeline(trades);
-      perTicker[ticker] = realized;
-      total += realized;
-    }
-    return { perTicker, total };
+    return (await this.portfolioSnapshot()).totals;
   }
 
   private validate(input: TradeInput): TradeInput {

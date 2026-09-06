@@ -52,7 +52,6 @@ export interface GoalRepository {
 
 export interface GoalAdjustmentRepository {
   create(adj: GoalAdjustment): Promise<GoalAdjustment>;
-  listByGoal(goalId: number): Promise<GoalAdjustment[]>;
   listAll(): Promise<GoalAdjustment[]>;
   deleteByGoal(goalId: number): Promise<void>;
 }
