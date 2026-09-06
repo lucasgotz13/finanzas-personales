@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { api, translateApiMessage } from '../api';
 import IndicatorCard from '../components/IndicatorCard';
 import { useApi } from '../hooks/useApi';
+import { useVisibleRefresh } from '../hooks/useVisibleRefresh';
 
 /** EI-6: TTL-respecting auto-refresh cadence while the tab is active. */
 const AUTO_REFRESH_MS = 5 * 60_000;
@@ -24,10 +25,11 @@ export default function IndicatorsPage({ active = true }: { active?: boolean }):
   // tab updates stale indicators without waiting for the interval.
   // The refresh is never forced: the server TTL gates the fetch, then the
   // views reload (EI-6).
-  useEffect(() => {
-    if (!active) return;
-    let intervalId: ReturnType<typeof setInterval> | undefined;
-    const tick = (): void => {
+  useVisibleRefresh({
+    active,
+    intervalMs: AUTO_REFRESH_MS,
+    immediateOnEntry: true,
+    onRefresh: () => {
       void (async () => {
         try {
           await api.refreshIndicators(false);
@@ -38,34 +40,8 @@ export default function IndicatorsPage({ active = true }: { active?: boolean }):
           setTick((t) => t + 1);
         }
       })();
-    };
-    const start = (): void => {
-      if (intervalId === undefined) intervalId = setInterval(tick, AUTO_REFRESH_MS);
-    };
-    const stop = (): void => {
-      if (intervalId !== undefined) {
-        clearInterval(intervalId);
-        intervalId = undefined;
-      }
-    };
-    const onVisibilityChange = (): void => {
-      if (document.visibilityState === 'visible') {
-        start();
-        tick(); // catch up once right when the tab becomes visible again
-      } else {
-        stop();
-      }
-    };
-    if (!document.hidden) {
-      start();
-      tick(); // entry tick: refresh once non-forced on mount/activation
-    }
-    document.addEventListener('visibilitychange', onVisibilityChange);
-    return () => {
-      stop();
-      document.removeEventListener('visibilitychange', onVisibilityChange);
-    };
-  }, [active]);
+    },
+  });
 
   const manualRefresh = async (): Promise<void> => {
     setRefreshing(true);
