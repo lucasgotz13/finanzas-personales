@@ -1,55 +1,92 @@
-import type { Client, InStatement, ResultSet, TransactionMode } from '@libsql/client';
-import { describe, expect, it, vi } from 'vitest';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import type { Client } from '@libsql/client';
+import { afterEach, describe, expect, it } from 'vitest';
+import { createLocalClient, MIGRATIONS_DIR, migrate } from '../../../scripts/migrate';
 import { SqliteBudgetRepository } from '../src/sqlite/repositories';
 
-/** A db double that only records batch calls; replaceAll must not use execute. */
-function fakeDb() {
-  const emptyResult = (): ResultSet => ({
-    columns: [],
-    columnTypes: [],
-    rows: [],
-    rowsAffected: 0,
-    lastInsertRowid: undefined,
-    toJSON: () => ({}),
+const clients: Client[] = [];
+const dirs: string[] = [];
+afterEach(() => {
+  for (const client of clients) client.close();
+  for (const dir of dirs) rmSync(dir, { recursive: true, force: true });
+  clients.length = 0;
+  dirs.length = 0;
+});
+
+async function tempDb(): Promise<Client> {
+  const dir = mkdtempSync(join(tmpdir(), 'finanzas-budgets-'));
+  dirs.push(dir);
+  const dbPath = join(dir, 'test.db');
+  await migrate(dbPath, MIGRATIONS_DIR);
+  const db = await createLocalClient(dbPath);
+  clients.push(db);
+  return db;
+}
+
+async function seedCategory(db: Client, name: string): Promise<number> {
+  const result = await db.execute({
+    sql: 'INSERT INTO categories (name, parent_id, deleted_at) VALUES (?, ?, ?)',
+    args: [name, null, null],
   });
-  const batch = vi.fn((_stmts: InStatement[], _mode?: TransactionMode): Promise<ResultSet> => {
-    return Promise.resolve(emptyResult());
-  });
-  const execute = vi.fn(
-    (_stmt: InStatement): Promise<ResultSet> => Promise.resolve(emptyResult()),
-  );
-  return { batch, execute, client: { batch, execute } as unknown as Client };
+  return Number(result.lastInsertRowid);
 }
 
 describe('SqliteBudgetRepository.replaceAll (issue #99 atomic replacement)', () => {
-  it('issues exactly one batch call: DELETE first, then every INSERT with its args, in write mode', async () => {
-    const { client, batch } = fakeDb();
-    const repo = new SqliteBudgetRepository(client);
+  it('replaces the whole map and lists it back ordered by category', async () => {
+    const db = await tempDb();
+    const food = await seedCategory(db, 'Food');
+    const transport = await seedCategory(db, 'Transport');
+    const repo = new SqliteBudgetRepository(db);
 
     await repo.replaceAll([
-      { categoryId: 7, capMinor: 12345 },
-      { categoryId: 3, capMinor: 678 },
+      { categoryId: transport, capMinor: 678 },
+      { categoryId: food, capMinor: 12345 },
+    ]);
+    expect(await repo.listAll()).toEqual([
+      { categoryId: food, capMinor: 12345 },
+      { categoryId: transport, capMinor: 678 },
     ]);
 
-    expect(batch).toHaveBeenCalledTimes(1);
-    const [stmts, mode] = batch.mock.calls[0];
-    expect(mode).toBe('write');
-    expect(stmts).toEqual([
-      { sql: 'DELETE FROM budgets' },
-      { sql: 'INSERT INTO budgets (category_id, cap_minor) VALUES (?, ?)', args: [7, 12345] },
-      { sql: 'INSERT INTO budgets (category_id, cap_minor) VALUES (?, ?)', args: [3, 678] },
+    await repo.replaceAll([{ categoryId: food, capMinor: 999 }]);
+    expect(await repo.listAll()).toEqual([{ categoryId: food, capMinor: 999 }]);
+  });
+
+  it('a failed replacement preserves the previous caps', async () => {
+    const db = await tempDb();
+    const food = await seedCategory(db, 'Food');
+    const transport = await seedCategory(db, 'Transport');
+    const repo = new SqliteBudgetRepository(db);
+    await repo.replaceAll([
+      { categoryId: food, capMinor: 12345 },
+      { categoryId: transport, capMinor: 678 },
+    ]);
+
+    // cap_minor 0 violates the CHECK (cap_minor > 0), so the batch fails
+    // after a valid INSERT: without atomicity the table would be left
+    // partially written instead of keeping the previous map.
+    await expect(
+      repo.replaceAll([
+        { categoryId: food, capMinor: 99999 },
+        { categoryId: transport, capMinor: 0 },
+      ]),
+    ).rejects.toThrow();
+    expect(await repo.listAll()).toEqual([
+      { categoryId: food, capMinor: 12345 },
+      { categoryId: transport, capMinor: 678 },
     ]);
   });
 
-  it('replacing with an empty map still empties the table (DELETE alone, no empty batch)', async () => {
-    const { client, batch } = fakeDb();
-    const repo = new SqliteBudgetRepository(client);
+  it('replacing with an empty map still empties the table', async () => {
+    const db = await tempDb();
+    const food = await seedCategory(db, 'Food');
+    const repo = new SqliteBudgetRepository(db);
+    await repo.replaceAll([{ categoryId: food, capMinor: 12345 }]);
+    expect(await repo.listAll()).toHaveLength(1);
 
     await repo.replaceAll([]);
 
-    expect(batch).toHaveBeenCalledTimes(1);
-    const [stmts, mode] = batch.mock.calls[0];
-    expect(mode).toBe('write');
-    expect(stmts).toEqual([{ sql: 'DELETE FROM budgets' }]);
+    expect(await repo.listAll()).toEqual([]);
   });
 });

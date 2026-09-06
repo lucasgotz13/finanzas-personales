@@ -52,17 +52,32 @@ describe('App tab switching', () => {
     expect(screen.getByTestId('note')).toHaveValue('rent');
   });
 
-  it('switches to every tab and back without crashing', async () => {
+  it('switches to every tab and shows its destination content', async () => {
     mockAllApis();
+    vi.spyOn(api, 'listGoals').mockResolvedValue([]);
+    vi.spyOn(api, 'getPortfolioHistory').mockResolvedValue({ points: [], currency: 'ARS', range: '3m', status: 'fresh' });
     const user = userEvent.setup();
     render(<App />);
 
     await screen.findByTestId('note');
 
-    for (const tab of ['Categorías', 'Presupuestos', 'Resúmenes', 'Indicadores', 'Transacciones']) {
+    const destinations: Array<{ tab: string; content: string }> = [
+      { tab: 'Transacciones', content: 'Registrar transacción' },
+      { tab: 'Categorías', content: 'Agregar categoría' },
+      { tab: 'Presupuestos', content: 'Topes mensuales (ARS)' },
+      { tab: 'Resúmenes', content: 'Resumen del período' },
+      { tab: 'Indicadores', content: 'Argentina — Indicadores económicos' },
+      { tab: 'Inversiones', content: 'Inversiones — Mi cartera' },
+      { tab: 'Metas', content: 'Mis metas' },
+    ];
+    for (const { tab, content } of destinations) {
       await user.click(screen.getByRole('tab', { name: tab }));
+      expect(screen.getByRole('tab', { name: tab })).toHaveAttribute('aria-selected', 'true');
+      const visiblePanel = Array.from(document.querySelectorAll('.tab-panel')).find((p) => !p.classList.contains('hidden'));
+      expect(visiblePanel?.textContent).toContain(content);
     }
 
+    await user.click(screen.getByRole('tab', { name: 'Transacciones' }));
     expect(screen.getByTestId('note')).toBeInTheDocument();
   });
 
