@@ -673,6 +673,91 @@ ul.tree .tree-row input {
   display: none;
 }
 
+/* --- Mobile nav sheet: single menu button + bottom sheet (mobile only) ---
+   World tokens only (card/ink/hairline/ground), so dark mode follows
+   automatically. The sheet mounts only while open; the menu button lives
+   inside .bottom-bar, which stays display:none on desktop. */
+.mobile-nav-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  background: rgba(26, 24, 21, 0.45);
+  animation: mobile-nav-fade-in 0.18s ease-out;
+}
+
+.mobile-nav-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 31;
+  background: var(--card);
+  color: var(--ink);
+  border-top: 1px solid var(--hairline);
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 -4px 16px rgba(26, 24, 21, 0.18);
+  padding: 0.5rem 0.5rem calc(0.75rem + env(safe-area-inset-bottom));
+  max-height: 80vh;
+  overflow-y: auto;
+  animation: mobile-nav-slide-up 0.22s ease-out;
+}
+
+.mobile-nav-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.mobile-nav-list button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ink);
+  font-size: 1rem;
+  padding: 0.7rem 0.9rem;
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.mobile-nav-list button:hover {
+  background: var(--ground);
+}
+
+/* Active sheet item is a state, not an action: ink bold on the ground tint,
+   matching the desktop tabs — never the action green. */
+.mobile-nav-list button.active {
+  font-weight: 700;
+  background: var(--ground);
+}
+
+@keyframes mobile-nav-slide-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes mobile-nav-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mobile-nav-backdrop,
+  .mobile-nav-sheet {
+    animation: none;
+  }
+}
+
 /* Price charts (PC-5): world tokens only — ink data line, hairline grid and
    axes, muted ticks; the action green never appears in a data line. */
 .chart-card h2,
@@ -906,6 +991,12 @@ tr.asset-chart-row td {
     color: var(--ink);
     font-weight: 700;
     border-top-color: var(--ink);
+  }
+
+  /* Single menu button fills the bar: larger and semibold, thumb-reachable. */
+  .bottom-bar .mobile-menu-button {
+    font-size: 0.95rem;
+    font-weight: 600;
   }
 
   main {

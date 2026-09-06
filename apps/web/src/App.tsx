@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { api, setUnauthorizedHandler } from './api';
 import LoginGate from './components/LoginGate';
 import ThemeToggle from './components/ThemeToggle';
@@ -24,6 +24,10 @@ const TABS: Array<{ id: Tab; label: string }> = [
 
 export default function App(): JSX.Element {
   const [tab, setTab] = useState<Tab>('transactions');
+  // Mobile bottom sheet open state (mobile-only; desktop tabs are unaffected).
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const sheetRef = useRef<HTMLDivElement>(null);
   // null = checking the session on first paint (WU2).
   const [authed, setAuthed] = useState<boolean | null>(null);
 
@@ -39,6 +43,29 @@ export default function App(): JSX.Element {
     setUnauthorizedHandler(() => setAuthed(false));
     return () => setUnauthorizedHandler(null);
   }, []);
+
+  // Mobile sheet: Escape closes, body scroll locks, focus moves into the
+  // sheet on open and back to the menu button on close.
+  useEffect(() => {
+    if (!menuOpen) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    function onKeyDown(e: KeyboardEvent): void {
+      if (e.key === 'Escape') setMenuOpen(false);
+    }
+    document.addEventListener('keydown', onKeyDown);
+    sheetRef.current?.querySelector<HTMLButtonElement>('[aria-selected="true"]')?.focus();
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      document.body.style.overflow = prevOverflow;
+      menuButtonRef.current?.focus();
+    };
+  }, [menuOpen]);
+
+  function selectMobileTab(id: Tab): void {
+    setTab(id);
+    setMenuOpen(false);
+  }
 
   async function handleLogout(): Promise<void> {
     try {
@@ -109,11 +136,52 @@ export default function App(): JSX.Element {
           <GoalsPage active={tab === 'metas'} />
         </div>
       </main>
-      {/* Mobile-first navigation: thumb-reachable, same buttons and state as
-          the header tabs (CSS swaps them at the ≤640px breakpoint). */}
-      <nav className="bottom-bar mobile-only" role="tablist" aria-label="Secciones">
-        {tabButtons}
+      {/* Mobile navigation: a single menu button opens a bottom sheet listing
+          the same tabs (CSS swaps the header tabs for this bar at ≤640px). */}
+      <nav className="bottom-bar mobile-only" aria-label="Secciones">
+        <button
+          type="button"
+          className="mobile-menu-button"
+          aria-expanded={menuOpen}
+          aria-controls="mobile-nav-sheet"
+          aria-haspopup="dialog"
+          onClick={() => setMenuOpen((v) => !v)}
+          ref={menuButtonRef}
+        >
+          Menú
+        </button>
       </nav>
+      {menuOpen && (
+        <>
+          <div
+            className="mobile-nav-backdrop"
+            data-testid="mobile-nav-backdrop"
+            onClick={() => setMenuOpen(false)}
+          />
+          <div
+            ref={sheetRef}
+            id="mobile-nav-sheet"
+            className="mobile-nav-sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Menú de secciones"
+          >
+            <nav className="mobile-nav-list" role="tablist" aria-label="Secciones">
+              {TABS.map((t) => (
+                <button
+                  key={t.id}
+                  role="tab"
+                  aria-selected={tab === t.id}
+                  className={tab === t.id ? 'active' : ''}
+                  onClick={() => selectMobileTab(t.id)}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </nav>
+          </div>
+        </>
+      )}
     </>
   );
 }
