@@ -1,4 +1,4 @@
-import type { Client, InStatement, Row } from '@libsql/client';
+import type { Client, InStatement } from '@libsql/client';
 import { arDateString } from '@finanzas/domain';
 import type {
   Budget,
@@ -9,6 +9,8 @@ import type {
   TransactionFilters,
   TransactionRepository,
 } from '@finanzas/domain';
+
+import { toObject } from './row';
 
 interface TransactionRow {
   id: number;
@@ -26,15 +28,6 @@ interface CategoryRow {
   name: string;
   parent_id: number | null;
   deleted_at: string | null;
-}
-
-/** Map a positional result row to an object keyed by the result columns. */
-function toObject(row: Row, columns: string[]): Record<string, unknown> {
-  const obj: Record<string, unknown> = {};
-  for (let i = 0; i < columns.length; i++) {
-    obj[columns[i]] = row[i];
-  }
-  return obj;
 }
 
 function toTransaction(row: TransactionRow): Transaction {

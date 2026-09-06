@@ -97,6 +97,16 @@ export function translateApiError(err: ApiError): string {
   return translateApiMessage(err.message);
 }
 
+/** Shared display conversion for form/page actions: structured reason
+ * translation for ApiError, otherwise the legacy message table with the
+ * caller-supplied fallback for non-Error failures. Callers that currently
+ * discard error metadata (plain translateApiMessage sites) are intentionally
+ * left on that path; switching them is a behavior change, not a dedupe. */
+export function translateActionError(err: unknown, fallback: string): string {
+  if (err instanceof ApiError) return translateApiError(err);
+  return translateApiMessage(err instanceof Error ? err.message : fallback);
+}
+
 interface ErrorEnvelope {
   error?: { code?: string; message?: string; details?: string[]; reason?: string; meta?: Record<string, unknown> };
 }

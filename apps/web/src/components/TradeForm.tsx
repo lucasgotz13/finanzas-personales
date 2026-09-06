@@ -1,6 +1,6 @@
 import { arDateString } from '@finanzas/domain';
 import { useState } from 'react';
-import { ApiError, api, translateApiError, translateApiMessage } from '../api';
+import { api, translateActionError } from '../api';
 import { parseEsArAmount } from '../amount';
 import type { Trade, TradeInput } from '../types';
 
@@ -35,8 +35,7 @@ export default function TradeForm({ initial, onSaved, onCancel }: TradeFormProps
   }
 
   function errorText(err: unknown): string {
-    if (err instanceof ApiError) return translateApiError(err);
-    return translateApiMessage(err instanceof Error ? err.message : 'No se pudo guardar la operación.');
+    return translateActionError(err, 'No se pudo guardar la operación.');
   }
 
   async function handleSubmit(e: React.FormEvent): Promise<void> {

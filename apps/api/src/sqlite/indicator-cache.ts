@@ -1,5 +1,7 @@
-import type { Client, Row } from '@libsql/client';
+import type { Client } from '@libsql/client';
 import type { IndicatorCache, IndicatorSnapshot } from '@finanzas/domain';
+
+import { toObject } from './row';
 
 interface SnapshotRow {
   key: string;
@@ -8,15 +10,6 @@ interface SnapshotRow {
   reference_date: string;
   fetched_at: string;
   source: string;
-}
-
-/** Map a positional result row to an object keyed by the result columns. */
-function toObject(row: Row, columns: string[]): Record<string, unknown> {
-  const obj: Record<string, unknown> = {};
-  for (let i = 0; i < columns.length; i++) {
-    obj[columns[i]] = row[i];
-  }
-  return obj;
 }
 
 function toSnapshot(row: SnapshotRow): IndicatorSnapshot {
