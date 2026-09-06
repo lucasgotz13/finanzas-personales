@@ -2,7 +2,11 @@ import type { ErrorReason } from '@finanzas/domain';
 import type {
   BudgetStatus,
   CategoryNode,
+  CreateGoalInput,
   CreateTransactionInput,
+  GoalAdjustment,
+  GoalAdjustmentInput,
+  GoalView,
   HistoryResponse,
   IndicatorRefreshResult,
   IndicatorView,
@@ -13,6 +17,7 @@ import type {
   SeriesRange,
   Trade,
   TradeInput,
+  UpdateGoalInput,
 } from './types';
 
 export const API_BASE = '/api/v1';
@@ -26,6 +31,10 @@ const API_MESSAGE_TRANSLATIONS: Record<string, string> = {
   'Nothing to update': 'No hay nada para actualizar.',
   'Invalid category id': 'Identificador de categoría inválido.',
   'Invalid transaction id': 'Identificador de transacción inválido.',
+  'Invalid goal id': 'Identificador de meta inválido.',
+  'Invalid goal': 'Meta inválida.',
+  'Invalid adjustment': 'Movimiento inválido.',
+  'Invalid goal order': 'Orden de metas inválido.',
   'Invalid date range': 'Rango de fechas inválido.',
   'Invalid period': 'Período inválido.',
   'Invalid date': 'Fecha inválida.',
@@ -68,6 +77,7 @@ const REASON_TEMPLATES: Partial<Record<ErrorReason, (meta: Record<string, unknow
   NOTHING_TO_UPDATE: () => 'No hay nada para actualizar.',
   INVALID_CATEGORY_ID: () => 'Identificador de categoría inválido.',
   INVALID_TRANSACTION_ID: () => 'Identificador de transacción inválido.',
+  INVALID_GOAL_ID: () => 'Identificador de meta inválido.',
   INVALID_DATE_RANGE: () => 'Rango de fechas inválido.',
   INVALID_PERIOD: () => 'Período inválido.',
   INVALID_DATE: () => 'Fecha inválida.',
@@ -127,6 +137,7 @@ const CACHEABLE_PATHS = new Set([
   '/portfolio',
   '/portfolio/trades',
   '/budgets',
+  '/goals',
   '/auth/status',
 ]);
 
@@ -320,6 +331,24 @@ export const api = {
   },
   getPositionHistory(id: number, range: SeriesRange, currency: SeriesCurrency, force = false): Promise<HistoryResponse> {
     return request(`/portfolio/positions/${id}/history${qs({ range, currency, force: force ? 'true' : undefined })}`);
+  },
+  listGoals(): Promise<GoalView[]> {
+    return request('/goals');
+  },
+  createGoal(input: CreateGoalInput): Promise<GoalView> {
+    return request('/goals', { method: 'POST', body: JSON.stringify(input) });
+  },
+  updateGoal(id: number, input: UpdateGoalInput): Promise<GoalView> {
+    return request(`/goals/${id}`, { method: 'PATCH', body: JSON.stringify(input) });
+  },
+  deleteGoal(id: number): Promise<void> {
+    return request(`/goals/${id}`, { method: 'DELETE' });
+  },
+  addGoalAdjustment(id: number, input: GoalAdjustmentInput): Promise<GoalAdjustment> {
+    return request(`/goals/${id}/adjustments`, { method: 'POST', body: JSON.stringify(input) });
+  },
+  reorderGoals(ids: number[]): Promise<GoalView[]> {
+    return request('/goals/order', { method: 'PUT', body: JSON.stringify({ ids }) });
   },
 };
 

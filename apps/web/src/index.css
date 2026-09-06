@@ -405,6 +405,21 @@ button.sort-reset {
   color: var(--ok);
 }
 
+/* Savings-goal progress bar: neutral track with the shared ok accent fill. */
+.progress-bar {
+  background: var(--ok-bg);
+  border-radius: 999px;
+  height: 0.5rem;
+  overflow: hidden;
+  margin: 0.25rem 0 0.5rem;
+}
+
+.progress-fill {
+  background: var(--ok);
+  height: 100%;
+  border-radius: 999px;
+}
+
 /* Month-total money card: per-currency totals, large tabular figures. */
 .money-card h2 {
   font-size: 1rem;

@@ -5,6 +5,7 @@ import {
   CategoryService,
   ChartService,
   DerivedPositionRepository,
+  GoalService,
   IndicatorService,
   PortfolioService,
   SummaryService,
@@ -13,6 +14,7 @@ import {
 } from '@finanzas/domain';
 import express from 'express';
 import { SqliteBudgetRepository, SqliteCategoryRepository, SqliteTransactionRepository } from '../sqlite/repositories';
+import { SqliteGoalAdjustmentRepository, SqliteGoalRepository } from '../sqlite/goals-repo';
 import { SqliteIndicatorCache } from '../sqlite/indicator-cache';
 import { SqlitePriceCache } from '../sqlite/price-cache';
 import { SqliteSeriesCache } from '../sqlite/series-cache';
@@ -27,6 +29,7 @@ import { createAuthRouter, createLockout, requireAuth } from './auth';
 import { errorHandler, notFoundHandler } from './errors';
 import { budgetsRouter } from './routes/budgets';
 import { categoriesRouter } from './routes/categories';
+import { goalsRouter } from './routes/goals';
 import { indicatorsRouter } from './routes/indicators';
 import { portfolioRouter } from './routes/portfolio';
 import { summariesRouter } from './routes/summaries';
@@ -77,6 +80,12 @@ export function buildApp(deps: AppDeps): express.Express {
   const categoryService = new CategoryService({ categories: categoriesRepo, clock });
   const budgetService = new BudgetService({ budgets: budgetsRepo, categories: categoriesRepo, transactions: transactionsRepo });
   const summaryService = new SummaryService({ transactions: transactionsRepo, categories: categoriesRepo });
+  const goalService = new GoalService({
+    goals: new SqliteGoalRepository(db),
+    adjustments: new SqliteGoalAdjustmentRepository(db),
+    transactions: transactionsRepo,
+    clock,
+  });
   const indicatorCache = new SqliteIndicatorCache(db);
   const indicatorService = new IndicatorService({
     sources: deps.indicatorSources ?? defaultIndicatorSources(),
@@ -116,6 +125,7 @@ export function buildApp(deps: AppDeps): express.Express {
   app.use('/api/v1', transactionsRouter({ transactionService }));
   app.use('/api/v1', categoriesRouter({ categoryService, clock }));
   app.use('/api/v1', budgetsRouter({ budgetService, clock }));
+  app.use('/api/v1', goalsRouter({ goalService }));
   app.use('/api/v1', summariesRouter({ summaryService, clock }));
   app.use('/api/v1', indicatorsRouter({ indicatorService }));
   app.use('/api/v1', portfolioRouter({ portfolioService, chartService, trades: tradeService }));

@@ -1,6 +1,7 @@
 import type { Transaction } from '../entities/transaction';
 import type { Category } from '../entities/category';
 import type { Budget } from '../entities/budget';
+import type { Goal, GoalAdjustment } from '../entities/goal';
 
 /** Abstraction over the current instant; the API adapter uses AR-timezone dates. */
 export interface Clock {
@@ -38,4 +39,20 @@ export interface BudgetRepository {
   /** Replaces the whole budget map (BM-3: PUT replaces all). */
   replaceAll(budgets: Budget[]): Promise<void>;
   listAll(): Promise<Budget[]>;
+}
+
+export interface GoalRepository {
+  create(goal: Goal): Promise<Goal>;
+  /** Returns null when the id does not exist. */
+  update(id: number, goal: Goal): Promise<Goal | null>;
+  findById(id: number): Promise<Goal | null>;
+  listAll(): Promise<Goal[]>;
+  delete(id: number): Promise<boolean>;
+}
+
+export interface GoalAdjustmentRepository {
+  create(adj: GoalAdjustment): Promise<GoalAdjustment>;
+  listByGoal(goalId: number): Promise<GoalAdjustment[]>;
+  listAll(): Promise<GoalAdjustment[]>;
+  deleteByGoal(goalId: number): Promise<void>;
 }

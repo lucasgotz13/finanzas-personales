@@ -70,12 +70,14 @@ export type {
 
 export { Transaction } from './entities/transaction';
 export type { TransactionInput } from './entities/transaction';
-
 export { Category } from './entities/category';
 export type { CategoryInput } from './entities/category';
 
 export { Budget } from './entities/budget';
 export type { BudgetInput } from './entities/budget';
+
+export { Goal, GoalAdjustment } from './entities/goal';
+export type { GoalInput, GoalAdjustmentInput } from './entities/goal';
 
 export type {
   Clock,
@@ -83,6 +85,8 @@ export type {
   TransactionFilters,
   CategoryRepository,
   BudgetRepository,
+  GoalRepository,
+  GoalAdjustmentRepository,
 } from './ports/repositories';
 
 export { TransactionService } from './use-cases/transactions';
@@ -96,3 +100,9 @@ export type { BudgetServiceDeps, BudgetStatus, CategoryBudgetStatus } from './us
 
 export { SummaryService } from './use-cases/summaries';
 export type { SummaryServiceDeps, PeriodSummary, CurrencySummary, CategorySummary } from './use-cases/summaries';
+
+export { netFlowByCurrency } from './use-cases/surplus';
+export type { CurrencyNet } from './use-cases/surplus';
+
+export { GoalService } from './use-cases/goals';
+export type { GoalServiceDeps, CreateGoalInput, UpdateGoalInput, AdjustmentKind, GoalView } from './use-cases/goals';

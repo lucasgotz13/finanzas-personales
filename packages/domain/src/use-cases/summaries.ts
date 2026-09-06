@@ -1,8 +1,8 @@
 import { PeriodKey } from '../vo/period-key';
 import type { PeriodType } from '../vo/period-key';
-import { SUPPORTED_CURRENCIES } from '../vo/money';
 import type { Currency } from '../vo/money';
 import type { CategoryRepository, TransactionRepository } from '../ports/repositories';
+import { netFlowByCurrency } from './surplus';
 
 export interface SummaryServiceDeps {
   transactions: TransactionRepository;
@@ -50,16 +50,10 @@ export class SummaryService {
     const allCategories = await this.deps.categories.listAll();
     const nameById = new Map<number, string>(allCategories.map((c) => [c.id as number, c.name]));
 
-    const currencyTotals = new Map<Currency, { expense: number; income: number }>();
     const categoryTotals = new Map<string, { categoryId: number; currency: Currency; expense: number; income: number }>();
 
     for (const tx of txs) {
       const currency = tx.currency as Currency;
-      const ct = currencyTotals.get(currency) ?? { expense: 0, income: 0 };
-      if (tx.direction === 'expense') ct.expense += tx.amountMinor;
-      else ct.income += tx.amountMinor;
-      currencyTotals.set(currency, ct);
-
       const ckey = `${tx.categoryId}:${currency}`;
       const cat = categoryTotals.get(ckey) ?? { categoryId: tx.categoryId, currency, expense: 0, income: 0 };
       if (tx.direction === 'expense') cat.expense += tx.amountMinor;
@@ -67,11 +61,13 @@ export class SummaryService {
       categoryTotals.set(ckey, cat);
     }
 
-    const currencies: CurrencySummary[] = SUPPORTED_CURRENCIES.map((currency) => {
-      const t = currencyTotals.get(currency) ?? { expense: 0, income: 0 };
-      const netFlow = t.income - t.expense;
+    // Per-currency surplus shares one helper with savings goals so both
+    // features always agree on what "surplus" means (income − expenses,
+    // never converted or mixed across currencies).
+    const currencies: CurrencySummary[] = netFlowByCurrency(txs).map((t) => {
+      const netFlow = t.netFlow;
       const savingsRate = t.income > 0 ? round3(netFlow / t.income) : null;
-      return { currency, expense: t.expense, income: t.income, netFlow, savingsRate };
+      return { currency: t.currency, expense: t.expense, income: t.income, netFlow, savingsRate };
     });
 
     const categories: CategorySummary[] = [...categoryTotals.values()]
