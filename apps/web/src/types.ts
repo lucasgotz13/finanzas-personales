@@ -158,3 +158,49 @@ export interface HistoryResponse {
   status: SeriesStatus;
   degraded?: boolean;
 }
+
+/** Savings-goal types mirroring the REST contract under /api/v1/goals. */
+export interface GoalView {
+  id: number;
+  name: string;
+  targetMinor: number;
+  currency: 'ARS' | 'USD';
+  deadline: string | null;
+  createdAt: string;
+  priority: number;
+  completed: boolean;
+  automaticMinor: number;
+  manualAportesMinor: number;
+  manualRetirosMinor: number;
+  manualNetMinor: number;
+  totalMinor: number;
+  remainingMinor: number;
+  daysRemaining: number | null;
+  requiredPaceMinor: number | null;
+}
+
+export interface CreateGoalInput {
+  name: string;
+  targetMinor: number;
+  currency: 'ARS' | 'USD';
+  deadline?: string | null;
+}
+
+export interface UpdateGoalInput {
+  name?: string;
+  targetMinor?: number;
+  currency?: 'ARS' | 'USD';
+  deadline?: string | null;
+}
+
+export interface GoalAdjustmentInput {
+  kind: 'aporte' | 'retiro';
+  amountMinor: number;
+}
+
+export interface GoalAdjustment {
+  id: number;
+  goalId: number;
+  amountMinor: number;
+  createdAt: string;
+}

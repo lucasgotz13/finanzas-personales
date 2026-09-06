@@ -4,12 +4,13 @@ import LoginGate from './components/LoginGate';
 import ThemeToggle from './components/ThemeToggle';
 import BudgetsPage from './pages/BudgetsPage';
 import CategoriesPage from './pages/CategoriesPage';
+import GoalsPage from './pages/GoalsPage';
 import IndicatorsPage from './pages/IndicatorsPage';
 import InvestmentsPage from './pages/InvestmentsPage';
 import SummariesPage from './pages/SummariesPage';
 import TransactionsPage from './pages/TransactionsPage';
 
-export type Tab = 'transactions' | 'categories' | 'budgets' | 'summaries' | 'indicators' | 'inversiones';
+export type Tab = 'transactions' | 'categories' | 'budgets' | 'summaries' | 'indicators' | 'inversiones' | 'metas';
 
 const TABS: Array<{ id: Tab; label: string }> = [
   { id: 'transactions', label: 'Transacciones' },
@@ -18,6 +19,7 @@ const TABS: Array<{ id: Tab; label: string }> = [
   { id: 'summaries', label: 'Resúmenes' },
   { id: 'indicators', label: 'Indicadores' },
   { id: 'inversiones', label: 'Inversiones' },
+  { id: 'metas', label: 'Metas' },
 ];
 
 export default function App(): JSX.Element {
@@ -102,6 +104,9 @@ export default function App(): JSX.Element {
         </div>
         <div className={tab === 'inversiones' ? 'tab-panel' : 'tab-panel hidden'}>
           <InvestmentsPage active={tab === 'inversiones'} />
+        </div>
+        <div className={tab === 'metas' ? 'tab-panel' : 'tab-panel hidden'}>
+          <GoalsPage active={tab === 'metas'} />
         </div>
       </main>
       {/* Mobile-first navigation: thumb-reachable, same buttons and state as
