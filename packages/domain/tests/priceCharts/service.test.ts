@@ -23,13 +23,12 @@ const GGAL_SERIES: NativeSeries = {
 };
 const CCL: CclPoint[] = [{ date: '2026-08-06', value: 1000 }, { date: '2026-08-07', value: 1000 }];
 
-class InMemoryPositionRepository implements PositionRepository {
-  private rows = new Map<number, Position>();
-  private nextId = 1;
-  async create(p: Position): Promise<Position> { const s = { ...p, id: this.nextId++ }; this.rows.set(s.id as number, s); return s; }
-  async update(id: number, p: Position): Promise<Position | null> { if (!this.rows.has(id)) return null; this.rows.set(id, { ...p, id }); return this.rows.get(id) ?? null; }
-  async list(): Promise<Position[]> { return [...this.rows.values()]; }
-  async delete(id: number): Promise<boolean> { return this.rows.delete(id); }
+class SeededPositionRepository implements PositionRepository {
+  private rows: Position[] = [];
+  seed(rows: Position[]): void {
+    this.rows = [...rows];
+  }
+  async list(): Promise<Position[]> { return [...this.rows]; }
 }
 
 class InMemorySeriesCache implements SeriesCache {
@@ -52,12 +51,12 @@ class StubCclSource implements CclSeriesSource {
 }
 
 interface Harness {
-  repo: InMemoryPositionRepository; cache: InMemorySeriesCache;
+  repo: SeededPositionRepository; cache: InMemorySeriesCache;
   seriesSource: StubSeriesSource; cclSource: StubCclSource; service: ChartService;
 }
 
 function harness(): Harness {
-  const repo = new InMemoryPositionRepository();
+  const repo = new SeededPositionRepository();
   const cache = new InMemorySeriesCache();
   const seriesSource = new StubSeriesSource(async () => { throw new Error('series source not configured'); });
   const cclSource = new StubCclSource(async () => { throw new Error('ccl source not configured'); });
@@ -75,8 +74,10 @@ function setSources(h: Harness, seriesSource: StubSeriesSource, cclSource: StubC
 }
 
 async function seedPositions(h: Harness): Promise<void> {
-  await h.repo.create({ ticker: 'AAPL', name: 'Apple', quantity: 10, avgCostMinor: 18000, currency: 'USD', createdAt: iso(0) });
-  await h.repo.create({ ticker: 'GGAL.BA', name: 'Galicia', quantity: 5, avgCostMinor: 6000, currency: 'USD', createdAt: iso(0) });
+  h.repo.seed([
+    { id: 1, ticker: 'AAPL', name: 'Apple', quantity: 10, avgCostMinor: 18000, currency: 'USD', createdAt: iso(0) },
+    { id: 2, ticker: 'GGAL.BA', name: 'Galicia', quantity: 5, avgCostMinor: 6000, currency: 'USD', createdAt: iso(0) },
+  ]);
 }
 
 function seedAll(h: Harness, range: SeriesRange, fetchedAt: string): void {
@@ -223,7 +224,7 @@ describe('ChartService.getPortfolioHistory (PC-1..PC-4)', () => {
 
   it('never touches the CCL source when all assets are ARS-native and ARS is requested', async () => {
     const h = harness();
-    await h.repo.create({ ticker: 'GGAL.BA', name: 'Galicia', quantity: 5, avgCostMinor: 6000, currency: 'USD', createdAt: iso(0) });
+    h.repo.seed([{ id: 1, ticker: 'GGAL.BA', name: 'Galicia', quantity: 5, avgCostMinor: 6000, currency: 'USD', createdAt: iso(0) }]);
     setSources(h, new StubSeriesSource(async () => GGAL_SERIES), new StubCclSource(async () => CCL));
 
     const res = await h.service.getPortfolioHistory('3m', 'ARS', true);

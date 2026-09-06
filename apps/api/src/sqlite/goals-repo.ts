@@ -101,14 +101,6 @@ export class SqliteGoalAdjustmentRepository implements GoalAdjustmentRepository 
     return new GoalAdjustment({ ...adj, id: Number(result.lastInsertRowid) });
   }
 
-  async listByGoal(goalId: number): Promise<GoalAdjustment[]> {
-    const result = await this.db.execute({
-      sql: 'SELECT * FROM goal_adjustments WHERE goal_id = ? ORDER BY created_at, id',
-      args: [goalId],
-    });
-    return result.rows.map((row) => toAdjustment(toObject(row, result.columns) as unknown as GoalAdjustmentRow));
-  }
-
   async listAll(): Promise<GoalAdjustment[]> {
     const result = await this.db.execute('SELECT * FROM goal_adjustments ORDER BY created_at, id');
     return result.rows.map((row) => toAdjustment(toObject(row, result.columns) as unknown as GoalAdjustmentRow));

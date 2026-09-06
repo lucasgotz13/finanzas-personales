@@ -985,14 +985,6 @@ tr.asset-chart-row td {
     text-overflow: ellipsis;
   }
 
-  /* Active nav item is a state, not an action: ink bold + 2px underline
-     (matches the desktop tabs), never the action green. */
-  .bottom-bar button.active {
-    color: var(--ink);
-    font-weight: 700;
-    border-top-color: var(--ink);
-  }
-
   /* Single menu button fills the bar: larger and semibold, thumb-reachable. */
   .bottom-bar .mobile-menu-button {
     font-size: 0.95rem;

@@ -17,22 +17,12 @@ class InMemoryPriceCache implements PriceCache {
   stored(ticker: string): PriceSnapshot | null { return this.rows.get(ticker) ?? null; }
 }
 
-class InMemoryPositionRepository implements PositionRepository {
-  private rows = new Map<number, Position>();
-  private nextId = 1;
-  async create(p: Position): Promise<Position> {
-    const stored = { ...p, id: this.nextId++ };
-    this.rows.set(stored.id as number, stored);
-    return stored;
+class SeededPositionRepository implements PositionRepository {
+  private rows: Position[] = [];
+  seed(rows: Position[]): void {
+    this.rows = [...rows];
   }
-  async update(id: number, p: Position): Promise<Position | null> {
-    if (!this.rows.has(id)) return null;
-    const stored = { ...p, id };
-    this.rows.set(id, stored);
-    return stored;
-  }
-  async list(): Promise<Position[]> { return [...this.rows.values()]; }
-  async delete(id: number): Promise<boolean> { return this.rows.delete(id); }
+  async list(): Promise<Position[]> { return [...this.rows]; }
 }
 
 class StubSource implements PriceSource {
@@ -47,7 +37,7 @@ class StubFx implements PortfolioFxPort {
 }
 
 interface Harness {
-  repo: InMemoryPositionRepository;
+  repo: SeededPositionRepository;
   cache: InMemoryPriceCache;
   source: StubSource;
   fx: StubFx;
@@ -55,7 +45,7 @@ interface Harness {
 }
 
 function harness(now = T0): Harness {
-  const repo = new InMemoryPositionRepository();
+  const repo = new SeededPositionRepository();
   const cache = new InMemoryPriceCache();
   const source = new StubSource(async () => {
     throw new Error('source not configured');
@@ -74,8 +64,10 @@ function harness(now = T0): Harness {
 
 /** Seed two positions: AAPL.BA (qty 10 @ 180 USD) and GGAL.BA (qty 5 @ 60 USD). */
 async function seedPositions(h: Harness): Promise<void> {
-  await h.repo.create({ ticker: 'AAPL.BA', name: 'Apple', quantity: 10, avgCostMinor: 18000, currency: 'USD', createdAt: iso(0) });
-  await h.repo.create({ ticker: 'GGAL.BA', name: 'Galicia', quantity: 5, avgCostMinor: 6000, currency: 'USD', createdAt: iso(0) });
+  h.repo.seed([
+    { id: 1, ticker: 'AAPL.BA', name: 'Apple', quantity: 10, avgCostMinor: 18000, currency: 'USD', createdAt: iso(0) },
+    { id: 2, ticker: 'GGAL.BA', name: 'Galicia', quantity: 5, avgCostMinor: 6000, currency: 'USD', createdAt: iso(0) },
+  ]);
 }
 
 function seedPrice(h: Harness, ticker: string, priceMinor: number, fetchedAt: string): void {
