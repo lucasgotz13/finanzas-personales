@@ -5,7 +5,7 @@ import type { Client } from '@libsql/client';
 import type { Express } from 'express';
 import type { Clock, CclPoint, CclSeriesSource, IndicatorSource, NativeSeries, PriceSeriesSource, PriceSource, SeriesRange } from '@finanzas/domain';
 import request from 'supertest';
-import { createDbClient, MIGRATIONS_DIR, migrate } from '../../../scripts/migrate';
+import { createLocalClient, MIGRATIONS_DIR, migrate } from '../../../scripts/migrate';
 import { signToken } from '../src/http/auth';
 import { buildApp } from '../src/http/app';
 
@@ -64,7 +64,7 @@ export async function createTestApp(
   const dir = mkdtempSync(join(tmpdir(), 'finanzas-test-'));
   const dbPath = join(dir, 'test.db');
   await migrate(dbPath, MIGRATIONS_DIR);
-  const db = await createDbClient(dbPath);
+  const db = await createLocalClient(dbPath);
   const clock = new FakeClock(now);
   const app = buildApp({
     db,

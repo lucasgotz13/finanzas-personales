@@ -12,8 +12,8 @@ class SystemClock implements Clock {
 
 const dbPath = process.env.FINANZAS_DB ? resolve(process.env.FINANZAS_DB) : DEFAULT_DB_PATH;
 validateProductionConfig(process.env.FINANZAS_AUTH_PASSPHRASE);
-await migrate(dbPath, MIGRATIONS_DIR);
-const db = await createDbClient(dbPath);
+await migrate(undefined, MIGRATIONS_DIR);
+const db = await createDbClient();
 const app = buildApp({ db, clock: new SystemClock(), authSecret: process.env.FINANZAS_AUTH_PASSPHRASE });
 
 const port = Number(process.env.PORT ?? 3000);
