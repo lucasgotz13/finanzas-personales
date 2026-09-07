@@ -289,18 +289,67 @@ form.transaction-form .actions {
   align-items: center;
 }
 
-/* One consistent danger style everywhere (Borrar, category delete). */
+/* Goal card (div, not form, so the form-qualified rules above don't reach
+   it): breathing room between the amount field and the buttons, a larger
+   rounded input, and spaced actions. */
+.goal-card .transaction-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.goal-card .transaction-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+}
+
+.goal-card .transaction-form input {
+  padding: 0.6rem 0.75rem;
+  font-size: 1rem;
+  border: 1px solid var(--hairline);
+  border-radius: 10px;
+  background: var(--card);
+  color: var(--ink);
+}
+
+.goal-card .transaction-form .actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+/* One consistent danger style everywhere (Borrar, category delete, goal
+   retiro): same padding as primary so solid buttons share one height. */
 button.danger {
   background: var(--danger);
   color: #fff;
   border: none;
   border-radius: 8px;
-  padding: 0.35rem 0.8rem;
+  padding: 0.5rem 1rem;
   cursor: pointer;
 }
 
 button.danger:hover:not(:disabled) {
   background: #8f1c16;
+}
+
+/* Amber sibling of danger (goal retiro): clearly distinct from the red
+   Borrar, same padding as primary/danger so solid buttons share one height. */
+button.warning {
+  background: var(--warn);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+button.warning:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--warn) 85%, black);
 }
 
 table.data {
@@ -1094,6 +1143,7 @@ tr.asset-chart-row td {
 
   button.primary,
   button.danger,
+  button.warning,
   button.link {
     min-height: 44px;
   }

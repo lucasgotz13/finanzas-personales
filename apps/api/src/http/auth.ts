@@ -160,7 +160,7 @@ export function createAuthRouter(deps: AuthRouterDeps): Router {
       const value = readCookie(req.headers.cookie, COOKIE_NAME);
       const authenticated =
         passphrase !== undefined && value !== undefined && verifyToken(passphrase, value);
-      res.json({ authenticated });
+      res.json({ authenticated, authDisabled: passphrase === undefined });
     }),
   );
 
