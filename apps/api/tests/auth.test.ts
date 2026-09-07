@@ -141,21 +141,21 @@ describe('GET /api/v1/auth/status', () => {
     env = await testApp();
     const res = await request(env.app).get('/api/v1/auth/status').set('Cookie', authCookieFor(SECRET));
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ authenticated: true });
+    expect(res.body).toEqual({ authenticated: true, authDisabled: false });
   });
 
   it('returns authenticated: false without a cookie', async () => {
     env = await testApp();
     const res = await request(env.app).get('/api/v1/auth/status');
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ authenticated: false });
+    expect(res.body).toEqual({ authenticated: false, authDisabled: false });
   });
 
   it('returns authenticated: false for an invalid cookie', async () => {
     env = await testApp();
     const res = await request(env.app).get('/api/v1/auth/status').set('Cookie', `${COOKIE}=garbage`);
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ authenticated: false });
+    expect(res.body).toEqual({ authenticated: false, authDisabled: false });
   });
 });
 
@@ -212,5 +212,15 @@ describe('auth disabled (dev convenience)', () => {
     const res = await request(env.app).post('/api/v1/auth/login').send({ passphrase: 'anything' });
     expect(res.status).toBe(401);
     expect(res.body).toMatchObject({ error: { code: 'UNAUTHORIZED', reason: 'AUTH_DISABLED' } });
+  });
+
+  it('reports authDisabled:true on status without a secret and keeps login fail-closed', async () => {
+    env = await createTestApp();
+    const status = await request(env.app).get('/api/v1/auth/status');
+    expect(status.status).toBe(200);
+    expect(status.body).toEqual({ authenticated: false, authDisabled: true });
+    const login = await request(env.app).post('/api/v1/auth/login').send({ passphrase: 'anything' });
+    expect(login.status).toBe(401);
+    expect(login.body).toMatchObject({ error: { code: 'UNAUTHORIZED', reason: 'AUTH_DISABLED' } });
   });
 });

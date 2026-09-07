@@ -34,7 +34,7 @@ export default function App(): JSX.Element {
   useEffect(() => {
     api
       .authStatus()
-      .then(setAuthed)
+      .then((status) => setAuthed(status.authDisabled ? true : status.authenticated))
       .catch(() => setAuthed(false));
   }, []);
 

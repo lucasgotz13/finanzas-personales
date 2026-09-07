@@ -263,8 +263,8 @@ export const api = {
     return request('/auth/logout', { method: 'POST' });
   },
   /** Whether the current session is authenticated (public endpoint). */
-  authStatus(): Promise<boolean> {
-    return request<{ authenticated: boolean }>('/auth/status').then((s) => s.authenticated);
+  authStatus(): Promise<{ authenticated: boolean; authDisabled: boolean }> {
+    return request<{ authenticated: boolean; authDisabled: boolean }>('/auth/status');
   },
   listTransactions(params: { month?: string; direction?: 'expense' | 'income' } = {}): Promise<import('./types').ApiTransaction[]> {
     return request(`/transactions${qs(params)}`);

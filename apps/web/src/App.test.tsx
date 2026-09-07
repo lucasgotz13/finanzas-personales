@@ -15,7 +15,7 @@ const budgetStatus: BudgetStatus = {
 const emptySummary: PeriodSummary = { period: 'month', currencies: [], categories: [] };
 
 function mockAllApis(): void {
-  vi.spyOn(api, 'authStatus').mockResolvedValue(true);
+  vi.spyOn(api, 'authStatus').mockResolvedValue({ authenticated: true, authDisabled: false });
   vi.spyOn(api, 'login').mockResolvedValue(undefined);
   vi.spyOn(api, 'logout').mockResolvedValue(undefined);
   vi.spyOn(api, 'listTransactions').mockResolvedValue([]);
@@ -236,7 +236,7 @@ describe('App auth gate (WU2)', () => {
   });
 
   it('shows the login gate when unauthenticated', async () => {
-    vi.spyOn(api, 'authStatus').mockResolvedValue(false);
+    vi.spyOn(api, 'authStatus').mockResolvedValue({ authenticated: false, authDisabled: false });
     render(<App />);
     expect(await screen.findByRole('heading', { name: 'Ingresar' })).toBeInTheDocument();
     expect(screen.getByLabelText('Contraseña')).toBeInTheDocument();
@@ -250,9 +250,18 @@ describe('App auth gate (WU2)', () => {
     expect(screen.queryByRole('heading', { name: 'Ingresar' })).not.toBeInTheDocument();
   });
 
+  it('skips the login gate when auth is disabled and renders tabs without login', async () => {
+    mockAllApis();
+    vi.spyOn(api, 'authStatus').mockResolvedValue({ authenticated: false, authDisabled: true });
+    render(<App />);
+    expect(await screen.findByTestId('note')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Ingresar' })).not.toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Transacciones' })).toBeInTheDocument();
+  });
+
   it('flips to the app after a successful login', async () => {
     mockAllApis();
-    vi.spyOn(api, 'authStatus').mockResolvedValue(false);
+    vi.spyOn(api, 'authStatus').mockResolvedValue({ authenticated: false, authDisabled: false });
     const login = vi.spyOn(api, 'login').mockResolvedValue(undefined);
     const user = userEvent.setup();
     render(<App />);
@@ -278,7 +287,7 @@ describe('App auth gate (WU2)', () => {
   });
 
   it('drops back to the login gate when a page call receives 401 (session expired)', async () => {
-    vi.spyOn(api, 'authStatus').mockResolvedValue(true);
+    vi.spyOn(api, 'authStatus').mockResolvedValue({ authenticated: true, authDisabled: false });
     const unauthorized = {
       ok: false,
       status: 401,
