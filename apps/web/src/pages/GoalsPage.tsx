@@ -75,7 +75,7 @@ function GoalCard({ goal, isFirst, isLast, editing, onEdit, onCancelEdit, onChan
   }
 
   return (
-    <article className="card" data-testid={`goal-${goal.id}`}>
+    <article className="card goal-card" data-testid={`goal-${goal.id}`}>
       <div className="indicators-header">
         <h3>{goal.name}</h3>
         <span className="badge ok">{goal.currency}</span>
@@ -115,7 +115,7 @@ function GoalCard({ goal, isFirst, isLast, editing, onEdit, onCancelEdit, onChan
           <button type="button" className="primary" disabled={adjBusy} onClick={() => void adjust('aporte')} data-testid={`goal-aporte-${goal.id}`}>
             Aportar
           </button>
-          <button type="button" disabled={adjBusy} onClick={() => void adjust('retiro')} data-testid={`goal-retiro-${goal.id}`}>
+          <button type="button" className="warning" disabled={adjBusy} onClick={() => void adjust('retiro')} data-testid={`goal-retiro-${goal.id}`}>
             Retirar
           </button>
         </div>
