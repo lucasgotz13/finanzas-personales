@@ -151,29 +151,42 @@ describe('InvestmentsPage (PI-6, TH-6)', () => {
   it('shows the portfolio fetch error in a role=alert box and Reintentar reloads', async () => {
     const getPortfolio = vi.spyOn(api, 'getPortfolio').mockRejectedValue(new Error('api caída'));
     vi.spyOn(api, 'listTrades').mockResolvedValue([]);
+    vi.spyOn(api, 'refreshPortfolio').mockResolvedValue({ results: [] });
+    vi.spyOn(api, 'refreshIndicators').mockResolvedValue({ results: [] });
     const user = userEvent.setup();
 
     render(<InvestmentsPage />);
 
+    // Wait for the entry-tick reload to settle (initial GET + entry tick),
+    // then the fetch error is stable and Reintentar is present.
+    await vi.waitFor(() => expect(getPortfolio).toHaveBeenCalledTimes(2));
     expect(await screen.findByRole('alert')).toHaveTextContent('api caída');
     await user.click(screen.getByTestId('retry-portfolio'));
-    await vi.waitFor(() => expect(getPortfolio).toHaveBeenCalledTimes(2));
+    // Initial GET + entry-tick reload + manual retry.
+    await vi.waitFor(() => expect(getPortfolio).toHaveBeenCalledTimes(3));
   });
 
   it('shows the trades fetch error with Reintentar that reloads', async () => {
     vi.spyOn(api, 'getPortfolio').mockResolvedValue(summary());
     const listTrades = vi.spyOn(api, 'listTrades').mockRejectedValue(new Error('sin operaciones'));
+    vi.spyOn(api, 'refreshPortfolio').mockResolvedValue({ results: [] });
+    vi.spyOn(api, 'refreshIndicators').mockResolvedValue({ results: [] });
     const user = userEvent.setup();
 
     render(<InvestmentsPage />);
 
+    // Wait for the entry-tick reload to settle before asserting the error.
+    await vi.waitFor(() => expect(listTrades).toHaveBeenCalledTimes(2));
     expect(await screen.findByText('sin operaciones')).toBeInTheDocument();
     await user.click(screen.getByTestId('retry-trades'));
-    await vi.waitFor(() => expect(listTrades).toHaveBeenCalledTimes(2));
+    // Initial GET + entry-tick reload + manual retry.
+    await vi.waitFor(() => expect(listTrades).toHaveBeenCalledTimes(3));
   });
 
   it('creates a trade through the form, edits one prefilled and deletes one after confirmation', async () => {
     mockPortfolioAndTrades();
+    vi.spyOn(api, 'refreshPortfolio').mockResolvedValue({ results: [] });
+    vi.spyOn(api, 'refreshIndicators').mockResolvedValue({ results: [] });
     const create = vi.spyOn(api, 'createTrade').mockResolvedValue({ id: 4, ticker: 'MELI.BA', type: 'buy', date: '2026-08-06', quantity: 2, priceMinor: 50000, currency: 'USD' });
     const update = vi.spyOn(api, 'updateTrade').mockResolvedValue({ id: 2, ticker: 'AAPL.BA', type: 'sell', date: '2026-08-05', quantity: 4, priceMinor: 25000, currency: 'USD' });
     const del = vi.spyOn(api, 'deleteTrade').mockResolvedValue(undefined);
@@ -210,6 +223,7 @@ describe('InvestmentsPage (PI-6, TH-6)', () => {
   it('auto-refreshes non-forced every 5 min while visible and pauses when hidden (PI-5)', async () => {
     mockPortfolioAndTrades();
     const refresh = vi.spyOn(api, 'refreshPortfolio').mockResolvedValue({ results: [] });
+    const refreshInd = vi.spyOn(api, 'refreshIndicators').mockResolvedValue({ results: [] });
     const visibility = { hidden: false };
     Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => (visibility.hidden ? 'hidden' : 'visible') });
     Object.defineProperty(document, 'hidden', { configurable: true, get: () => visibility.hidden });
@@ -219,12 +233,20 @@ describe('InvestmentsPage (PI-6, TH-6)', () => {
     await act(async () => {
       await vi.advanceTimersByTimeAsync(0);
     });
-    expect(api.getPortfolio).toHaveBeenCalledTimes(1);
+    // Entry tick: one non-forced portfolio + indicators refresh, then the views reload.
+    expect(refresh).toHaveBeenCalledTimes(1);
+    expect(refresh).toHaveBeenCalledWith(false);
+    expect(refreshInd).toHaveBeenCalledTimes(1);
+    expect(refreshInd).toHaveBeenCalledWith(false);
+    expect(api.getPortfolio).toHaveBeenCalledTimes(2);
+    expect(api.listTrades).toHaveBeenCalledTimes(2);
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(FIVE_MINUTES);
     });
     expect(refresh).toHaveBeenCalledWith(false);
+    expect(refresh).toHaveBeenCalledTimes(2);
+    expect(refreshInd).toHaveBeenCalledTimes(2);
 
     visibility.hidden = true;
     act(() => {
@@ -233,18 +255,21 @@ describe('InvestmentsPage (PI-6, TH-6)', () => {
     await act(async () => {
       await vi.advanceTimersByTimeAsync(3 * FIVE_MINUTES);
     });
-    expect(refresh).toHaveBeenCalledTimes(1);
+    expect(refresh).toHaveBeenCalledTimes(2);
+    expect(refreshInd).toHaveBeenCalledTimes(2);
 
     visibility.hidden = false;
     await act(async () => {
       document.dispatchEvent(new Event('visibilitychange'));
     });
-    expect(refresh).toHaveBeenCalledTimes(2);
+    expect(refresh).toHaveBeenCalledTimes(3);
+    expect(refreshInd).toHaveBeenCalledTimes(3);
   });
 
   it('manual refresh forces the server refresh and reloads the summary', async () => {
     mockPortfolioAndTrades();
     vi.spyOn(api, 'refreshPortfolio').mockResolvedValue({ results: [] });
+    vi.spyOn(api, 'refreshIndicators').mockResolvedValue({ results: [] });
     const user = userEvent.setup();
 
     render(<InvestmentsPage />);
@@ -253,26 +278,36 @@ describe('InvestmentsPage (PI-6, TH-6)', () => {
     await user.click(screen.getByTestId('portfolio-refresh'));
 
     expect(api.refreshPortfolio).toHaveBeenCalledWith(true);
-    await vi.waitFor(() => expect(api.getPortfolio).toHaveBeenCalledTimes(2));
+    await vi.waitFor(() => expect(api.getPortfolio).toHaveBeenCalledTimes(3));
   });
 
   it('does not fetch while inactive and fetches once when activated (optimize batch)', async () => {
     const getPortfolio = vi.spyOn(api, 'getPortfolio').mockResolvedValue(summary());
     const listTrades = vi.spyOn(api, 'listTrades').mockResolvedValue(trades());
     vi.spyOn(api, 'getPortfolioHistory').mockResolvedValue(history());
+    const refreshPortfolio = vi.spyOn(api, 'refreshPortfolio').mockResolvedValue({ results: [] });
+    const refreshIndicators = vi.spyOn(api, 'refreshIndicators').mockResolvedValue({ results: [] });
 
     const { rerender } = render(<InvestmentsPage active={false} />);
 
-    // Dormant tab: no portfolio/trades fetches, no chart chunk mount.
+    // Dormant tab: no portfolio/trades fetches, no chart chunk mount, no entry refresh.
     expect(getPortfolio).not.toHaveBeenCalled();
     expect(listTrades).not.toHaveBeenCalled();
+    expect(refreshPortfolio).not.toHaveBeenCalled();
+    expect(refreshIndicators).not.toHaveBeenCalled();
     expect(screen.queryByTestId('portfolio-chart')).not.toBeInTheDocument();
 
     rerender(<InvestmentsPage active />);
 
     expect(await screen.findByTestId('positions-table')).toBeInTheDocument();
-    expect(getPortfolio).toHaveBeenCalledTimes(1);
-    expect(listTrades).toHaveBeenCalledTimes(1);
+    // Entry tick on activation: one non-forced portfolio + indicators refresh,
+    // then a single tick reloads the views (initial GET + entry-tick reload).
+    await vi.waitFor(() => expect(refreshPortfolio).toHaveBeenCalledTimes(1));
+    expect(refreshPortfolio).toHaveBeenCalledWith(false);
+    expect(refreshIndicators).toHaveBeenCalledTimes(1);
+    expect(refreshIndicators).toHaveBeenCalledWith(false);
+    await vi.waitFor(() => expect(getPortfolio).toHaveBeenCalledTimes(2));
+    expect(listTrades).toHaveBeenCalledTimes(2);
     // Activation mounts the lazy portfolio chart (chunk loads now, not at boot).
     expect(await screen.findByTestId('portfolio-chart')).toBeInTheDocument();
   });
@@ -448,6 +483,8 @@ describe('Price charts (PC-5, PC-6)', () => {
   it('warms the series cache once per range on open and on visibilitychange back to visible', async () => {
     mockCharts();
     const getHistory = vi.spyOn(api, 'getPortfolioHistory').mockResolvedValue(history(points));
+    const refreshPortfolio = vi.spyOn(api, 'refreshPortfolio').mockResolvedValue({ results: [] });
+    const refreshIndicators = vi.spyOn(api, 'refreshIndicators').mockResolvedValue({ results: [] });
     const visibility = { hidden: false };
     Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => (visibility.hidden ? 'hidden' : 'visible') });
     Object.defineProperty(document, 'hidden', { configurable: true, get: () => visibility.hidden });
@@ -465,6 +502,13 @@ describe('Price charts (PC-5, PC-6)', () => {
     expect(getHistory).toHaveBeenCalledWith('6m', 'USD', true);
     expect(getHistory).toHaveBeenCalledWith('1y', 'ARS', true);
     expect(getHistory).toHaveBeenCalledWith('1y', 'USD', true);
+    expect(forcedCalls()).toBe(8);
+    // Entry tick runs the TTL-gated snapshot refresh alongside the warm-up
+    // (different caches: 5-min snapshot vs 24-h history) without extra history forces.
+    await vi.waitFor(() => expect(refreshPortfolio).toHaveBeenCalledTimes(1));
+    expect(refreshPortfolio).toHaveBeenCalledWith(false);
+    expect(refreshIndicators).toHaveBeenCalledTimes(1);
+    expect(refreshIndicators).toHaveBeenCalledWith(false);
     expect(forcedCalls()).toBe(8);
 
     visibility.hidden = true;
