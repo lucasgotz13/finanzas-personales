@@ -102,16 +102,26 @@ export default function InvestmentsPage({ active = true }: { active?: boolean })
 
   // Auto-refresh every 5 min while the document is visible and the tab is
   // active (PI-5): pauses in hidden tabs and on tab switches, catches up once
-  // on visibilitychange back to visible. No immediate refresh on entry: the
-  // mount/activation reads are already fresh.
+  // on visibilitychange back to visible. A non-forced tick also runs on entry
+  // (mount or re-activation) for both the portfolio snapshot and the shared
+  // indicators cache — the CCL TTL is shared, so a stale indicator would
+  // otherwise leave ARS valuations one cycle behind. Both POSTs are
+  // TTL-gated and cheap when fresh; a single tick then reloads the views.
   useVisibleRefresh({
     active,
     intervalMs: AUTO_REFRESH_MS,
+    immediateOnEntry: true,
     onRefresh: () => {
-      void api
-        .refreshPortfolio(false)
-        .then(() => setRefreshError(null), (err: unknown) => setRefreshError(errorText(err)))
-        .finally(() => setTick((t) => t + 1));
+      void (async () => {
+        try {
+          await Promise.all([api.refreshPortfolio(false), api.refreshIndicators(false)]);
+          setRefreshError(null);
+        } catch (err: unknown) {
+          setRefreshError(errorText(err));
+        } finally {
+          setTick((t) => t + 1);
+        }
+      })();
     },
   });
 
