@@ -951,6 +951,24 @@ ul.tree .tree-row input {
   font-weight: 600;
 }
 
+/* Drag-to-compare readout: hairline rule, tabular es-AR figures. */
+.compare-readout {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.75rem;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--hairline);
+  font-variant-numeric: tabular-nums;
+}
+
+.compare-hint {
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--muted-text);
+}
+
 /* Row-tap expansion for the inline asset chart (PC-5). */
 tr.positions-row {
   cursor: pointer;
