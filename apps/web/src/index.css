@@ -990,16 +990,23 @@ tr.asset-chart-row td {
 }
 
 @media (max-width: 640px) {
+  /* One compact row: title on the left, theme toggle and Salir on the right. */
   header.app-header {
-    flex-direction: column;
-    align-items: flex-start;
+    flex-direction: row;
+    align-items: center;
     gap: 0.5rem;
     padding: 0.6rem 0.75rem;
   }
 
   header.app-header h1 {
     font-size: 1rem;
-    margin-right: 0;
+    margin-right: auto;
+  }
+
+  /* The auto margin on the title owns the free space; without this reset the
+     header would center the action pair instead of pinning it right. */
+  header.app-header .logout-button {
+    margin-left: 0;
   }
 
   /* Header tabs hide on mobile; the bottom bar owns navigation. */
