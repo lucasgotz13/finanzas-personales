@@ -1,6 +1,6 @@
 import type { IndicatorClass, IndicatorKey } from './types';
 
-/** All 9 indicator keys, in display order (EI-1). */
+/** All 11 indicator keys, in display order (EI-1). */
 export const KEYS: readonly IndicatorKey[] = [
   'usd-blue',
   'usd-oficial',
@@ -11,9 +11,11 @@ export const KEYS: readonly IndicatorKey[] = [
   'ipc-mensual',
   'reservas',
   'badlar',
+  'brent',
+  'wti',
 ];
 
-/** Display unit per indicator (EI-1): FX ARS/USD, riesgo país pb, IPC %, reservas millones USD, BADLAR % TNA. */
+/** Display unit per indicator (EI-1): FX ARS/USD, riesgo país pb, IPC %, reservas millones USD, BADLAR % TNA, oil USD/bbl. */
 export const UNIT_BY_KEY: Record<IndicatorKey, string> = {
   'usd-blue': 'ARS/USD',
   'usd-oficial': 'ARS/USD',
@@ -24,6 +26,8 @@ export const UNIT_BY_KEY: Record<IndicatorKey, string> = {
   'ipc-mensual': '%',
   reservas: 'millones USD',
   badlar: '% TNA',
+  brent: 'USD/bbl',
+  wti: 'USD/bbl',
 };
 
 /** Refresh class per indicator (EI-2): one external fetch covers one class. */
@@ -37,20 +41,24 @@ export const CLASS_BY_KEY: Record<IndicatorKey, IndicatorClass> = {
   'ipc-mensual': 'ipc',
   reservas: 'bcra',
   badlar: 'bcra',
+  brent: 'oil',
+  wti: 'oil',
 };
 
-/** TTL per class in ms (EI-3): FX ≈ 5 min; BCRA and riesgo país ≈ daily; IPC ≈ 12 h. */
+/** TTL per class in ms (EI-3): FX ≈ 5 min; oil ≈ 10 min (halves Yahoo calls behind the 5-min web poll); BCRA and riesgo país ≈ daily; IPC ≈ 12 h. */
 export const TTL_BY_CLASS: Record<IndicatorClass, number> = {
   fx: 5 * 60_000,
   bcra: 24 * 60 * 60_000,
   'riesgo-pais': 24 * 60 * 60_000,
   ipc: 12 * 60 * 60_000,
+  oil: 10 * 60_000,
 };
 
-/** Max acceptable reference-date age per class in ms (issue #29): FX ≈ 2 days, BCRA and riesgo país ≈ 7 days, IPC ≈ 90 days (INDEC monthly with ~6-week lag + margin). */
+/** Max acceptable reference-date age per class in ms (issue #29): FX ≈ 2 days, oil ≈ 4 days (futures weekend gap + holidays), BCRA and riesgo país ≈ 7 days, IPC ≈ 90 days (INDEC monthly with ~6-week lag + margin). */
 export const REFERENCE_MAX_AGE_MS: Record<IndicatorClass, number> = {
   fx: 2 * 24 * 60 * 60_000,
   bcra: 7 * 24 * 60 * 60_000,
   'riesgo-pais': 7 * 24 * 60 * 60_000,
   ipc: 90 * 24 * 60 * 60_000,
+  oil: 4 * 24 * 60 * 60_000,
 };

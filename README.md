@@ -150,7 +150,7 @@ scripts/          migration runner CLI
 | `GET/PUT /budgets`, `GET /budgets/status?month=` | per-category caps + status |
 | `GET /summaries?period=&date=` | month/quarter/year summaries |
 | `POST /auth/login`, `POST /auth/logout`, `GET /auth/status` | single-user passphrase login (signed httpOnly cookie) |
-| `GET /indicators`, `POST /indicators/refresh?force=` | economic indicators (9 keys), TTL-gated refresh |
+| `GET /indicators`, `POST /indicators/refresh?force=` | economic indicators (11 keys), TTL-gated refresh |
 | `GET /portfolio`, `POST /portfolio/refresh?force=` | derived positions + portfolio valuation |
 | `GET/POST /portfolio/trades`, `PUT/DELETE /portfolio/trades/:id` | buy/sell trade ledger |
 | `GET /portfolio/history?range=&currency=`, `GET /portfolio/positions/:id/history` | portfolio/asset price history charts |
