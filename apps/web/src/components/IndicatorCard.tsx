@@ -11,6 +11,8 @@ const LABEL_BY_KEY: Record<string, string> = {
   'ipc-mensual': 'IPC Mensual',
   reservas: 'Reservas',
   badlar: 'BADLAR',
+  brent: 'Brent',
+  wti: 'WTI',
 };
 
 /** Human-relative age of an ISO timestamp, e.g. "hace 5 min" (EI-6). */

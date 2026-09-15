@@ -2,17 +2,17 @@
 
 ## Purpose
 
-Read-only snapshot of 9 Argentina indicators (USD blue/oficial/tarjeta/MEP/CCL, riesgo país, IPC mensual, reservas, BADLAR) served cache-first via REST with per-class TTL freshness, stale degradation, and a card UI. Decoupled from the expense-tracker core.
+Read-only snapshot of 11 economic indicators (USD blue/oficial/tarjeta/MEP/CCL, riesgo país, IPC mensual, reservas, BADLAR, Brent and WTI crude oil) served cache-first via REST with per-class TTL freshness, stale degradation, and a card UI. Decoupled from the expense-tracker core.
 
 ## Requirements
 
 ### Requirement: EI-1 — Snapshot serving (cache-first)
 
-`GET /api/v1/indicators` SHALL return 9 indicators as `{key, value, unit, referenceDate, updatedAt, stale, status}` with `status` ∈ `fresh|stale|absent`. Keys: `usd-blue`, `usd-oficial`, `usd-tarjeta`, `usd-mep`, `usd-ccl`, `riesgo-pais`, `ipc-mensual`, `reservas`, `badlar`. FX value SHALL be the sell quote (`venta`); units: FX `ARS/USD`, riesgo país `pb`, IPC `%` (signed), reservas `millones USD`, BADLAR `% TNA`. GET SHALL be cache-first: it MUST NOT trigger an external fetch.
+`GET /api/v1/indicators` SHALL return 11 indicators as `{key, value, unit, referenceDate, updatedAt, stale, status}` with `status` ∈ `fresh|stale|absent`. Keys: `usd-blue`, `usd-oficial`, `usd-tarjeta`, `usd-mep`, `usd-ccl`, `riesgo-pais`, `ipc-mensual`, `reservas`, `badlar`, `brent`, `wti`. FX value SHALL be the sell quote (`venta`); units: FX `ARS/USD`, riesgo país `pb`, IPC `%` (signed), reservas `millones USD`, BADLAR `% TNA`, Brent/WTI `USD/bbl` (raw dollars per barrel). GET SHALL be cache-first: it MUST NOT trigger an external fetch.
 
 #### Scenario: Fresh cache
 
-- GIVEN all 9 snapshots cached, age ≤ TTL, WHEN `GET /api/v1/indicators`, THEN 200 with 9 items `status:"fresh"`, `stale:false`, all fields set; no external request
+- GIVEN all 11 snapshots cached, age ≤ TTL, WHEN `GET /api/v1/indicators`, THEN 200 with 11 items `status:"fresh"`, `stale:false`, all fields set; no external request
 
 #### Scenario: Empty cache (first run)
 
@@ -24,11 +24,11 @@ Read-only snapshot of 9 Argentina indicators (USD blue/oficial/tarjeta/MEP/CCL, 
 
 ### Requirement: EI-2 — Refresh
 
-`POST /api/v1/indicators/refresh` SHALL fetch all classes (dolarapi one call, 5 FX; BCRA v4 catalog+series, reservas, BADLAR; argentinadatos, IPC via the `inflacion` series last entry and riesgo país), update the cache with `fetched_at`, and respond `{results:[{class, status: updated|cached|failed, error?}]}`. A source failure MUST NOT affect other classes (partial success). Zero/negative BCRA values SHALL be treated as failed. IPC SHALL be the last entry of the argentinadatos `inflacion` series; an empty or malformed series SHALL be treated as failed.
+`POST /api/v1/indicators/refresh` SHALL fetch all classes (dolarapi one call, 5 FX; BCRA v4 catalog+series, reservas, BADLAR; argentinadatos, IPC via the `inflacion` series last entry and riesgo país; Yahoo v8 chart, Brent `BZ=F` and WTI `CL=F`), update the cache with `fetched_at`, and respond `{results:[{class, status: updated|cached|failed, error?}]}`. A source failure MUST NOT affect other classes (partial success). Zero/negative BCRA values SHALL be treated as failed. IPC SHALL be the last entry of the argentinadatos `inflacion` series; an empty or malformed series SHALL be treated as failed. The oil fetch SHALL be all-or-nothing: any missing or invalid field on either symbol reports the class `failed` and keeps the prior snapshots.
 
 #### Scenario: Full success
 
-- GIVEN all 4 sources reachable, WHEN refresh, THEN cache updated for all 9 with `fetched_at`; all classes report `updated`
+- GIVEN all 5 sources reachable, WHEN refresh, THEN cache updated for all 11 with `fetched_at`; all classes report `updated`
 
 #### Scenario: Source failure modes (timeout, HTTP 5xx, malformed JSON)
 
@@ -40,7 +40,7 @@ Read-only snapshot of 9 Argentina indicators (USD blue/oficial/tarjeta/MEP/CCL, 
 
 #### Scenario: All sources down
 
-- GIVEN all 4 sources fail, WHEN refresh, THEN 200 with all classes `failed`; GET keeps serving cache
+- GIVEN all 5 sources fail, WHEN refresh, THEN 200 with all classes `failed`; GET keeps serving cache
 
 #### Scenario: Invalid BCRA values
 
@@ -52,7 +52,7 @@ Read-only snapshot of 9 Argentina indicators (USD blue/oficial/tarjeta/MEP/CCL, 
 
 ### Requirement: EI-3 — TTL policy
 
-TTLs: FX ≈ 5 min; BCRA and riesgo país ≈ daily; IPC ≈ 12 h. A non-forced refresh MUST NOT refetch a class with cache age ≤ TTL — it SHALL serve cache and report `cached`. `POST /api/v1/indicators/refresh?force=true` (manual, user-initiated) MUST bypass TTL and refetch all classes.
+TTLs: FX ≈ 5 min; oil ≈ 10 min (halves Yahoo calls behind the 5-min web poll); BCRA and riesgo país ≈ daily; IPC ≈ 12 h. A non-forced refresh MUST NOT refetch a class with cache age ≤ TTL — it SHALL serve cache and report `cached`. `POST /api/v1/indicators/refresh?force=true` (manual, user-initiated) MUST bypass TTL and refetch all classes.
 
 #### Scenario: Within TTL
 
@@ -84,7 +84,7 @@ A value SHALL be `stale` when cached and age > TTL; `absent` when never fetched 
 
 ### Requirement: EI-5 — Reference dates and timezone
 
-`referenceDate` SHALL be the source's own date: IPC the INDEC reference month (e.g. `2026-06`; ≈6-week publish lag acceptable), FX the dolarapi `fechaActualizacion`. All timestamps SHALL be ISO-8601 in `America/Argentina/Buenos_Aires` (offset -03:00). IPC SHALL be the signed monthly variation (may be negative).
+`referenceDate` SHALL be the source's own date: IPC the INDEC reference month (e.g. `2026-06`; ≈6-week publish lag acceptable), FX the dolarapi `fechaActualizacion`, Brent/WTI the Yahoo `regularMarketTime` rendered as an AR-time instant. All timestamps SHALL be ISO-8601 in `America/Argentina/Buenos_Aires` (offset -03:00). IPC SHALL be the signed monthly variation (may be negative). Oil reference dates SHALL tolerate up to 4 days (futures weekend gap + holidays) before being flagged `referenceAged`.
 
 #### Scenario: IPC reference month
 
@@ -100,11 +100,11 @@ A value SHALL be `stale` when cached and age > TTL; `absent` when never fetched 
 
 ### Requirement: EI-6 — Web tab
 
-`IndicatorsPage` SHALL render 9 cards (label, value, unit, updatedAt; stale badge when `stale`), auto-refresh every ≈5 min while the tab is active (TTL-respecting refresh), a manual refresh button (force), and loading/error/stale states. No charts in v1.
+`IndicatorsPage` SHALL render 11 cards (label, value, unit, updatedAt; stale badge when `stale`), auto-refresh every ≈5 min while the tab is active (TTL-respecting refresh), a manual refresh button (force), and loading/error/stale states. No charts in v1.
 
 #### Scenario: Render
 
-- GIVEN API returns 9 fresh items, WHEN page loads, THEN 9 cards show label, value, unit, updatedAt, no badge
+- GIVEN API returns 11 fresh items, WHEN page loads, THEN 11 cards show label, value, unit, updatedAt, no badge
 
 #### Scenario: Stale badge and failed auto-refresh
 

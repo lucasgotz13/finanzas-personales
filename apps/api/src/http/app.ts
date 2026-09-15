@@ -24,6 +24,7 @@ import { ArgentinadatosCclSeriesSource } from '../sources/argentinadatos-ccl';
 import { BcraSource } from '../sources/bcra';
 import { DolarApiSource } from '../sources/dolar-api';
 import { YahooSource } from '../sources/yahoo';
+import { YahooOilSource } from '../sources/yahoo-oil';
 import { YahooSeriesSource } from '../sources/yahoo-series';
 import { createAuthRouter, createLockout, requireAuth } from './auth';
 import { errorHandler, notFoundHandler } from './errors';
@@ -67,6 +68,7 @@ function defaultIndicatorSources(): IndicatorSource[] {
     new BcraSource(),
     new ArgentinadatosSource(undefined, undefined, 'ipc'),
     new ArgentinadatosSource(),
+    new YahooOilSource(),
   ];
 }
 

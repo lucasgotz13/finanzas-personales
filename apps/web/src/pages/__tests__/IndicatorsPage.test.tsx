@@ -18,6 +18,8 @@ function freshViews(overrides: Partial<IndicatorView>[] = []): IndicatorView[] {
     ['ipc-mensual', -0.1, '%', 'IPC Mensual'],
     ['reservas', 28000, 'millones USD', 'Reservas'],
     ['badlar', 38.5, '% TNA', 'BADLAR'],
+    ['brent', 67.45, 'USD/bbl', 'Brent'],
+    ['wti', 63.2, 'USD/bbl', 'WTI'],
   ];
   return base.map(([key, value, unit], i) => ({
     key,
@@ -43,17 +45,21 @@ describe('IndicatorsPage (EI-6)', () => {
     delete (document as { hidden?: unknown }).hidden;
   });
 
-  it('renders 9 cards with label, value, unit and updatedAt, no badge', async () => {
+  it('renders 11 cards with label, value, unit and updatedAt, no badge', async () => {
     vi.spyOn(api, 'getIndicators').mockResolvedValue(freshViews());
 
     render(<IndicatorsPage />);
 
     expect(await screen.findByTestId('indicators-grid')).toBeInTheDocument();
-    expect(screen.getAllByTestId(/^indicator-/)).toHaveLength(9);
+    expect(screen.getAllByTestId(/^indicator-/)).toHaveLength(11);
     expect(screen.getByText('USD Blue')).toBeInTheDocument();
     expect(screen.getByText('1.350,5')).toBeInTheDocument();
     expect(screen.getAllByText('ARS/USD')).toHaveLength(5);
     expect(screen.getByText('-0,1')).toBeInTheDocument();
+    // Brent/WTI are proper nouns: no translation in the label map.
+    expect(screen.getByText('Brent')).toBeInTheDocument();
+    expect(screen.getByText('WTI')).toBeInTheDocument();
+    expect(screen.getByText('67,45')).toBeInTheDocument();
     expect(screen.queryByText('Vencido')).not.toBeInTheDocument();
   });
 
@@ -63,7 +69,7 @@ describe('IndicatorsPage (EI-6)', () => {
     render(<IndicatorsPage />);
     await screen.findByTestId('indicators-grid');
 
-    expect(screen.getAllByText('ref ago 2026')).toHaveLength(9);
+    expect(screen.getAllByText('ref ago 2026')).toHaveLength(11);
     expect(screen.queryByText('Referencia antigua')).not.toBeInTheDocument();
   });
 
@@ -77,7 +83,7 @@ describe('IndicatorsPage (EI-6)', () => {
 
     expect(screen.getByTestId('indicator-ipc-mensual')).toHaveTextContent('Referencia antigua');
     expect(screen.queryByText('Vencido')).not.toBeInTheDocument();
-    expect(screen.getAllByText('ref ago 2026')).toHaveLength(9);
+    expect(screen.getAllByText('ref ago 2026')).toHaveLength(11);
   });
 
   it('shows a loading state before data arrives', () => {

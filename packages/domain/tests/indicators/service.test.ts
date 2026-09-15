@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { KEYS, TTL_BY_CLASS } from '../../src/indicators/catalog';
+import { CLASS_BY_KEY, KEYS, TTL_BY_CLASS } from '../../src/indicators/catalog';
 import type { IndicatorCache, IndicatorSource } from '../../src/indicators/ports';
 import { IndicatorService } from '../../src/indicators/service';
 import type {
@@ -79,7 +79,7 @@ function harness(now = T0): Harness {
 /** Registers a stub source only for the classes given; missing classes have no source. */
 function withSources(h: Harness, impls: Partial<Record<IndicatorClass, () => Promise<IndicatorSample[]>>>): void {
   const list: IndicatorSource[] = [];
-  for (const cls of ['fx', 'bcra', 'riesgo-pais', 'ipc'] as IndicatorClass[]) {
+  for (const cls of ['fx', 'bcra', 'riesgo-pais', 'ipc', 'oil'] as IndicatorClass[]) {
     const impl = impls[cls];
     if (impl === undefined) continue;
     const stub = new StubSource(cls, impl);
@@ -97,15 +97,20 @@ const FX_SAMPLES: IndicatorSample[] = [
   { key: 'usd-ccl', value: 1345, referenceDate: '2026-08-09T20:55:00-03:00' },
 ];
 
+const OIL_SAMPLES: IndicatorSample[] = [
+  { key: 'brent', value: 67.45, referenceDate: '2026-08-09T20:58:00-03:00' },
+  { key: 'wti', value: 63.2, referenceDate: '2026-08-09T20:58:00-03:00' },
+];
+
 describe('IndicatorService.getAll (EI-1, EI-4, EI-5)', () => {
-  it('derives 9 fresh views from a populated cache without fetching', async () => {
+  it('derives 11 fresh views from a populated cache without fetching', async () => {
     const h = harness(T0);
     withSources(h, {});
     for (const key of KEYS) h.seed(key, key === 'ipc-mensual' ? -0.1 : 1, '2026-08', iso(0));
 
     const views = await h.service.getAll();
 
-    expect(views).toHaveLength(9);
+    expect(views).toHaveLength(11);
     for (const view of views) {
       expect(view.status).toBe('fresh');
       expect(view.stale).toBe(false);
@@ -121,7 +126,7 @@ describe('IndicatorService.getAll (EI-1, EI-4, EI-5)', () => {
     withSources(h, {});
     const views = await h.service.getAll();
 
-    expect(views).toHaveLength(9);
+    expect(views).toHaveLength(11);
     for (const view of views) {
       expect(view.status).toBe('absent');
       expect(view.stale).toBe(false);
@@ -183,13 +188,13 @@ describe('IndicatorService.getAll (EI-1, EI-4, EI-5)', () => {
 
     const views = await h.service.getAll();
 
-    expect(views).toHaveLength(9);
+    expect(views).toHaveLength(11);
     expect(views.every((v) => v.status === 'absent' && v.referenceAged === false)).toBe(true);
   });
 });
 
 describe('IndicatorService.refresh (EI-2, EI-3)', () => {
-  it('reports cached and does not fetch classes within TTL (fx 2 min, bcra 10 h)', async () => {
+  it('reports cached and does not fetch classes within TTL (fx 2 min, oil 2 min, bcra 10 h)', async () => {
     const h = harness(T0);
     // Sources registered but must never be fetched while every class is fresh.
     withSources(h, {
@@ -197,8 +202,12 @@ describe('IndicatorService.refresh (EI-2, EI-3)', () => {
       bcra: () => Promise.reject(new Error('should not fetch')),
       'riesgo-pais': () => Promise.reject(new Error('should not fetch')),
       ipc: () => Promise.reject(new Error('should not fetch')),
+      oil: () => Promise.reject(new Error('should not fetch')),
     });
-    for (const key of KEYS) h.seed(key, 1, '2026-08', iso(key.startsWith('usd') ? -2 * 60_000 : -10 * 60 * 60_000));
+    for (const key of KEYS) {
+      const shortLived = CLASS_BY_KEY[key] === 'fx' || CLASS_BY_KEY[key] === 'oil';
+      h.seed(key, 1, '2026-08', iso(shortLived ? -2 * 60_000 : -10 * 60 * 60_000));
+    }
 
     const results = await h.service.refresh(false);
 
@@ -207,6 +216,7 @@ describe('IndicatorService.refresh (EI-2, EI-3)', () => {
       ['bcra', 'cached'],
       ['riesgo-pais', 'cached'],
       ['ipc', 'cached'],
+      ['oil', 'cached'],
     ]);
     for (const s of h.sources.values()) expect(s.calls).toBe(0);
   });
@@ -221,9 +231,13 @@ describe('IndicatorService.refresh (EI-2, EI-3)', () => {
       ],
       'riesgo-pais': async () => [{ key: 'riesgo-pais', value: 1200, referenceDate: '2026-08-09' }],
       ipc: async () => [{ key: 'ipc-mensual', value: 0.2, referenceDate: '2026-06' }],
+      oil: async () => OIL_SAMPLES,
     });
-    // everything 6 min old: fx (TTL 5 min) is past TTL, the other classes are not
+    // everything 6 min old: fx (TTL 5 min) is past its TTL, the other classes are not
     for (const key of KEYS) h.seed(key, 1, '2026-08', iso(-TTL_BY_CLASS.fx - 60_000));
+    // oil (TTL 10 min) is pushed past its TTL as well to prove both keys refetch
+    h.seed('brent', 60, '2026-08-09', iso(-TTL_BY_CLASS.oil - 60_000));
+    h.seed('wti', 60, '2026-08-09', iso(-TTL_BY_CLASS.oil - 60_000));
 
     const results = await h.service.refresh(false);
 
@@ -233,6 +247,9 @@ describe('IndicatorService.refresh (EI-2, EI-3)', () => {
     expect(h.cache.stored('usd-blue')?.value).toBe(1350.5);
     expect(h.cache.stored('usd-blue')?.fetchedAt).toBe(iso(0));
     expect(results.find((r) => r.class === 'bcra')?.status).toBe('cached');
+    expect(results.find((r) => r.class === 'oil')?.status).toBe('updated');
+    expect(h.cache.stored('brent')).toMatchObject({ value: 67.45, unit: 'USD/bbl' });
+    expect(h.cache.stored('wti')).toMatchObject({ value: 63.2, unit: 'USD/bbl' });
   });
 
   it('force bypasses TTL and refetches every class', async () => {
@@ -245,6 +262,7 @@ describe('IndicatorService.refresh (EI-2, EI-3)', () => {
       ],
       'riesgo-pais': async () => [{ key: 'riesgo-pais', value: 1200, referenceDate: '2026-08-09' }],
       ipc: async () => [{ key: 'ipc-mensual', value: -0.1, referenceDate: '2026-06' }],
+      oil: async () => OIL_SAMPLES,
     });
     for (const key of KEYS) h.seed(key, 1, '2026-08', iso(0)); // all fresh
 
@@ -261,6 +279,7 @@ describe('IndicatorService.refresh (EI-2, EI-3)', () => {
       bcra: async () => Promise.reject(new Error('bcra down')),
       'riesgo-pais': async () => [{ key: 'riesgo-pais', value: 1200, referenceDate: '2026-08-09' }],
       ipc: async () => [{ key: 'ipc-mensual', value: 0.2, referenceDate: '2026-06' }],
+      oil: async () => OIL_SAMPLES,
     });
     h.seed('reservas', 100, '2026-08-01', iso(-60_000));
 
@@ -270,7 +289,7 @@ describe('IndicatorService.refresh (EI-2, EI-3)', () => {
     expect(bcra?.status).toBe('failed');
     expect(bcra?.error).toBe('bcra down');
     expect(results.filter((r) => r.status === 'failed')).toHaveLength(1);
-    expect(results.filter((r) => r.status === 'updated')).toHaveLength(3);
+    expect(results.filter((r) => r.status === 'updated')).toHaveLength(4);
     // prior cache row untouched
     expect(h.cache.stored('reservas')?.value).toBe(100);
     expect(h.cache.stored('reservas')?.fetchedAt).toBe(iso(-60_000));
@@ -283,12 +302,13 @@ describe('IndicatorService.refresh (EI-2, EI-3)', () => {
       bcra: async () => Promise.reject(new Error('bcra 500')),
       'riesgo-pais': async () => Promise.reject(new Error('rp down')),
       ipc: async () => Promise.reject(new Error('ipc down')),
+      oil: async () => Promise.reject(new Error('oil down')),
     });
     h.seed('usd-blue', 1350.5, '2026-08-09', iso(-60_000));
 
     const results = await h.service.refresh(false);
 
-    expect(results).toHaveLength(4);
+    expect(results).toHaveLength(5);
     expect(results.every((r) => r.status === 'failed')).toBe(true);
     const blue = (await h.service.getAll()).find((v) => v.key === 'usd-blue');
     expect(blue?.value).toBe(1350.5);
@@ -315,7 +335,7 @@ describe('IndicatorService.refresh (EI-2, EI-3)', () => {
     const results = await h.service.refresh(false);
 
     expect(results.find((r) => r.class === 'fx')?.status).toBe('updated');
-    for (const cls of ['bcra', 'riesgo-pais', 'ipc'] as IndicatorClass[]) {
+    for (const cls of ['bcra', 'riesgo-pais', 'ipc', 'oil'] as IndicatorClass[]) {
       expect(results.find((r) => r.class === cls)?.status).toBe('failed');
     }
   });

@@ -16,7 +16,7 @@ export interface IndicatorServiceDeps {
   clock: { now(): Date };
 }
 
-const CLASSES: readonly IndicatorClass[] = ['fx', 'bcra', 'riesgo-pais', 'ipc'];
+const CLASSES: readonly IndicatorClass[] = ['fx', 'bcra', 'riesgo-pais', 'ipc', 'oil'];
 
 /**
  * Indicator read model service (EI-1..EI-5). getAll() is cache-only and never
@@ -26,7 +26,7 @@ const CLASSES: readonly IndicatorClass[] = ['fx', 'bcra', 'riesgo-pais', 'ipc'];
 export class IndicatorService {
   constructor(private deps: IndicatorServiceDeps) {}
 
-  /** Cache-first views for all 9 keys; absent/stale degrade, never fail (EI-1, EI-4). */
+  /** Cache-first views for all 11 keys; absent/stale degrade, never fail (EI-1, EI-4). */
   async getAll(): Promise<IndicatorView[]> {
     const views: IndicatorView[] = [];
     for (const key of KEYS) {

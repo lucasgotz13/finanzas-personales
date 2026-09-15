@@ -1,5 +1,5 @@
 /** Indicator classes: one external fetch each (EI-2). */
-export type IndicatorClass = 'fx' | 'bcra' | 'ipc' | 'riesgo-pais';
+export type IndicatorClass = 'fx' | 'bcra' | 'ipc' | 'riesgo-pais' | 'oil';
 
 export type IndicatorKey =
   | 'usd-blue'
@@ -10,7 +10,9 @@ export type IndicatorKey =
   | 'riesgo-pais'
   | 'ipc-mensual'
   | 'reservas'
-  | 'badlar';
+  | 'badlar'
+  | 'brent'
+  | 'wti';
 
 export type IndicatorStatus = 'fresh' | 'stale' | 'absent';
 
