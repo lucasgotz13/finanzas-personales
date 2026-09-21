@@ -64,4 +64,15 @@ describe('IndicatorCard', () => {
     render(<IndicatorCard indicator={{ ...indicator, changePercent: null }} />);
     expect(screen.queryByTitle('Cambio diario')).not.toBeInTheDocument();
   });
+
+  it('hides the badge when changePercent is undefined (old API without the field)', () => {
+    const { changePercent: _omitted, ...withoutChange } = indicator;
+    render(<IndicatorCard indicator={withoutChange as IndicatorView} />);
+    expect(screen.queryByTitle('Cambio diario')).not.toBeInTheDocument();
+  });
+
+  it('hides the badge when changePercent is NaN', () => {
+    render(<IndicatorCard indicator={{ ...indicator, changePercent: NaN }} />);
+    expect(screen.queryByTitle('Cambio diario')).not.toBeInTheDocument();
+  });
 });

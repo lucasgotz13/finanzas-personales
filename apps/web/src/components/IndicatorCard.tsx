@@ -45,7 +45,7 @@ export default function IndicatorCard({ indicator }: { indicator: IndicatorView 
       <div className="indicator-value">
         {indicator.value !== null ? formatValue(indicator.value) : '—'}
         <span className="indicator-unit"> {indicator.unit}</span>
-        {indicator.changePercent !== null && (
+        {typeof indicator.changePercent === 'number' && Number.isFinite(indicator.changePercent) && (
           <span
             className={`change-badge ${indicator.changePercent < 0 ? 'down' : 'up'}`}
             title="Cambio diario"
