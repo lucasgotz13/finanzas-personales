@@ -31,7 +31,13 @@ function formatValue(value: number): string {
   return new Intl.NumberFormat('es-AR', { maximumFractionDigits: 2 }).format(value);
 }
 
-/** One indicator card: label, value, unit, relative updatedAt, ref date, badges (EI-6, issue #29). */
+/** Signed day-change percent, exactly 2 decimals: '+1,30%' / '-0,80%' / '0,00%'. */
+function formatChange(changePercent: number): string {
+  const sign = changePercent > 0 ? '+' : '';
+  return `${sign}${changePercent.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`;
+}
+
+/** One indicator card: label, value, unit, day-change badge, relative updatedAt, ref date, badges (EI-6, issue #29). */
 export default function IndicatorCard({ indicator }: { indicator: IndicatorView }): JSX.Element {
   return (
     <div className={`indicator-card${indicator.stale ? ' stale' : ''}`} data-testid={`indicator-${indicator.key}`}>
@@ -39,6 +45,14 @@ export default function IndicatorCard({ indicator }: { indicator: IndicatorView 
       <div className="indicator-value">
         {indicator.value !== null ? formatValue(indicator.value) : '—'}
         <span className="indicator-unit"> {indicator.unit}</span>
+        {indicator.changePercent !== null && (
+          <span
+            className={`change-badge ${indicator.changePercent < 0 ? 'down' : 'up'}`}
+            title="Cambio diario"
+          >
+            {formatChange(indicator.changePercent)}
+          </span>
+        )}
       </div>
       <div className="indicator-updated">
         {indicator.updatedAt ? `actualizado ${timeAgo(indicator.updatedAt)}` : 'sin datos aún'}

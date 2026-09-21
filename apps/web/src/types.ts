@@ -74,6 +74,8 @@ export interface IndicatorView {
   stale: boolean;
   status: IndicatorStatus;
   referenceAged: boolean;
+  /** Signed percent change vs the previous published reading; null when unavailable (or for ipc-mensual). */
+  changePercent: number | null;
 }
 
 export interface IndicatorRefreshResult {

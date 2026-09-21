@@ -674,6 +674,30 @@ tr.confirming-row td {
   color: var(--muted-text);
 }
 
+/* Day-change chip beside the indicator value (signed %, e.g. +1,30%):
+   green up / red down on the existing chip tints. */
+.change-badge {
+  display: inline-block;
+  margin-left: 0.35rem;
+  vertical-align: middle;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 999px;
+  padding: 0.1rem 0.5rem;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.change-badge.up {
+  background: var(--ok-bg);
+  color: var(--action-link);
+}
+
+.change-badge.down {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
 .indicator-updated {
   font-size: 0.75rem;
   color: var(--muted-text);

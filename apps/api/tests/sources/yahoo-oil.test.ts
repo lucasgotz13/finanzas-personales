@@ -6,8 +6,8 @@ import type { MockFetch } from './helpers';
 const T0_SECONDS = 1_786_319_880;
 const AR_REF = '2026-08-09T20:58:00-03:00';
 
-const BZ_META = { regularMarketPrice: 67.45, currency: 'USD', regularMarketTime: T0_SECONDS };
-const CL_META = { regularMarketPrice: 63.2, currency: 'USD', regularMarketTime: T0_SECONDS };
+const BZ_META = { regularMarketPrice: 67.45, currency: 'USD', regularMarketTime: T0_SECONDS, previousClose: 66.1 };
+const CL_META = { regularMarketPrice: 63.2, currency: 'USD', regularMarketTime: T0_SECONDS, chartPreviousClose: 62 };
 
 function chart(meta: unknown): unknown {
   return { chart: { result: [{ meta }] } };
@@ -25,15 +25,15 @@ function oilFetch(metaBySymbol: Record<string, unknown>): MockFetch {
 }
 
 describe('YahooOilSource (EI-2)', () => {
-  it('fetches BZ=F and CL=F and returns raw USD prices with AR reference instants', async () => {
+  it('fetches BZ=F and CL=F and returns raw USD prices with AR reference instants and the previous close as prevValue', async () => {
     const fetchFn = oilFetch({ 'BZ=F': BZ_META, 'CL=F': CL_META });
     const source = new YahooOilSource(fetchFn);
 
     const samples = await source.fetch();
 
     expect(samples).toEqual([
-      { key: 'brent', value: 67.45, referenceDate: AR_REF },
-      { key: 'wti', value: 63.2, referenceDate: AR_REF },
+      { key: 'brent', value: 67.45, referenceDate: AR_REF, prevValue: 66.1 },
+      { key: 'wti', value: 63.2, referenceDate: AR_REF, prevValue: 62 },
     ]);
     // Indicator values are display units (dollars per barrel), never cents.
     expect(samples[0].value).toBeGreaterThan(1);
@@ -41,6 +41,30 @@ describe('YahooOilSource (EI-2)', () => {
       'https://query1.finance.yahoo.com/v8/finance/chart/BZ%3DF?interval=1d&range=1d',
       'https://query1.finance.yahoo.com/v8/finance/chart/CL%3DF?interval=1d&range=1d',
     ]);
+  });
+
+  it('prefers previousClose over chartPreviousClose for prevValue', async () => {
+    const meta = {
+      regularMarketPrice: 67.45,
+      currency: 'USD',
+      regularMarketTime: T0_SECONDS,
+      previousClose: 66.1,
+      chartPreviousClose: 60,
+    };
+    const source = new YahooOilSource(oilFetch({ 'BZ=F': meta, 'CL=F': CL_META }));
+
+    const samples = await source.fetch();
+
+    expect(samples[0].prevValue).toBe(66.1);
+  });
+
+  it('sets prevValue to null when the chart meta has no previous close', async () => {
+    const bare = { regularMarketPrice: 67.45, currency: 'USD', regularMarketTime: T0_SECONDS };
+    const source = new YahooOilSource(oilFetch({ 'BZ=F': bare, 'CL=F': { ...bare, regularMarketPrice: 63.2 } }));
+
+    const samples = await source.fetch();
+
+    expect(samples.map((s) => s.prevValue)).toEqual([null, null]);
   });
 
   it('rejects the whole fetch when one symbol returns HTTP 404 (all-or-nothing)', async () => {

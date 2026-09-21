@@ -57,10 +57,12 @@ export class BcraSource implements IndicatorSource {
     if (!Array.isArray(points) || points.length === 0) {
       throw new Error(`BCRA returned no series for variable ${variable}`);
     }
-    // v4.0 returns detalle newest-first; select by max fecha to stay order-independent.
-    const latest = points.reduce((a, b) =>
-      new Date(String(b.fecha)) > new Date(String(a.fecha)) ? b : a,
+    // v4.0 returns detalle newest-first; order by fecha to stay order-independent.
+    const ordered = [...points].sort(
+      (a, b) => new Date(String(a.fecha)).getTime() - new Date(String(b.fecha)).getTime(),
     );
+    const latest = ordered[ordered.length - 1];
+    const previous = ordered.length > 1 ? ordered[ordered.length - 2] : undefined;
     const value = Number(latest.valor);
     if (!Number.isFinite(value) || value <= 0) {
       throw new Error(`BCRA returned an invalid value for variable ${variable}`);
@@ -68,7 +70,12 @@ export class BcraSource implements IndicatorSource {
     const key = KEY_BY_VARIABLE[variable];
     if (!key) throw new Error(`BCRA unknown variable ${variable}`);
     if (typeof latest.fecha !== 'string') throw new Error(`BCRA missing fecha for variable ${variable}`);
-    return { key: key as IndicatorSample['key'], value, referenceDate: latest.fecha };
+    // Second-latest point by fecha as the previous published reading; null when
+    // the window holds a single point (the domain carry-forward may fill it).
+    const prevRaw = previous?.valor;
+    const prevNum = prevRaw === null || prevRaw === undefined ? Number.NaN : Number(prevRaw);
+    const prevValue = Number.isFinite(prevNum) ? prevNum : null;
+    return { key: key as IndicatorSample['key'], value, referenceDate: latest.fecha, prevValue };
   }
 
   private fromDate(): string {

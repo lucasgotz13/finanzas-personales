@@ -32,7 +32,7 @@ const BADLAR_OK = {
 };
 
 describe('BcraSource (EI-2)', () => {
-  it('takes the newest detalle point for variables 1 (reservas) and 7 (badlar)', async () => {
+  it('takes the newest detalle point for variables 1 (reservas) and 7 (badlar), with the second-latest as prevValue', async () => {
     const fetchFn = jsonFetch(BCRA_OK);
     const fetchBadlar = jsonFetch(BADLAR_OK);
     const fetchMock = ((input: string | URL | Request, init?: RequestInit) =>
@@ -42,8 +42,57 @@ describe('BcraSource (EI-2)', () => {
     const samples = await source.fetch();
 
     expect(samples).toEqual([
-      { key: 'reservas', value: 28000, referenceDate: '2026-08-07' },
-      { key: 'badlar', value: 38.5, referenceDate: '2026-08-07' },
+      { key: 'reservas', value: 28000, referenceDate: '2026-08-07', prevValue: 27500 },
+      { key: 'badlar', value: 38.5, referenceDate: '2026-08-07', prevValue: 37.9 },
+    ]);
+  });
+
+  it('selects the latest and second-latest points by fecha regardless of series order', async () => {
+    // Oldest-first detalle (the opposite of the live newest-first shape).
+    const body = {
+      status: 200,
+      results: [
+        {
+          idVariable: 1,
+          detalle: [
+            { fecha: '2026-08-05', valor: 27500 },
+            { fecha: '2026-08-07', valor: 28000 },
+          ],
+        },
+        {
+          idVariable: 7,
+          detalle: [
+            { fecha: '2026-08-05', valor: 37.9 },
+            { fecha: '2026-08-07', valor: 38.5 },
+          ],
+        },
+      ],
+    };
+    const source = new BcraSource(jsonFetch(body), () => NOW);
+
+    const samples = await source.fetch();
+
+    expect(samples).toEqual([
+      { key: 'reservas', value: 28000, referenceDate: '2026-08-07', prevValue: 27500 },
+      { key: 'badlar', value: 38.5, referenceDate: '2026-08-07', prevValue: 37.9 },
+    ]);
+  });
+
+  it('sets prevValue to null when the series has a single point', async () => {
+    const body = {
+      status: 200,
+      results: [
+        { idVariable: 1, detalle: [{ fecha: '2026-08-07', valor: 28000 }] },
+        { idVariable: 7, detalle: [{ fecha: '2026-08-07', valor: 38.5 }] },
+      ],
+    };
+    const source = new BcraSource(jsonFetch(body), () => NOW);
+
+    const samples = await source.fetch();
+
+    expect(samples).toEqual([
+      { key: 'reservas', value: 28000, referenceDate: '2026-08-07', prevValue: null },
+      { key: 'badlar', value: 38.5, referenceDate: '2026-08-07', prevValue: null },
     ]);
   });
 

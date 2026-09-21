@@ -8,7 +8,7 @@ Read-only snapshot of 11 economic indicators (USD blue/oficial/tarjeta/MEP/CCL, 
 
 ### Requirement: EI-1 — Snapshot serving (cache-first)
 
-`GET /api/v1/indicators` SHALL return 11 indicators as `{key, value, unit, referenceDate, updatedAt, stale, status}` with `status` ∈ `fresh|stale|absent`. Keys: `usd-blue`, `usd-oficial`, `usd-tarjeta`, `usd-mep`, `usd-ccl`, `riesgo-pais`, `ipc-mensual`, `reservas`, `badlar`, `brent`, `wti`. FX value SHALL be the sell quote (`venta`); units: FX `ARS/USD`, riesgo país `pb`, IPC `%` (signed), reservas `millones USD`, BADLAR `% TNA`, Brent/WTI `USD/bbl` (raw dollars per barrel). GET SHALL be cache-first: it MUST NOT trigger an external fetch.
+`GET /api/v1/indicators` SHALL return 11 indicators as `{key, value, unit, referenceDate, updatedAt, stale, status, referenceAged, changePercent}` with `status` ∈ `fresh|stale|absent`. Keys: `usd-blue`, `usd-oficial`, `usd-tarjeta`, `usd-mep`, `usd-ccl`, `riesgo-pais`, `ipc-mensual`, `reservas`, `badlar`, `brent`, `wti`. FX value SHALL be the sell quote (`venta`); units: FX `ARS/USD`, riesgo país `pb`, IPC `%` (signed), reservas `millones USD`, BADLAR `% TNA`, Brent/WTI `USD/bbl` (raw dollars per barrel). GET SHALL be cache-first: it MUST NOT trigger an external fetch. `changePercent` SHALL be the signed percent change vs the previous published reading, derived as `(value - prevValue) / prevValue * 100`; it SHALL be `null` when `value` or `prevValue` is missing or `prevValue <= 0`, and always `null` for `ipc-mensual` (its value is already a monthly variation percentage; a % change of a % is a second-order stat).
 
 #### Scenario: Fresh cache
 
@@ -24,7 +24,7 @@ Read-only snapshot of 11 economic indicators (USD blue/oficial/tarjeta/MEP/CCL, 
 
 ### Requirement: EI-2 — Refresh
 
-`POST /api/v1/indicators/refresh` SHALL fetch all classes (dolarapi one call, 5 FX; BCRA v4 catalog+series, reservas, BADLAR; argentinadatos, IPC via the `inflacion` series last entry and riesgo país; Yahoo v8 chart, Brent `BZ=F` and WTI `CL=F`), update the cache with `fetched_at`, and respond `{results:[{class, status: updated|cached|failed, error?}]}`. A source failure MUST NOT affect other classes (partial success). Zero/negative BCRA values SHALL be treated as failed. IPC SHALL be the last entry of the argentinadatos `inflacion` series; an empty or malformed series SHALL be treated as failed. The oil fetch SHALL be all-or-nothing: any missing or invalid field on either symbol reports the class `failed` and keeps the prior snapshots.
+`POST /api/v1/indicators/refresh` SHALL fetch all classes (dolarapi one call, 5 FX; BCRA v4 catalog+series, reservas, BADLAR; argentinadatos, IPC via the `inflacion` series last entry and riesgo país; Yahoo v8 chart, Brent `BZ=F` and WTI `CL=F`), update the cache with `fetched_at`, and respond `{results:[{class, status: updated|cached|failed, error?}]}`. A source failure MUST NOT affect other classes (partial success). Zero/negative BCRA values SHALL be treated as failed. IPC SHALL be the last entry of the argentinadatos `inflacion` series; an empty or malformed series SHALL be treated as failed. The oil fetch SHALL be all-or-nothing: any missing or invalid field on either symbol reports the class `failed` and keeps the prior snapshots. Before writing each snapshot the refresh SHALL resolve `prevValue` (the previous published reading): an adapter-supplied `prevValue` wins; otherwise the cached `value` is carried forward as `prevValue` when the cached `referenceDate` differs from the incoming sample, and a same-`referenceDate` refresh keeps the cached `prevValue` (no double-shift). Series sources (BCRA, argentinadatos) SHALL set `prevValue` from the second-latest point by `fecha` (`null` when the series has one point); the oil source SHALL use the chart meta `previousClose`/`chartPreviousClose` when present; dolarapi supplies none and relies on carry-forward.
 
 #### Scenario: Full success
 
@@ -100,7 +100,7 @@ A value SHALL be `stale` when cached and age > TTL; `absent` when never fetched 
 
 ### Requirement: EI-6 — Web tab
 
-`IndicatorsPage` SHALL render 11 cards (label, value, unit, updatedAt; stale badge when `stale`), auto-refresh every ≈5 min while the tab is active (TTL-respecting refresh), a manual refresh button (force), and loading/error/stale states. No charts in v1.
+`IndicatorsPage` SHALL render 11 cards (label, value, unit, updatedAt; stale badge when `stale`; signed `changePercent` badge next to the value — green `+` up / red `-` down, 2 decimals — hidden when `changePercent` is `null`), auto-refresh every ≈5 min while the tab is active (TTL-respecting refresh), a manual refresh button (force), and loading/error/stale states. No charts in v1.
 
 #### Scenario: Render
 
