@@ -30,6 +30,7 @@ function freshViews(overrides: Partial<IndicatorView>[] = []): IndicatorView[] {
     stale: false,
     status: 'fresh',
     referenceAged: false,
+    changePercent: null,
     ...overrides[i],
   }));
 }

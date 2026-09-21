@@ -55,7 +55,7 @@ interface Harness {
   cache: InMemoryIndicatorCache;
   sources: Map<IndicatorClass, StubSource>;
   service: IndicatorService;
-  seed: (key: IndicatorKey, value: number, referenceDate: string, fetchedAt: string) => void;
+  seed: (key: IndicatorKey, value: number, referenceDate: string, fetchedAt: string, prevValue?: number | null) => void;
 }
 
 function harness(now = T0): Harness {
@@ -70,8 +70,8 @@ function harness(now = T0): Harness {
     cache,
     sources,
     service,
-    seed: (key, value, referenceDate, fetchedAt) => {
-      void cache.set({ key, value, unit: 'u', referenceDate, fetchedAt, source: 'test' });
+    seed: (key, value, referenceDate, fetchedAt, prevValue = null) => {
+      void cache.set({ key, value, unit: 'u', referenceDate, fetchedAt, source: 'test', prevValue });
     },
   };
 }
@@ -338,5 +338,108 @@ describe('IndicatorService.refresh (EI-2, EI-3)', () => {
     for (const cls of ['bcra', 'riesgo-pais', 'ipc', 'oil'] as IndicatorClass[]) {
       expect(results.find((r) => r.class === cls)?.status).toBe('failed');
     }
+  });
+});
+
+describe('IndicatorService changePercent derivation (indicator-day-change)', () => {
+  it('derives the signed percent change from value and prevValue', async () => {
+    const h = harness(T0);
+    withSources(h, {});
+    h.seed('usd-oficial', 1560, '2026-08-10', iso(0), 1540);
+    h.seed('usd-blue', 1520, '2026-08-10', iso(0), 1540);
+
+    const views = await h.service.getAll();
+
+    // 1540 → 1560 = +1.2987...%; 1540 → 1520 = -1.2987...%
+    expect(views.find((v) => v.key === 'usd-oficial')?.changePercent).toBeCloseTo((20 / 1540) * 100);
+    expect(views.find((v) => v.key === 'usd-blue')?.changePercent).toBeCloseTo((-20 / 1540) * 100);
+  });
+
+  it('is null when value or prevValue is missing or prevValue is non-positive', async () => {
+    const h = harness(T0);
+    withSources(h, {});
+    h.seed('usd-blue', 1560, '2026-08-10', iso(0), null); // first run: no previous reading
+    h.seed('usd-oficial', 1560, '2026-08-10', iso(0), 0);
+    h.seed('usd-tarjeta', 1560, '2026-08-10', iso(0), -5);
+
+    const views = await h.service.getAll();
+
+    for (const key of ['usd-blue', 'usd-oficial', 'usd-tarjeta']) {
+      expect(views.find((v) => v.key === key)?.changePercent).toBeNull();
+    }
+    // absent snapshot: no value, no change
+    expect(views.find((v) => v.key === 'usd-mep')?.changePercent).toBeNull();
+  });
+
+  it('always hides the change for ipc-mensual (its value is already a variation %)', async () => {
+    const h = harness(T0);
+    withSources(h, {});
+    h.seed('ipc-mensual', 2, '2026-06', iso(0), 1.5);
+
+    const ipc = (await h.service.getAll()).find((v) => v.key === 'ipc-mensual');
+
+    expect(ipc?.changePercent).toBeNull();
+  });
+});
+
+describe('IndicatorService refresh prevValue carry-forward (indicator-day-change)', () => {
+  it('prefers the adapter-supplied prevValue over the cached snapshot', async () => {
+    const h = harness(T0);
+    withSources(h, {
+      bcra: async () => [
+        { key: 'reservas', value: 28500, referenceDate: '2026-08-10', prevValue: 28000 },
+        { key: 'badlar', value: 38.5, referenceDate: '2026-08-10', prevValue: 38 },
+      ],
+    });
+    h.seed('reservas', 27500, '2026-08-09', iso(-60_000), 27000);
+    h.seed('badlar', 37, '2026-08-09', iso(-60_000), 36);
+
+    await h.service.refresh(true);
+
+    expect(h.cache.stored('reservas')).toMatchObject({ value: 28500, prevValue: 28000 });
+    expect(h.cache.stored('badlar')).toMatchObject({ value: 38.5, prevValue: 38 });
+  });
+
+  it('carries the cached value forward as prevValue when the reference date rolls', async () => {
+    // dolar-api style: the sample has no prevValue of its own.
+    const h = harness(T0);
+    withSources(h, {
+      fx: async () => [{ key: 'usd-oficial', value: 1560, referenceDate: '2026-08-10T14:00:00-03:00' }],
+    });
+    h.seed('usd-oficial', 1540, '2026-08-09T14:00:00-03:00', iso(-60_000), null);
+
+    await h.service.refresh(true);
+
+    expect(h.cache.stored('usd-oficial')).toMatchObject({ value: 1560, prevValue: 1540 });
+    const view = (await h.service.getAll()).find((v) => v.key === 'usd-oficial');
+    expect(view?.changePercent).toBeCloseTo((20 / 1540) * 100);
+  });
+
+  it('keeps the cached prevValue on a same-referenceDate refresh (no double-shift)', async () => {
+    const h = harness(T0);
+    withSources(h, {
+      fx: async () => [{ key: 'usd-oficial', value: 1560, referenceDate: '2026-08-10T14:00:00-03:00' }],
+    });
+    h.seed('usd-oficial', 1560, '2026-08-10T14:00:00-03:00', iso(-60_000), 1540);
+
+    await h.service.refresh(true);
+    await h.service.refresh(true);
+
+    expect(h.cache.stored('usd-oficial')).toMatchObject({ value: 1560, prevValue: 1540 });
+    const view = (await h.service.getAll()).find((v) => v.key === 'usd-oficial');
+    expect(view?.changePercent).toBeCloseTo((20 / 1540) * 100);
+  });
+
+  it('stores a null prevValue on the first run without a cached snapshot', async () => {
+    const h = harness(T0);
+    withSources(h, {
+      fx: async () => [{ key: 'usd-oficial', value: 1560, referenceDate: '2026-08-10T14:00:00-03:00' }],
+    });
+
+    await h.service.refresh(true);
+
+    expect(h.cache.stored('usd-oficial')?.prevValue).toBeNull();
+    const view = (await h.service.getAll()).find((v) => v.key === 'usd-oficial');
+    expect(view?.changePercent).toBeNull();
   });
 });

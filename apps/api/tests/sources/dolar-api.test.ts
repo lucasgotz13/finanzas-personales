@@ -26,6 +26,15 @@ describe('DolarApiSource (EI-1, EI-2)', () => {
     ]);
   });
 
+  it('leaves prevValue unset so the domain carry-forward supplies it', async () => {
+    const fetchFn = jsonFetch(DOLARAPI_OK);
+    const source = new DolarApiSource(fetchFn);
+
+    const samples = await source.fetch();
+
+    expect(samples.every((s) => s.prevValue === undefined)).toBe(true);
+  });
+
   it('rejects a missing casa as a failure (incomplete payload)', async () => {
     const fetchFn = jsonFetch(DOLARAPI_OK.slice(0, 2));
     const source = new DolarApiSource(fetchFn);

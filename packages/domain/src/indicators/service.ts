@@ -19,6 +19,29 @@ export interface IndicatorServiceDeps {
 const CLASSES: readonly IndicatorClass[] = ['fx', 'bcra', 'riesgo-pais', 'ipc', 'oil'];
 
 /**
+ * Day-over-day change vs the previous published reading. `ipc-mensual` is
+ * always null: its value is already a monthly variation percentage and a %
+ * change of a % is a confusing second-order stat on the card.
+ */
+function changePercentOf(key: IndicatorKey, value: number | null, prevValue: number | null): number | null {
+  if (key === 'ipc-mensual') return null;
+  if (value === null || prevValue === null || prevValue <= 0) return null;
+  return ((value - prevValue) / prevValue) * 100;
+}
+
+/**
+ * Previous reading for a refreshed sample (before `cache.set`): an
+ * adapter-supplied prevValue wins; otherwise carry the cached value forward
+ * when the cached snapshot is on a different referenceDate, and keep the
+ * cached prevValue on a same-referenceDate refresh (no double-shift).
+ */
+function resolvePrevValue(sample: IndicatorSample, cached: IndicatorSnapshot | null): number | null {
+  if (sample.prevValue != null && Number.isFinite(sample.prevValue)) return sample.prevValue;
+  if (!cached) return null;
+  return cached.referenceDate !== sample.referenceDate ? cached.value : cached.prevValue;
+}
+
+/**
  * Indicator read model service (EI-1..EI-5). getAll() is cache-only and never
  * fetches; refresh() runs per class with TTL gating, force bypass, finite-value
  * validation and try/catch isolation so one failing source never affects others.
@@ -59,9 +82,11 @@ export class IndicatorService {
       }
       const fetchedAt = this.deps.clock.now().toISOString();
       for (const sample of samples) {
+        const cached = await this.deps.cache.get(sample.key);
         await this.deps.cache.set({
           key: sample.key,
           value: sample.value,
+          prevValue: resolvePrevValue(sample, cached),
           unit: UNIT_BY_KEY[sample.key],
           referenceDate: sample.referenceDate,
           fetchedAt,
@@ -98,6 +123,7 @@ export class IndicatorService {
         stale: false,
         status: 'absent',
         referenceAged: false,
+        changePercent: null,
       };
     }
     const now = this.deps.clock.now().getTime();
@@ -118,6 +144,7 @@ export class IndicatorService {
       stale,
       status: stale ? 'stale' : 'fresh',
       referenceAged,
+      changePercent: changePercentOf(key, snapshot.value, snapshot.prevValue),
     };
   }
 }

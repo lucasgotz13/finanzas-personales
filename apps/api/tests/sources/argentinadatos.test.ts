@@ -9,12 +9,20 @@ const RIESGO_PAIS_OK = [
 ];
 
 describe('ArgentinadatosSource (EI-1, EI-2)', () => {
-  it('takes the latest {valor, fecha} as the riesgo país sample', async () => {
+  it('takes the latest {valor, fecha} as the riesgo país sample and the second-latest as prevValue', async () => {
     const source = new ArgentinadatosSource(jsonFetch(RIESGO_PAIS_OK));
 
     const samples = await source.fetch();
 
-    expect(samples).toEqual([{ key: 'riesgo-pais', value: 1050, referenceDate: '2026-08-09' }]);
+    expect(samples).toEqual([{ key: 'riesgo-pais', value: 1050, referenceDate: '2026-08-09', prevValue: 1080 }]);
+  });
+
+  it('sets prevValue to null when the series has a single point', async () => {
+    const source = new ArgentinadatosSource(jsonFetch([{ fecha: '2026-08-09', valor: 1050 }]));
+
+    const samples = await source.fetch();
+
+    expect(samples).toEqual([{ key: 'riesgo-pais', value: 1050, referenceDate: '2026-08-09', prevValue: null }]);
   });
 
   it('rejects zero or negative values', async () => {
@@ -39,7 +47,7 @@ describe('ArgentinadatosSource (EI-1, EI-2)', () => {
 });
 
 describe('ArgentinadatosSource IPC (issue #33, EI-2, EI-5)', () => {
-  it('takes the last inflacion series entry as the IPC sample', async () => {
+  it('takes the last inflacion series entry as the IPC sample and the second-latest as prevValue', async () => {
     const series = [
       { fecha: '2026-05-31', valor: 2.1 },
       { fecha: '2026-06-30', valor: 1.9 },
@@ -48,7 +56,7 @@ describe('ArgentinadatosSource IPC (issue #33, EI-2, EI-5)', () => {
 
     const samples = await source.fetch();
 
-    expect(samples).toEqual([{ key: 'ipc-mensual', value: 1.9, referenceDate: '2026-06-30' }]);
+    expect(samples).toEqual([{ key: 'ipc-mensual', value: 1.9, referenceDate: '2026-06-30', prevValue: 2.1 }]);
   });
 
   it('accepts negative IPC values (signed monthly variation)', async () => {
@@ -57,6 +65,8 @@ describe('ArgentinadatosSource IPC (issue #33, EI-2, EI-5)', () => {
     const samples = await source.fetch();
 
     expect(samples[0].value).toBe(-0.5);
+    // Single-point series: no previous reading from the source.
+    expect(samples[0].prevValue).toBeNull();
   });
 
   it('rejects an empty series', async () => {

@@ -42,6 +42,8 @@ export class DolarApiSource implements IndicatorSource {
       if (typeof item.fechaActualizacion !== 'string') {
         throw new Error(`dolarapi missing fechaActualizacion for ${String(item.casa)}`);
       }
+      // prevValue intentionally omitted: dolarapi exposes no previous close and
+      // the domain carry-forward supplies it from the cached snapshot.
       samples.push({ key: key as IndicatorSample['key'], value, referenceDate: item.fechaActualizacion });
     }
     if (samples.length !== 5) throw new Error('dolarapi response is missing casas');

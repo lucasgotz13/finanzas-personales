@@ -5,7 +5,13 @@ import { YahooTransport } from './yahoo-transport';
 interface ChartBody {
   chart?: {
     result?: Array<{
-      meta?: { regularMarketPrice?: unknown; currency?: unknown; regularMarketTime?: unknown };
+      meta?: {
+        regularMarketPrice?: unknown;
+        currency?: unknown;
+        regularMarketTime?: unknown;
+        previousClose?: unknown;
+        chartPreviousClose?: unknown;
+      };
     }>;
   };
 }
@@ -51,8 +57,13 @@ export class YahooOilSource implements IndicatorSource {
         if (!Number.isFinite(seconds)) {
           throw new Error(`yahoo oil missing regularMarketTime for ${symbol}`);
         }
+        // Previous close from chart meta when present (previousClose first);
+        // null otherwise — the domain carry-forward may supply one.
+        const rawPrev = meta?.previousClose ?? meta?.chartPreviousClose;
+        const prevNum = rawPrev === null || rawPrev === undefined ? Number.NaN : Number(rawPrev);
+        const prevValue = Number.isFinite(prevNum) ? prevNum : null;
         // Yahoo reports unix seconds; store the AR-time instant like the rest of EI-5.
-        return { key, value: price, referenceDate: arIsoString(new Date(seconds * 1000)) };
+        return { key, value: price, referenceDate: arIsoString(new Date(seconds * 1000)), prevValue };
       }),
     );
   }

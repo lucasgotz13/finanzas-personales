@@ -13,11 +13,12 @@ interface SeriesItem {
 /**
  * Riesgo país (JP Morgan EMBI) and IPC monthly variation from
  * argentinadatos.com (EI-2). Both endpoints return a chronologically ordered
- * series; the adapter takes the LAST entry. Riesgo país rejects zero/negative
- * valores; IPC is a signed monthly variation (EI-5) so only non-finite values
- * are rejected. IPC has been served by this source since issue #33 (previously
- * datos.gob.ar). One instance per indicator class: the domain resolves sources
- * by class.
+ * series; the adapter takes the LAST entry as the value and the second-latest
+ * entry by fecha as `prevValue` (null when the series has a single point).
+ * Riesgo país rejects zero/negative valores; IPC is a signed monthly variation
+ * (EI-5) so only non-finite values are rejected. IPC has been served by this
+ * source since issue #33 (previously datos.gob.ar). One instance per indicator
+ * class: the domain resolves sources by class.
  */
 export class ArgentinadatosSource implements IndicatorSource {
   readonly class: 'riesgo-pais' | 'ipc';
@@ -45,16 +46,21 @@ export class ArgentinadatosSource implements IndicatorSource {
       throw new Error('argentinadatos returned an unexpected shape');
     }
     const latest = body[body.length - 1] as SeriesItem; // chronologically ordered
+    const previous = body.length > 1 ? (body[body.length - 2] as SeriesItem) : undefined;
     const value = Number(latest.valor);
     if (!Number.isFinite(value) || (this.class === 'riesgo-pais' && value <= 0)) {
       throw new Error('argentinadatos returned an invalid valor');
     }
     if (typeof latest.fecha !== 'string') throw new Error('argentinadatos missing fecha');
+    const prevRaw = previous?.valor;
+    const prevNum = prevRaw === null || prevRaw === undefined ? Number.NaN : Number(prevRaw);
+    const prevValue = Number.isFinite(prevNum) ? prevNum : null;
     return [
       {
         key: this.class === 'ipc' ? 'ipc-mensual' : 'riesgo-pais',
         value,
         referenceDate: latest.fecha,
+        prevValue,
       },
     ];
   }

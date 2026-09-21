@@ -10,6 +10,7 @@ interface SnapshotRow {
   reference_date: string;
   fetched_at: string;
   source: string;
+  prev_value: number | null;
 }
 
 function toSnapshot(row: SnapshotRow): IndicatorSnapshot {
@@ -20,6 +21,8 @@ function toSnapshot(row: SnapshotRow): IndicatorSnapshot {
     referenceDate: row.reference_date,
     fetchedAt: row.fetched_at,
     source: row.source,
+    // NULL (or a column missing on an un-migrated database) reads as null.
+    prevValue: row.prev_value ?? null,
   };
 }
 
@@ -35,14 +38,15 @@ export class SqliteIndicatorCache implements IndicatorCache {
 
   async set(snapshot: IndicatorSnapshot): Promise<void> {
     await this.db.execute({
-      sql: `INSERT INTO indicator_snapshots (key, value, unit, reference_date, fetched_at, source)
-         VALUES (?, ?, ?, ?, ?, ?)
+      sql: `INSERT INTO indicator_snapshots (key, value, unit, reference_date, fetched_at, source, prev_value)
+         VALUES (?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT(key) DO UPDATE SET
            value = excluded.value,
            unit = excluded.unit,
            reference_date = excluded.reference_date,
            fetched_at = excluded.fetched_at,
-           source = excluded.source`,
+           source = excluded.source,
+           prev_value = excluded.prev_value`,
       args: [
         snapshot.key,
         snapshot.value,
@@ -50,6 +54,7 @@ export class SqliteIndicatorCache implements IndicatorCache {
         snapshot.referenceDate,
         snapshot.fetchedAt,
         snapshot.source,
+        snapshot.prevValue,
       ],
     });
   }
