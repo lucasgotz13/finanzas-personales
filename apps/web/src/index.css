@@ -21,6 +21,10 @@
   --error-border: #f5c6c0;
   --warn: #b45309;
   --warn-bg: #fff4e5;
+  /* Solid danger/warning button fills: white text stays ≥4.5:1 in both themes
+     (same principle as the action green fill, which is theme-independent). */
+  --danger-fill: #b3261e;
+  --warn-fill: #b45309;
   /* OK chip: ink on a light gray-green tint — state, never the action green. */
   --ok: var(--ink);
   --ok-bg: #eef2ee;
@@ -388,7 +392,7 @@ form.transaction-form .actions {
 /* One consistent danger style everywhere (Borrar, category delete, goal
    retiro): same padding as primary so solid buttons share one height. */
 button.danger {
-  background: var(--danger);
+  background: var(--danger-fill);
   color: #fff;
   border: none;
   border-radius: 8px;
@@ -405,7 +409,7 @@ button.danger:hover:not(:disabled) {
 /* Amber sibling of danger (goal retiro): clearly distinct from the red
    Borrar, same padding as primary/danger so solid buttons share one height. */
 button.warning {
-  background: var(--warn);
+  background: var(--warn-fill);
   color: #fff;
   border: none;
   border-radius: 8px;
@@ -416,7 +420,7 @@ button.warning {
 }
 
 button.warning:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--warn) 85%, black);
+  background: color-mix(in srgb, var(--warn-fill) 85%, black);
 }
 
 table.data {

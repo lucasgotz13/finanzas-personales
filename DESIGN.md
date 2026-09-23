@@ -139,6 +139,7 @@ A warm neutral system with one saturated action accent and a semantic red/amber 
 - **Danger Red** (#b3261e): destructive intent — Borrar buttons, over-budget badge text, error boxes. Hover darkens to #8f1c16.
 - **Danger Tint** (#fdecea): ground for danger chips, error boxes, and stale cards (border #f5c6c0).
 - **Warning Amber** (#b45309): REFERENCIA ANTIGUA (aged data) chip text, on Amber Tint (#fff4e5).
+- **Solid Borrar/Retirar Fills** (`--danger-fill` #b3261e, `--warn-fill` #b45309): solid destructive-button backgrounds with white text in both themes — the Danger Red and Warning Amber above stay text/chip colors on tinted grounds.
 - **OK Gray-Green Tint** (#eef2ee): ground for the "ok" chip and success box; its text is ink, deliberately NOT the action green.
 
 ### Neutral
@@ -173,6 +174,7 @@ The theme follows the system on first visit (`prefers-color-scheme`) and the hea
 - **Action Link Light** (#58c46f): action link text and the :focus-visible outline in dark.
 - **Danger Light** (#e57373) on **Danger Night Tint** (#3a2320), border **#6e3b35**.
 - **Warning Light** (#e0a458) on **Warning Night Tint** (#3a2f1e).
+- **Solid Button Fills** (`--danger-fill` #b3261e, `--warn-fill` #b45309): unchanged after dark; white text stays AA (≥4.5:1).
 - **OK Night Tint** (#232b23); its text stays the night ink.
 - **Disabled Night** (#3a362e): disabled primary buttons.
 - **Night Whisper** (`0 1px 3px rgba(0, 0, 0, 0.45)`): the one shadow token after dark.
