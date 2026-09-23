@@ -694,9 +694,13 @@ button:disabled {
 }
 
 /* Text left, action buttons packed together on the right (space-between would
-   also stretch the gap between the two buttons). */
+   also stretch the gap between the two buttons). The danger button takes the
+   compact danger style from DESIGN.md (0.35rem 0.8rem) at the strip's own
+   0.85rem, so a confirm question never outweighs its own answer. */
 .confirm-prompt button.danger {
   margin-left: auto;
+  font-size: 0.85rem;
+  padding: 0.35rem 0.8rem;
 }
 
 .confirm-prompt .confirm-question {
@@ -1235,6 +1239,17 @@ tr.asset-chart-row td {
 
   .confirm-prompt .confirm-question,
   .confirm-prompt .confirm-note {
+    flex-basis: 100%;
+  }
+
+  /* Goal cards: the confirm prompt owns the full row on phones (question and
+     note each on their own line, answers below), instead of squeezing into
+     the actions strip next to the trigger it replaces. */
+  .goal-card .row-actions {
+    flex-wrap: wrap;
+  }
+
+  .goal-card .confirm-prompt {
     flex-basis: 100%;
   }
 

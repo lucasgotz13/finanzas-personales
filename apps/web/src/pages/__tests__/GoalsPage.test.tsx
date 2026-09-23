@@ -189,6 +189,49 @@ describe('GoalsPage', () => {
     expect(createGoal).not.toHaveBeenCalled();
   });
 
+  it('marks the invalid fields, focuses the first one and points them at the error box', async () => {
+    mockList([]);
+    const user = userEvent.setup();
+    render(<GoalsPage />);
+    await screen.findByTestId('goals-empty');
+
+    await user.click(screen.getByTestId('goal-submit'));
+
+    const errorBox = await screen.findByRole('alert');
+    expect(errorBox).toHaveAttribute('id', 'goal-form-errors');
+    const nameInput = screen.getByTestId('goal-name');
+    const targetInput = screen.getByTestId('goal-target');
+    expect(nameInput).toHaveAttribute('aria-invalid', 'true');
+    expect(nameInput).toHaveAttribute('aria-describedby', 'goal-form-errors');
+    expect(targetInput).toHaveAttribute('aria-invalid', 'true');
+    expect(targetInput).toHaveAttribute('aria-describedby', 'goal-form-errors');
+    expect(document.activeElement).toBe(nameInput);
+
+    // Fixing the name leaves only the target marked; focus lands there next.
+    await user.type(nameInput, 'Viaje');
+    await user.click(screen.getByTestId('goal-submit'));
+    expect(targetInput).toHaveAttribute('aria-invalid', 'true');
+    expect(targetInput).toHaveAttribute('aria-describedby', 'goal-form-errors');
+    expect(nameInput).not.toHaveAttribute('aria-invalid');
+    expect(document.activeElement).toBe(targetInput);
+  });
+
+  it('leaves the fields unmarked for an API error', async () => {
+    mockList([]);
+    vi.spyOn(api, 'createGoal').mockRejectedValue(new Error('sin conexión'));
+    const user = userEvent.setup();
+    render(<GoalsPage />);
+    await screen.findByTestId('goals-empty');
+
+    await user.type(screen.getByTestId('goal-name'), 'Viaje');
+    await user.type(screen.getByTestId('goal-target'), '1000');
+    await user.click(screen.getByTestId('goal-submit'));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('sin conexión');
+    expect(screen.getByTestId('goal-name')).not.toHaveAttribute('aria-invalid');
+    expect(screen.getByTestId('goal-target')).not.toHaveAttribute('aria-invalid');
+  });
+
   it('registers an aporte with the goal amount and reloads the list', async () => {
     mockList();
     const adjust = vi.spyOn(api, 'addGoalAdjustment').mockResolvedValue({ id: 7, goalId: 1, amountMinor: 50000, createdAt: '' });
@@ -212,12 +255,20 @@ describe('GoalsPage', () => {
     await screen.findByTestId('goal-1');
 
     await user.click(screen.getByTestId('goal-retiro-1'));
-    expect(await screen.findByRole('alert')).toHaveTextContent('El monto debe ser un número positivo.');
+    const alertBox = await screen.findByRole('alert');
+    expect(alertBox).toHaveTextContent('El monto debe ser un número positivo.');
+    const amountInput = screen.getByTestId('goal-amount-1');
+    expect(alertBox).toHaveAttribute('id', 'goal-adj-error-1');
+    expect(amountInput).toHaveAttribute('aria-invalid', 'true');
+    expect(amountInput).toHaveAttribute('aria-describedby', 'goal-adj-error-1');
     expect(adjust).not.toHaveBeenCalled();
 
-    await user.type(screen.getByTestId('goal-amount-1'), '10');
+    await user.type(amountInput, '10');
     await user.click(screen.getByTestId('goal-retiro-1'));
     expect(adjust).toHaveBeenCalledWith(1, { kind: 'retiro', amountMinor: 1000 });
+    // A successful movement clears the field flags along with the message.
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(amountInput).not.toHaveAttribute('aria-invalid');
   });
 
   it('reorders with Subir/Bajar by sending the swapped id array', async () => {
@@ -231,6 +282,28 @@ describe('GoalsPage', () => {
     expect(screen.getByTestId('goal-up-1')).toBeDisabled();
     await user.click(screen.getByTestId('goal-down-1'));
     expect(reorder).toHaveBeenCalledWith([2, 1]);
+  });
+
+  it('shows a failed reorder inside the affected card, not above the list', async () => {
+    mockList();
+    vi.spyOn(api, 'reorderGoals').mockRejectedValue(new Error('orden caído'));
+    const user = userEvent.setup();
+    render(<GoalsPage />);
+    await screen.findByTestId('goal-1');
+
+    await user.click(screen.getByTestId('goal-down-1'));
+
+    const card = screen.getByTestId('goal-1');
+    const error = await within(card).findByTestId('move-error-1');
+    expect(error).toHaveTextContent('orden caído');
+    expect(error).toHaveAttribute('role', 'alert');
+    expect(screen.queryByTestId('move-error')).not.toBeInTheDocument();
+    expect(within(screen.getByTestId('goal-2')).queryByTestId('move-error-2')).not.toBeInTheDocument();
+
+    // The next move clears the stale notice and pins the new one to its card.
+    await user.click(screen.getByTestId('goal-up-2'));
+    expect(await within(screen.getByTestId('goal-2')).findByTestId('move-error-2')).toHaveTextContent('orden caído');
+    expect(screen.queryByTestId('move-error-1')).not.toBeInTheDocument();
   });
 
   it('edits a goal name through the inline form', async () => {
@@ -265,6 +338,28 @@ describe('GoalsPage', () => {
     expect(deleteGoal).not.toHaveBeenCalled();
     await user.click(screen.getByTestId('goal-confirm-delete-1'));
     expect(deleteGoal).toHaveBeenCalledWith(1);
+  });
+
+  it('states the delete consequence, focuses the confirm button and cancels on Escape', async () => {
+    mockList();
+    const deleteGoal = vi.spyOn(api, 'deleteGoal').mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    render(<GoalsPage />);
+    await screen.findByTestId('goal-1');
+
+    await user.click(screen.getByTestId('goal-delete-1'));
+
+    const prompt = screen.getByRole('alert');
+    expect(prompt).toHaveTextContent('¿Borrar la meta?');
+    expect(prompt).toHaveTextContent('Se borrarán también los aportes registrados.');
+    expect(document.activeElement).toBe(screen.getByTestId('goal-confirm-delete-1'));
+
+    await user.keyboard('{Escape}');
+
+    expect(screen.queryByTestId('goal-confirm-delete-1')).not.toBeInTheDocument();
+    expect(screen.queryByText('¿Borrar la meta?')).not.toBeInTheDocument();
+    expect(document.activeElement).toBe(screen.getByTestId('goal-delete-1'));
+    expect(deleteGoal).not.toHaveBeenCalled();
   });
 
   it('states the funding engine once under the list header', async () => {

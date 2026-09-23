@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { api, translateActionError } from '../api';
 import { parseEsArAmount } from '../amount';
 import { formatDate } from '../dates';
@@ -31,6 +31,8 @@ interface GoalCardProps {
   isFirst: boolean;
   isLast: boolean;
   editing: boolean;
+  /** Reorder failure for this card only: the notice belongs where the move started. */
+  moveError: string | null;
   onEdit: () => void;
   onCancelEdit: () => void;
   onChanged: () => void;
@@ -40,7 +42,7 @@ interface GoalCardProps {
 /** One goal: derived progress with its automatic/manual trace, manual
  * aporte/retiro controls, priority order buttons and edit/delete. The total
  * itself is never editable — it only moves through surplus and movements. */
-function GoalCard({ goal, isFirst, isLast, editing, onEdit, onCancelEdit, onChanged, onMove }: GoalCardProps): JSX.Element {
+function GoalCard({ goal, isFirst, isLast, editing, moveError, onEdit, onCancelEdit, onChanged, onMove }: GoalCardProps): JSX.Element {
   const [amount, setAmount] = useState('');
   const [adjError, setAdjError] = useState<string | null>(null);
   const [adjBusy, setAdjBusy] = useState(false);
@@ -52,8 +54,27 @@ function GoalCard({ goal, isFirst, isLast, editing, onEdit, onCancelEdit, onChan
   const [movements, setMovements] = useState<GoalAdjustment[] | null>(null);
   const [movementsLoading, setMovementsLoading] = useState(false);
   const [movementsError, setMovementsError] = useState<string | null>(null);
+  const confirmDeleteRef = useRef<HTMLButtonElement | null>(null);
+  const deleteTriggerRef = useRef<HTMLButtonElement | null>(null);
+  // The trigger unmounts while the prompt is open, so remember that the prompt
+  // was actually shown before sending focus back to the re-mounted button.
+  const wasConfirmingDeleteRef = useRef(false);
 
   const overdue = goal.deadline !== null && (goal.daysRemaining as number) < 0;
+
+  // Focus choreography: opening the prompt lands on its Borrar; cancelling
+  // (Cancelar or Escape) returns focus to the trigger that opened it.
+  useEffect(() => {
+    if (confirmingDelete) {
+      wasConfirmingDeleteRef.current = true;
+      confirmDeleteRef.current?.focus();
+      return;
+    }
+    if (wasConfirmingDeleteRef.current) {
+      wasConfirmingDeleteRef.current = false;
+      deleteTriggerRef.current?.focus();
+    }
+  }, [confirmingDelete]);
 
   // The money sub shows the real funded percent (it can exceed 100); only the
   // bar width saturates at 100.
@@ -109,6 +130,11 @@ function GoalCard({ goal, isFirst, isLast, editing, onEdit, onCancelEdit, onChan
     } catch (err) {
       setDeleteError(errorText(err));
     }
+  }
+
+  function cancelDelete(): void {
+    // The effect above restores focus to the re-mounted trigger.
+    setConfirmingDelete(false);
   }
 
   return (
@@ -176,6 +202,8 @@ function GoalCard({ goal, isFirst, isLast, editing, onEdit, onCancelEdit, onChan
             placeholder="10.000"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
+            aria-invalid={adjError !== null ? true : undefined}
+            aria-describedby={adjError !== null ? `goal-adj-error-${goal.id}` : undefined}
             data-testid={`goal-amount-${goal.id}`}
           />
         </label>
@@ -194,7 +222,7 @@ function GoalCard({ goal, isFirst, isLast, editing, onEdit, onCancelEdit, onChan
           </button>
         </div>
         {adjError && (
-          <div className="error-box" role="alert">
+          <div className="error-box" role="alert" id={`goal-adj-error-${goal.id}`}>
             {adjError}
           </div>
         )}
@@ -241,21 +269,50 @@ function GoalCard({ goal, isFirst, isLast, editing, onEdit, onCancelEdit, onChan
           {movementsOpen ? 'Ocultar movimientos' : 'Ver movimientos'}
         </button>
         {confirmingDelete ? (
-          <span className="confirm-prompt" role="alert">
+          <span
+            className="confirm-prompt"
+            role="alert"
+            onKeyDown={(e) => {
+              // Escape belongs to the open prompt: cancel instead of letting
+              // the key bubble to any outer surface.
+              if (e.key === 'Escape') {
+                e.stopPropagation();
+                cancelDelete();
+              }
+            }}
+          >
             <span className="confirm-question">¿Borrar la meta?</span>
-            <button type="button" className="danger" onClick={() => void confirmDelete()} data-testid={`goal-confirm-delete-${goal.id}`}>
+            <span className="confirm-note">Se borrarán también los aportes registrados.</span>
+            <button
+              type="button"
+              className="danger"
+              ref={confirmDeleteRef}
+              onClick={() => void confirmDelete()}
+              data-testid={`goal-confirm-delete-${goal.id}`}
+            >
               Borrar
             </button>
-            <button type="button" className="link muted" onClick={() => setConfirmingDelete(false)} data-testid={`goal-cancel-delete-${goal.id}`}>
+            <button type="button" className="link muted" onClick={cancelDelete} data-testid={`goal-cancel-delete-${goal.id}`}>
               Cancelar
             </button>
           </span>
         ) : (
-          <button type="button" className="danger" onClick={() => setConfirmingDelete(true)} data-testid={`goal-delete-${goal.id}`}>
+          <button
+            type="button"
+            className="danger"
+            ref={deleteTriggerRef}
+            onClick={() => setConfirmingDelete(true)}
+            data-testid={`goal-delete-${goal.id}`}
+          >
             Borrar
           </button>
         )}
       </div>
+      {moveError && (
+        <div className="error-box" role="alert" data-testid={`move-error-${goal.id}`}>
+          {moveError}
+        </div>
+      )}
       {movementsOpen && (
         <div className="goal-movements">
           {movementsLoading ? (
@@ -301,7 +358,8 @@ export default function GoalsPage({ active = true }: { active?: boolean }): JSX.
   const [tick, setTick] = useState(0);
   const goals = useApi(() => api.listGoals(), [tick], active);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [moveError, setMoveError] = useState<string | null>(null);
+  // A reorder failure belongs to the card whose Subir/Bajar started it.
+  const [moveError, setMoveError] = useState<{ goalId: number; message: string } | null>(null);
   // null = no explicit user choice yet: the disclosure defaults open only when
   // the loaded list is empty, closed when there are goals to show first.
   const [creating, setCreating] = useState<boolean | null>(null);
@@ -321,12 +379,14 @@ export default function GoalsPage({ active = true }: { active?: boolean }): JSX.
     const tmp = ids[idx] as number;
     ids[idx] = ids[swap] as number;
     ids[swap] = tmp;
+    // A new move supersedes the previous failure notice.
+    setMoveError(null);
     try {
       await api.reorderGoals(ids);
       setMoveError(null);
       reload();
     } catch (err) {
-      setMoveError(errorText(err));
+      setMoveError({ goalId: id, message: errorText(err) });
     }
   }
 
@@ -367,11 +427,6 @@ export default function GoalsPage({ active = true }: { active?: boolean }): JSX.
             </button>
           </div>
         )}
-        {moveError && (
-          <div className="error-box" role="alert" data-testid="move-error">
-            {moveError}
-          </div>
-        )}
         {goals.loading && goals.data === null ? (
           <div className="empty">Cargando…</div>
         ) : (goals.data ?? []).length === 0 ? (
@@ -388,6 +443,7 @@ export default function GoalsPage({ active = true }: { active?: boolean }): JSX.
               isFirst={i === 0}
               isLast={i === list.length - 1}
               editing={editingId === goal.id}
+              moveError={moveError?.goalId === goal.id ? moveError.message : null}
               onEdit={() => setEditingId(goal.id)}
               onCancelEdit={() => setEditingId(null)}
               onChanged={reload}

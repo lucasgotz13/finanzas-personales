@@ -14,6 +14,9 @@ export interface GoalFormProps {
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
+/** Fields the submit-time validation can mark: exactly the inputs that failed. */
+type InvalidField = 'name' | 'target' | 'deadline';
+
 function isValidDate(value: string): boolean {
   if (!DATE_RE.test(value)) return false;
   const [year, month, day] = value.split('-').map(Number);
@@ -30,7 +33,10 @@ export default function GoalForm({ initial, onSaved, onCancel, focusDeadline = f
   const [currency, setCurrency] = useState<'ARS' | 'USD'>(initial?.currency ?? 'ARS');
   const [deadline, setDeadline] = useState(initial?.deadline ?? '');
   const [errors, setErrors] = useState<string[]>([]);
+  const [invalidFields, setInvalidFields] = useState<InvalidField[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const nameRef = useRef<HTMLInputElement>(null);
+  const targetRef = useRef<HTMLInputElement>(null);
   const deadlineRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -42,6 +48,7 @@ export default function GoalForm({ initial, onSaved, onCancel, focusDeadline = f
     setTarget('');
     setDeadline('');
     setErrors([]);
+    setInvalidFields([]);
   }
 
   function errorText(err: unknown): string {
@@ -51,15 +58,32 @@ export default function GoalForm({ initial, onSaved, onCancel, focusDeadline = f
   async function handleSubmit(e: React.FormEvent): Promise<void> {
     e.preventDefault();
     const details: string[] = [];
-    if (name.trim() === '') details.push('El nombre es obligatorio.');
+    const invalid: InvalidField[] = [];
+    if (name.trim() === '') {
+      details.push('El nombre es obligatorio.');
+      invalid.push('name');
+    }
     const parsed = parseEsArAmount(target);
-    if (parsed === null || parsed <= 0) details.push('El objetivo debe ser un monto positivo.');
-    if (deadline !== '' && !isValidDate(deadline)) details.push('La fecha límite debe ser una fecha válida.');
-    if (details.length > 0) {
+    if (parsed === null || parsed <= 0) {
+      details.push('El objetivo debe ser un monto positivo.');
+      invalid.push('target');
+    }
+    if (deadline !== '' && !isValidDate(deadline)) {
+      details.push('La fecha límite debe ser una fecha válida.');
+      invalid.push('deadline');
+    }
+    if (invalid.length > 0) {
       setErrors(details);
+      setInvalidFields(invalid);
+      // Land on the first field that needs fixing.
+      const first = invalid[0];
+      if (first === 'name') nameRef.current?.focus();
+      else if (first === 'target') targetRef.current?.focus();
+      else deadlineRef.current?.focus();
       return;
     }
     setErrors([]);
+    setInvalidFields([]);
     setSubmitting(true);
     try {
       const targetMinor = Math.round((parsed as number) * 100);
@@ -86,6 +110,10 @@ export default function GoalForm({ initial, onSaved, onCancel, focusDeadline = f
     }
   }
 
+  const nameInvalid = invalidFields.includes('name');
+  const targetInvalid = invalidFields.includes('target');
+  const deadlineInvalid = invalidFields.includes('deadline');
+
   function handleCancel(): void {
     onCancel?.();
     resetForm();
@@ -96,21 +124,27 @@ export default function GoalForm({ initial, onSaved, onCancel, focusDeadline = f
       <label>
         Nombre
         <input
+          ref={nameRef}
           type="text"
           placeholder="Viaje a Bariloche"
           value={name}
           onChange={(e) => setName(e.target.value)}
+          aria-invalid={nameInvalid ? true : undefined}
+          aria-describedby={nameInvalid ? 'goal-form-errors' : undefined}
           data-testid="goal-name"
         />
       </label>
       <label>
         Objetivo ({currency})
         <input
+          ref={targetRef}
           type="text"
           inputMode="decimal"
           placeholder="500.000"
           value={target}
           onChange={(e) => setTarget(e.target.value)}
+          aria-invalid={targetInvalid ? true : undefined}
+          aria-describedby={targetInvalid ? 'goal-form-errors' : undefined}
           data-testid="goal-target"
         />
       </label>
@@ -123,7 +157,15 @@ export default function GoalForm({ initial, onSaved, onCancel, focusDeadline = f
       </label>
       <label>
         Fecha límite (opcional)
-        <input ref={deadlineRef} type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} data-testid="goal-deadline" />
+        <input
+          ref={deadlineRef}
+          type="date"
+          value={deadline}
+          onChange={(e) => setDeadline(e.target.value)}
+          aria-invalid={deadlineInvalid ? true : undefined}
+          aria-describedby={deadlineInvalid ? 'goal-form-errors' : undefined}
+          data-testid="goal-deadline"
+        />
       </label>
       <div className="actions">
         <button type="submit" className="primary" disabled={submitting} data-testid="goal-submit">
@@ -136,7 +178,7 @@ export default function GoalForm({ initial, onSaved, onCancel, focusDeadline = f
         )}
       </div>
       {errors.length > 0 && (
-        <div className="error-box" role="alert">
+        <div className="error-box" role="alert" id="goal-form-errors">
           {errors.map((err) => (
             <div key={err}>{err}</div>
           ))}
