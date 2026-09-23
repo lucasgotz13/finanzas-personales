@@ -100,7 +100,7 @@ A value SHALL be `stale` when cached and age > TTL; `absent` when never fetched 
 
 ### Requirement: EI-6 — Web tab
 
-`IndicatorsPage` SHALL render 11 cards (label, value, unit, updatedAt; stale badge when `stale`; signed `changePercent` badge next to the value — green `+` up / red `-` down, 2 decimals — hidden when `changePercent` is `null`), auto-refresh every ≈5 min while the tab is active (TTL-respecting refresh), a manual refresh button (force), and loading/error/stale states. No charts in v1.
+`IndicatorsPage` SHALL render 11 cards (label, value, unit, updatedAt; stale badge when `stale`; signed `changePercent` badge next to the value — green `+` up / red `-` down, 2 decimals — hidden when `changePercent` is `null` or `abs(changePercent) < 0.005`, i.e. any change that would render as `0,00%` at 2 decimals, including exact `0`), auto-refresh every ≈5 min while the tab is active (TTL-respecting refresh), a manual refresh button (force), and loading/error/stale states. No charts in v1.
 
 #### Scenario: Render
 
