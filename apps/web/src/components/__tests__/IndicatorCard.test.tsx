@@ -53,10 +53,30 @@ describe('IndicatorCard', () => {
     expect(badge.className).toContain('down');
   });
 
-  it('renders a zero change with 2 decimals and no sign', () => {
+  it('hides the badge when the change is exactly zero', () => {
     render(<IndicatorCard indicator={{ ...indicator, changePercent: 0 }} />);
+    expect(screen.queryByTitle('Cambio diario')).not.toBeInTheDocument();
+  });
+
+  it('hides the badge for negative zero (-0)', () => {
+    render(<IndicatorCard indicator={{ ...indicator, changePercent: -0 }} />);
+    expect(screen.queryByTitle('Cambio diario')).not.toBeInTheDocument();
+  });
+
+  it('hides the badge when the change rounds to "0,00%" at 2 decimals (0,003%)', () => {
+    render(<IndicatorCard indicator={{ ...indicator, changePercent: 0.003 }} />);
+    expect(screen.queryByTitle('Cambio diario')).not.toBeInTheDocument();
+  });
+
+  it('hides the badge for a tiny negative change that would read "-0,00%"', () => {
+    render(<IndicatorCard indicator={{ ...indicator, changePercent: -0.004 }} />);
+    expect(screen.queryByTitle('Cambio diario')).not.toBeInTheDocument();
+  });
+
+  it('shows a tiny change that still rounds above zero (0,007% -> "+0,01%")', () => {
+    render(<IndicatorCard indicator={{ ...indicator, changePercent: 0.007 }} />);
     const badge = screen.getByTitle('Cambio diario');
-    expect(badge).toHaveTextContent('0,00%');
+    expect(badge).toHaveTextContent('+0,01%');
     expect(badge.className).toContain('up');
   });
 

@@ -31,7 +31,14 @@ function formatValue(value: number): string {
   return new Intl.NumberFormat('es-AR', { maximumFractionDigits: 2 }).format(value);
 }
 
-/** Signed day-change percent, exactly 2 decimals: '+1,30%' / '-0,80%' / '0,00%'. */
+/**
+ * Smallest day-change (in %) that earns a badge. Anything below this renders
+ * as '0,00%' at 2 decimals and would only add noise to the card, so the card
+ * shows nothing at all instead of a zero badge.
+ */
+const MIN_VISIBLE_CHANGE = 0.005;
+
+/** Signed day-change percent, exactly 2 decimals: '+1,30%' / '-0,80%'. */
 function formatChange(changePercent: number): string {
   const sign = changePercent > 0 ? '+' : '';
   return `${sign}${changePercent.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`;
@@ -45,14 +52,16 @@ export default function IndicatorCard({ indicator }: { indicator: IndicatorView 
       <div className="indicator-value">
         {indicator.value !== null ? formatValue(indicator.value) : '—'}
         <span className="indicator-unit"> {indicator.unit}</span>
-        {typeof indicator.changePercent === 'number' && Number.isFinite(indicator.changePercent) && (
-          <span
-            className={`change-badge ${indicator.changePercent < 0 ? 'down' : 'up'}`}
-            title="Cambio diario"
-          >
-            {formatChange(indicator.changePercent)}
-          </span>
-        )}
+        {typeof indicator.changePercent === 'number' &&
+          Number.isFinite(indicator.changePercent) &&
+          Math.abs(indicator.changePercent) >= MIN_VISIBLE_CHANGE && (
+            <span
+              className={`change-badge ${indicator.changePercent < 0 ? 'down' : 'up'}`}
+              title="Cambio diario"
+            >
+              {formatChange(indicator.changePercent)}
+            </span>
+          )}
       </div>
       <div className="indicator-updated">
         {indicator.updatedAt ? `actualizado ${timeAgo(indicator.updatedAt)}` : 'sin datos aún'}
