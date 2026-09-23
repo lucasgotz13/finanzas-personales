@@ -113,6 +113,8 @@ export default function GoalForm({ initial, onSaved, onCancel, focusDeadline = f
   const nameInvalid = invalidFields.includes('name');
   const targetInvalid = invalidFields.includes('target');
   const deadlineInvalid = invalidFields.includes('deadline');
+  // Unique per instance: a create form and an edit form can coexist.
+  const errorsId = `goal-form-errors-${initial?.id ?? 'new'}`;
 
   function handleCancel(): void {
     onCancel?.();
@@ -130,7 +132,7 @@ export default function GoalForm({ initial, onSaved, onCancel, focusDeadline = f
           value={name}
           onChange={(e) => setName(e.target.value)}
           aria-invalid={nameInvalid ? true : undefined}
-          aria-describedby={nameInvalid ? 'goal-form-errors' : undefined}
+          aria-describedby={nameInvalid ? errorsId : undefined}
           data-testid="goal-name"
         />
       </label>
@@ -144,7 +146,7 @@ export default function GoalForm({ initial, onSaved, onCancel, focusDeadline = f
           value={target}
           onChange={(e) => setTarget(e.target.value)}
           aria-invalid={targetInvalid ? true : undefined}
-          aria-describedby={targetInvalid ? 'goal-form-errors' : undefined}
+          aria-describedby={targetInvalid ? errorsId : undefined}
           data-testid="goal-target"
         />
       </label>
@@ -163,7 +165,7 @@ export default function GoalForm({ initial, onSaved, onCancel, focusDeadline = f
           value={deadline}
           onChange={(e) => setDeadline(e.target.value)}
           aria-invalid={deadlineInvalid ? true : undefined}
-          aria-describedby={deadlineInvalid ? 'goal-form-errors' : undefined}
+          aria-describedby={deadlineInvalid ? errorsId : undefined}
           data-testid="goal-deadline"
         />
       </label>
@@ -178,7 +180,7 @@ export default function GoalForm({ initial, onSaved, onCancel, focusDeadline = f
         )}
       </div>
       {errors.length > 0 && (
-        <div className="error-box" role="alert" id="goal-form-errors">
+        <div className="error-box" role="alert" id={errorsId}>
           {errors.map((err) => (
             <div key={err}>{err}</div>
           ))}

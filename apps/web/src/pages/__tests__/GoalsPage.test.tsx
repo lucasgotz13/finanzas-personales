@@ -198,20 +198,20 @@ describe('GoalsPage', () => {
     await user.click(screen.getByTestId('goal-submit'));
 
     const errorBox = await screen.findByRole('alert');
-    expect(errorBox).toHaveAttribute('id', 'goal-form-errors');
+    expect(errorBox).toHaveAttribute('id', 'goal-form-errors-new');
     const nameInput = screen.getByTestId('goal-name');
     const targetInput = screen.getByTestId('goal-target');
     expect(nameInput).toHaveAttribute('aria-invalid', 'true');
-    expect(nameInput).toHaveAttribute('aria-describedby', 'goal-form-errors');
+    expect(nameInput).toHaveAttribute('aria-describedby', 'goal-form-errors-new');
     expect(targetInput).toHaveAttribute('aria-invalid', 'true');
-    expect(targetInput).toHaveAttribute('aria-describedby', 'goal-form-errors');
+    expect(targetInput).toHaveAttribute('aria-describedby', 'goal-form-errors-new');
     expect(document.activeElement).toBe(nameInput);
 
     // Fixing the name leaves only the target marked; focus lands there next.
     await user.type(nameInput, 'Viaje');
     await user.click(screen.getByTestId('goal-submit'));
     expect(targetInput).toHaveAttribute('aria-invalid', 'true');
-    expect(targetInput).toHaveAttribute('aria-describedby', 'goal-form-errors');
+    expect(targetInput).toHaveAttribute('aria-describedby', 'goal-form-errors-new');
     expect(nameInput).not.toHaveAttribute('aria-invalid');
     expect(document.activeElement).toBe(targetInput);
   });
@@ -230,6 +230,31 @@ describe('GoalsPage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('sin conexión');
     expect(screen.getByTestId('goal-name')).not.toHaveAttribute('aria-invalid');
     expect(screen.getByTestId('goal-target')).not.toHaveAttribute('aria-invalid');
+  });
+
+  it('scopes form error ids per instance when create and edit forms coexist', async () => {
+    mockList();
+    const user = userEvent.setup();
+    render(<GoalsPage />);
+    await screen.findByTestId('goal-1');
+
+    // Create form: invalid submit marks its own error box.
+    await user.click(screen.getByTestId('goal-create-toggle'));
+    const createForm = document.getElementById('goal-create-form') as HTMLElement;
+    await user.click(within(createForm).getByTestId('goal-submit'));
+    expect(within(createForm).getByRole('alert')).toHaveAttribute('id', 'goal-form-errors-new');
+
+    // Edit form: its own box, its own association — never the create form's.
+    await user.click(screen.getByTestId('goal-edit-1'));
+    const card = screen.getByTestId('goal-1');
+    const editName = within(card).getByTestId('goal-name');
+    await user.clear(editName);
+    await user.click(within(card).getByTestId('goal-submit'));
+
+    const boxes = document.querySelectorAll('[id^="goal-form-errors"]');
+    expect(boxes).toHaveLength(2);
+    expect(new Set(Array.from(boxes).map((box) => box.id)).size).toBe(2);
+    expect(editName).toHaveAttribute('aria-describedby', 'goal-form-errors-1');
   });
 
   it('registers an aporte with the goal amount and reloads the list', async () => {
