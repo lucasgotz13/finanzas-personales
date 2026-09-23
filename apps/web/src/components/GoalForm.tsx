@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { api, translateActionError } from '../api';
 import { parseEsArAmount } from '../amount';
 import type { CreateGoalInput, GoalView, UpdateGoalInput } from '../types';
@@ -8,6 +8,8 @@ export interface GoalFormProps {
   initial?: GoalView;
   onSaved: (goal: GoalView) => void;
   onCancel?: () => void;
+  /** Reschedule flow: focus the deadline field when the form opens. */
+  focusDeadline?: boolean;
 }
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -22,13 +24,18 @@ function isValidDate(value: string): boolean {
 /** Savings-goal create/edit form: name, target, currency and optional deadline.
  * The running total is never an input here — progress only moves through the
  * automatic surplus and the per-goal aportar/retirar buttons. */
-export default function GoalForm({ initial, onSaved, onCancel }: GoalFormProps): JSX.Element {
+export default function GoalForm({ initial, onSaved, onCancel, focusDeadline = false }: GoalFormProps): JSX.Element {
   const [name, setName] = useState(initial?.name ?? '');
   const [target, setTarget] = useState(initial ? String(initial.targetMinor / 100) : '');
   const [currency, setCurrency] = useState<'ARS' | 'USD'>(initial?.currency ?? 'ARS');
   const [deadline, setDeadline] = useState(initial?.deadline ?? '');
   const [errors, setErrors] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const deadlineRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (focusDeadline) deadlineRef.current?.focus();
+  }, [focusDeadline]);
 
   function resetForm(): void {
     setName('');
@@ -116,7 +123,7 @@ export default function GoalForm({ initial, onSaved, onCancel }: GoalFormProps):
       </label>
       <label>
         Fecha límite (opcional)
-        <input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} data-testid="goal-deadline" />
+        <input ref={deadlineRef} type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} data-testid="goal-deadline" />
       </label>
       <div className="actions">
         <button type="submit" className="primary" disabled={submitting} data-testid="goal-submit">

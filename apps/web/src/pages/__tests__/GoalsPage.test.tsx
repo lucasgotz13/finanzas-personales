@@ -43,6 +43,14 @@ const goalB: GoalView = {
   requiredPaceMinor: null,
 };
 
+const goalOverdue: GoalView = {
+  ...goalA,
+  id: 3,
+  deadline: '2026-09-15',
+  daysRemaining: -8,
+  requiredPaceMinor: 68000000,
+};
+
 function mockList(goals: GoalView[] = [goalA, goalB]): void {
   vi.spyOn(api, 'listGoals').mockResolvedValue(goals);
 }
@@ -65,10 +73,43 @@ describe('GoalsPage', () => {
     expect(screen.getByTestId('goal-deadline-1')).toHaveTextContent(
       'Límite: 15/10/2026 · Faltan 68 días · Ritmo necesario: $ 200,00/mes',
     );
+    // Byte-identical raw text: same characters as before the overdue chip
+    // (including the NBSP that Intl puts inside the formatted amount).
+    expect(screen.getByTestId('goal-deadline-1').textContent).toBe(
+      'Límite: 15/10/2026 · Faltan 68 días · Ritmo necesario: $\u00a0200,00/mes',
+    );
     expect(screen.queryByText(/vas bien|vas mal/i)).not.toBeInTheDocument();
     // Completed goal stays listed with its badge; goals without deadline show no pace line.
     expect(screen.getByTestId('goal-completed-2')).toHaveTextContent('Completada');
     expect(screen.queryByTestId('goal-deadline-2')).not.toBeInTheDocument();
+  });
+
+  it('shouts an overdue goal with a Vencida chip, danger days and a reschedule link', async () => {
+    mockList([goalOverdue]);
+    const user = userEvent.setup();
+    render(<GoalsPage />);
+    await screen.findByTestId('goal-3');
+
+    // The state word lives in the chip, not inside the muted meta sentence.
+    expect(screen.getByTestId('goal-overdue-3')).toHaveTextContent('Vencida');
+    expect(screen.getByTestId('goal-deadline-3')).toHaveTextContent('Límite: 15/09/2026');
+    expect(screen.getByTestId('goal-deadline-3')).toHaveTextContent('Ritmo necesario: $ 680.000,00/mes');
+
+    // The day count carries the danger styling inside the meta line.
+    const days = screen.getByText('Hace 8 días');
+    expect(days).toHaveClass('goal-overdue-days');
+
+    // The currency is a label now: Completada stays the only chip on the card.
+    const currency = screen.getByTestId('goal-currency-3');
+    expect(currency).toHaveTextContent('ARS');
+    expect(currency).not.toHaveClass('badge');
+
+    // Reschedule opens the edit form with the deadline field focused.
+    await user.click(screen.getByTestId('goal-reschedule-3'));
+    const card = screen.getByTestId('goal-3');
+    const deadlineInput = within(card).getByTestId('goal-deadline');
+    expect(deadlineInput).toHaveValue('2026-09-15');
+    expect(document.activeElement).toBe(deadlineInput);
   });
 
   it('renders the empty state when there are no goals', async () => {

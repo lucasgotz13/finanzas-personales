@@ -365,6 +365,26 @@ form.transaction-form .actions {
   font-variant-numeric: tabular-nums;
 }
 
+/* Currency is a label, not a state chip (state lives in chips). */
+.goal-currency {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--muted-text);
+}
+
+/* Overdue day count carries danger inside the meta line. */
+.goal-overdue-days {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+/* Inline chip inside the meta line must not clip its line box. */
+.goal-deadline .badge {
+  display: inline-block;
+  vertical-align: -1px;
+}
+
 /* One consistent danger style everywhere (Borrar, category delete, goal
    retiro): same padding as primary so solid buttons share one height. */
 button.danger {

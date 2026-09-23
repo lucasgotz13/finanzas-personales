@@ -14,13 +14,16 @@ function errorText(err: unknown): string {
   return translateActionError(err, 'No se pudo completar la acción.');
 }
 
-/** Factual deadline line: days remaining plus the required monthly pace. Never a verdict. */
-function deadlineText(goal: GoalView): string {
+/** Factual day count for the deadline line. Overdue says how late it is; the
+ * state word (VENCIDA) lives in the chip, never duplicated here. */
+function deadlineDays(goal: GoalView): string {
   const days = goal.daysRemaining as number;
-  const pace = money(goal.requiredPaceMinor as number, goal.currency);
-  const dayPart =
-    days > 1 ? `Faltan ${days} días` : days === 1 ? 'Falta 1 día' : days === 0 ? 'Vence hoy' : `Vencida hace ${-days} ${-days === 1 ? 'día' : 'días'}`;
-  return `${dayPart} · Ritmo necesario: ${pace}/mes`;
+  return days > 1 ? `Faltan ${days} días` : days === 1 ? 'Falta 1 día' : days === 0 ? 'Vence hoy' : `Hace ${-days} ${-days === 1 ? 'día' : 'días'}`;
+}
+
+/** Required monthly pace for the deadline line: a fact, never a verdict. */
+function deadlinePace(goal: GoalView): string {
+  return `Ritmo necesario: ${money(goal.requiredPaceMinor as number, goal.currency)}/mes`;
 }
 
 interface GoalCardProps {
@@ -43,6 +46,10 @@ function GoalCard({ goal, isFirst, isLast, editing, onEdit, onCancelEdit, onChan
   const [adjBusy, setAdjBusy] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  // Reschedule flow: open the edit form with the deadline field focused.
+  const [focusDeadline, setFocusDeadline] = useState(false);
+
+  const overdue = goal.deadline !== null && (goal.daysRemaining as number) < 0;
 
   const percent = Math.min(100, Math.round((goal.totalMinor / goal.targetMinor) * 100));
 
@@ -78,7 +85,9 @@ function GoalCard({ goal, isFirst, isLast, editing, onEdit, onCancelEdit, onChan
     <article className="card goal-card" data-testid={`goal-${goal.id}`}>
       <div className="indicators-header">
         <h3>{goal.name}</h3>
-        <span className="badge ok">{goal.currency}</span>
+        <span className="goal-currency" data-testid={`goal-currency-${goal.id}`}>
+          {goal.currency}
+        </span>
         {goal.completed && (
           <span className="badge ok" data-testid={`goal-completed-${goal.id}`}>
             Completada
@@ -96,8 +105,36 @@ function GoalCard({ goal, isFirst, isLast, editing, onEdit, onCancelEdit, onChan
         Automático: {money(goal.automaticMinor, goal.currency)} · Manual: {money(goal.manualNetMinor, goal.currency)}
       </p>
       {goal.deadline !== null && (
-        <p className="goal-meta" data-testid={`goal-deadline-${goal.id}`}>
-          Límite: {formatDate(goal.deadline)} · {deadlineText(goal)}
+        <p className="goal-meta goal-deadline" data-testid={`goal-deadline-${goal.id}`}>
+          Límite: {formatDate(goal.deadline)}
+          {overdue && (
+            <>
+              {' '}
+              <span className="badge over" data-testid={`goal-overdue-${goal.id}`}>
+                Vencida
+              </span>
+            </>
+          )}
+          {' · '}
+          <span className={overdue ? 'goal-overdue-days' : undefined}>{deadlineDays(goal)}</span>
+          {' · '}
+          {deadlinePace(goal)}
+          {overdue && (
+            <>
+              {' · '}
+              <button
+                type="button"
+                className="link"
+                onClick={() => {
+                  setFocusDeadline(true);
+                  onEdit();
+                }}
+                data-testid={`goal-reschedule-${goal.id}`}
+              >
+                Reprogramar plazo
+              </button>
+            </>
+          )}
         </p>
       )}
       <div className="transaction-form">
@@ -147,7 +184,15 @@ function GoalCard({ goal, isFirst, isLast, editing, onEdit, onCancelEdit, onChan
         >
           Bajar
         </button>
-        <button type="button" className="link muted" onClick={onEdit} data-testid={`goal-edit-${goal.id}`}>
+        <button
+          type="button"
+          className="link muted"
+          onClick={() => {
+            setFocusDeadline(false);
+            onEdit();
+          }}
+          data-testid={`goal-edit-${goal.id}`}
+        >
           Editar
         </button>
         {confirmingDelete ? (
@@ -171,6 +216,7 @@ function GoalCard({ goal, isFirst, isLast, editing, onEdit, onCancelEdit, onChan
         <GoalForm
           key={`edit-${goal.id}`}
           initial={goal}
+          focusDeadline={focusDeadline}
           onSaved={() => {
             onCancelEdit();
             onChanged();
