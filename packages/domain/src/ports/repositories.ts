@@ -53,5 +53,7 @@ export interface GoalRepository {
 export interface GoalAdjustmentRepository {
   create(adj: GoalAdjustment): Promise<GoalAdjustment>;
   listAll(): Promise<GoalAdjustment[]>;
+  /** Manual movements of one goal, newest first. */
+  listByGoal(goalId: number): Promise<GoalAdjustment[]>;
   deleteByGoal(goalId: number): Promise<void>;
 }

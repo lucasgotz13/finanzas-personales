@@ -68,6 +68,15 @@ export function goalsRouter(deps: GoalsRouterDeps): Router {
     }),
   );
 
+  router.get(
+    '/goals/:id/adjustments',
+    wrap(async (req, res) => {
+      const id = parseId(req.params.id);
+      const adjustments = await goalService.listAdjustments(id);
+      res.json(adjustments);
+    }),
+  );
+
   router.post(
     '/goals/:id/adjustments',
     wrap(async (req, res) => {

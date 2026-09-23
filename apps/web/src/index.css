@@ -21,6 +21,10 @@
   --error-border: #f5c6c0;
   --warn: #b45309;
   --warn-bg: #fff4e5;
+  /* Solid danger/warning button fills: white text stays ≥4.5:1 in both themes
+     (same principle as the action green fill, which is theme-independent). */
+  --danger-fill: #b3261e;
+  --warn-fill: #b45309;
   /* OK chip: ink on a light gray-green tint — state, never the action green. */
   --ok: var(--ink);
   --ok-bg: #eef2ee;
@@ -159,6 +163,7 @@ button.primary {
   border-radius: 8px;
   padding: 0.5rem 1rem;
   cursor: pointer;
+  font-size: 1rem;
   font-weight: 600;
 }
 
@@ -321,15 +326,115 @@ form.transaction-form .actions {
   align-items: center;
 }
 
+/* Goal list header: section title + create disclosure control on one row. */
+.goal-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.goal-list-header h2 {
+  margin: 0;
+}
+
+/* The funding engine, stated once under the header (automatic vs manual). */
+.goal-explainer {
+  color: var(--muted-text);
+  font-size: 0.8rem;
+  margin: 0 0 0.75rem;
+}
+
+/* Goal card typography: the amount leads, metadata follows (Loudness Ladder). */
+.goal-card .indicators-header h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.goal-money {
+  margin: 0 0 0.25rem;
+}
+
+.goal-money-total {
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.goal-money-sub {
+  font-size: 0.85rem;
+  color: var(--muted-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.goal-meta {
+  margin: 0.25rem 0 0;
+  font-size: 0.8rem;
+  color: var(--muted-text);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Currency is a label, not a state chip (state lives in chips). */
+.goal-currency {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--muted-text);
+}
+
+/* Overdue day count carries danger inside the meta line. */
+.goal-overdue-days {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+/* Inline chip inside the meta line must not clip its line box. */
+.goal-deadline .badge {
+  display: inline-block;
+  vertical-align: -1px;
+}
+
+/* Per-goal manual movement history (Ver movimientos): newest first, one row
+   per movement with the date muted and the amount on tabular figures. */
+.goal-movements {
+  font-size: 0.8rem;
+  margin-top: 0.5rem;
+}
+
+.goal-movement {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  margin: 0.15rem 0;
+  font-size: 0.8rem;
+}
+
+.goal-movement-date {
+  color: var(--muted-text);
+}
+
+.goal-movement-amount {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Row-action links stay whole words when the strip wraps on phones. */
+.goal-card .row-actions .link {
+  white-space: nowrap;
+}
+
 /* One consistent danger style everywhere (Borrar, category delete, goal
    retiro): same padding as primary so solid buttons share one height. */
 button.danger {
-  background: var(--danger);
+  background: var(--danger-fill);
   color: #fff;
   border: none;
   border-radius: 8px;
   padding: 0.5rem 1rem;
   cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
 }
 
 button.danger:hover:not(:disabled) {
@@ -339,17 +444,18 @@ button.danger:hover:not(:disabled) {
 /* Amber sibling of danger (goal retiro): clearly distinct from the red
    Borrar, same padding as primary/danger so solid buttons share one height. */
 button.warning {
-  background: var(--warn);
+  background: var(--warn-fill);
   color: #fff;
   border: none;
   border-radius: 8px;
   padding: 0.5rem 1rem;
   cursor: pointer;
+  font-size: 1rem;
   font-weight: 600;
 }
 
 button.warning:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--warn) 85%, black);
+  background: color-mix(in srgb, var(--warn-fill) 85%, black);
 }
 
 table.data {
@@ -588,9 +694,13 @@ button:disabled {
 }
 
 /* Text left, action buttons packed together on the right (space-between would
-   also stretch the gap between the two buttons). */
+   also stretch the gap between the two buttons). The danger button takes the
+   compact danger style from DESIGN.md (0.35rem 0.8rem) at the strip's own
+   0.85rem, so a confirm question never outweighs its own answer. */
 .confirm-prompt button.danger {
   margin-left: auto;
+  font-size: 0.85rem;
+  padding: 0.35rem 0.8rem;
 }
 
 .confirm-prompt .confirm-question {
@@ -1132,6 +1242,17 @@ tr.asset-chart-row td {
     flex-basis: 100%;
   }
 
+  /* Goal cards: the confirm prompt owns the full row on phones (question and
+     note each on their own line, answers below), instead of squeezing into
+     the actions strip next to the trigger it replaces. */
+  .goal-card .row-actions {
+    flex-wrap: wrap;
+  }
+
+  .goal-card .confirm-prompt {
+    flex-basis: 100%;
+  }
+
   /* Single-column form; 16px inputs prevent iOS focus-zoom (also covers the
      budget caps table, the category rename inline input and the filter
      month/date inputs) */
@@ -1187,6 +1308,10 @@ tr.asset-chart-row td {
   }
 
   .total .total-amount {
+    font-size: 1.4rem;
+  }
+
+  .goal-money-total {
     font-size: 1.4rem;
   }
 

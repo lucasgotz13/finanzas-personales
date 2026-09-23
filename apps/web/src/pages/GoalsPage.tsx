@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { api, translateActionError } from '../api';
 import { parseEsArAmount } from '../amount';
 import { formatDate } from '../dates';
 import { useApi } from '../hooks/useApi';
-import type { GoalView } from '../types';
+import type { GoalAdjustment, GoalView } from '../types';
 import GoalForm from '../components/GoalForm';
 
 function money(minor: number, currency: 'ARS' | 'USD'): string {
@@ -14,13 +14,16 @@ function errorText(err: unknown): string {
   return translateActionError(err, 'No se pudo completar la acción.');
 }
 
-/** Factual deadline line: days remaining plus the required monthly pace. Never a verdict. */
-function deadlineText(goal: GoalView): string {
+/** Factual day count for the deadline line. Overdue says how late it is; the
+ * state word (VENCIDA) lives in the chip, never duplicated here. */
+function deadlineDays(goal: GoalView): string {
   const days = goal.daysRemaining as number;
-  const pace = money(goal.requiredPaceMinor as number, goal.currency);
-  const dayPart =
-    days > 1 ? `Faltan ${days} días` : days === 1 ? 'Falta 1 día' : days === 0 ? 'Vence hoy' : `Vencida hace ${-days} ${-days === 1 ? 'día' : 'días'}`;
-  return `${dayPart} · Ritmo necesario: ${pace}/mes`;
+  return days > 1 ? `Faltan ${days} días` : days === 1 ? 'Falta 1 día' : days === 0 ? 'Vence hoy' : `Hace ${-days} ${-days === 1 ? 'día' : 'días'}`;
+}
+
+/** Required monthly pace for the deadline line: a fact, never a verdict. */
+function deadlinePace(goal: GoalView): string {
+  return `Ritmo necesario: ${money(goal.requiredPaceMinor as number, goal.currency)}/mes`;
 }
 
 interface GoalCardProps {
@@ -28,6 +31,8 @@ interface GoalCardProps {
   isFirst: boolean;
   isLast: boolean;
   editing: boolean;
+  /** Reorder failure for this card only: the notice belongs where the move started. */
+  moveError: string | null;
   onEdit: () => void;
   onCancelEdit: () => void;
   onChanged: () => void;
@@ -37,14 +42,65 @@ interface GoalCardProps {
 /** One goal: derived progress with its automatic/manual trace, manual
  * aporte/retiro controls, priority order buttons and edit/delete. The total
  * itself is never editable — it only moves through surplus and movements. */
-function GoalCard({ goal, isFirst, isLast, editing, onEdit, onCancelEdit, onChanged, onMove }: GoalCardProps): JSX.Element {
+function GoalCard({ goal, isFirst, isLast, editing, moveError, onEdit, onCancelEdit, onChanged, onMove }: GoalCardProps): JSX.Element {
   const [amount, setAmount] = useState('');
   const [adjError, setAdjError] = useState<string | null>(null);
   const [adjBusy, setAdjBusy] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  // Reschedule flow: open the edit form with the deadline field focused.
+  const [focusDeadline, setFocusDeadline] = useState(false);
+  const [movementsOpen, setMovementsOpen] = useState(false);
+  const [movements, setMovements] = useState<GoalAdjustment[] | null>(null);
+  const [movementsLoading, setMovementsLoading] = useState(false);
+  const [movementsError, setMovementsError] = useState<string | null>(null);
+  const confirmDeleteRef = useRef<HTMLButtonElement | null>(null);
+  const deleteTriggerRef = useRef<HTMLButtonElement | null>(null);
+  // The trigger unmounts while the prompt is open, so remember that the prompt
+  // was actually shown before sending focus back to the re-mounted button.
+  const wasConfirmingDeleteRef = useRef(false);
 
-  const percent = Math.min(100, Math.round((goal.totalMinor / goal.targetMinor) * 100));
+  const overdue = goal.deadline !== null && (goal.daysRemaining as number) < 0;
+
+  // Focus choreography: opening the prompt lands on its Borrar; cancelling
+  // (Cancelar or Escape) returns focus to the trigger that opened it.
+  useEffect(() => {
+    if (confirmingDelete) {
+      wasConfirmingDeleteRef.current = true;
+      confirmDeleteRef.current?.focus();
+      return;
+    }
+    if (wasConfirmingDeleteRef.current) {
+      wasConfirmingDeleteRef.current = false;
+      deleteTriggerRef.current?.focus();
+    }
+  }, [confirmingDelete]);
+
+  // The money sub shows the real funded percent (it can exceed 100); only the
+  // bar width saturates at 100.
+  const percent = Math.round((goal.totalMinor / goal.targetMinor) * 100);
+  const barPercent = Math.max(0, Math.min(100, percent));
+
+  async function loadMovements(): Promise<void> {
+    setMovementsLoading(true);
+    setMovementsError(null);
+    try {
+      setMovements(await api.listGoalAdjustments(goal.id));
+    } catch (err) {
+      setMovementsError(errorText(err));
+    } finally {
+      setMovementsLoading(false);
+    }
+  }
+
+  async function toggleMovements(): Promise<void> {
+    if (movementsOpen) {
+      setMovementsOpen(false);
+      return;
+    }
+    setMovementsOpen(true);
+    await loadMovements();
+  }
 
   async function adjust(kind: 'aporte' | 'retiro'): Promise<void> {
     const parsed = parseEsArAmount(amount);
@@ -58,6 +114,8 @@ function GoalCard({ goal, isFirst, isLast, editing, onEdit, onCancelEdit, onChan
       await api.addGoalAdjustment(goal.id, { kind, amountMinor: Math.round(parsed * 100) });
       setAmount('');
       onChanged();
+      // The open history is part of what the movement just changed.
+      if (movementsOpen) await loadMovements();
     } catch (err) {
       setAdjError(errorText(err));
     } finally {
@@ -74,29 +132,65 @@ function GoalCard({ goal, isFirst, isLast, editing, onEdit, onCancelEdit, onChan
     }
   }
 
+  function cancelDelete(): void {
+    // The effect above restores focus to the re-mounted trigger.
+    setConfirmingDelete(false);
+  }
+
   return (
     <article className="card goal-card" data-testid={`goal-${goal.id}`}>
       <div className="indicators-header">
         <h3>{goal.name}</h3>
-        <span className="badge ok">{goal.currency}</span>
+        <span className="goal-currency" data-testid={`goal-currency-${goal.id}`}>
+          {goal.currency}
+        </span>
         {goal.completed && (
           <span className="badge ok" data-testid={`goal-completed-${goal.id}`}>
             Completada
           </span>
         )}
       </div>
-      <p className="money" data-testid={`goal-progress-${goal.id}`}>
-        {money(goal.totalMinor, goal.currency)} de {money(goal.targetMinor, goal.currency)} ({percent}%)
+      <p className="goal-money" data-testid={`goal-progress-${goal.id}`}>
+        <span className="goal-money-total">{money(goal.totalMinor, goal.currency)}</span>{' '}
+        <span className="goal-money-sub">de {money(goal.targetMinor, goal.currency)} ({percent}%)</span>
       </p>
       <div className="progress-bar" aria-hidden="true">
-        <div className="progress-fill" style={{ width: `${percent}%` }} />
+        <div className="progress-fill" style={{ width: `${barPercent}%` }} />
       </div>
-      <p data-testid={`goal-split-${goal.id}`}>
+      <p className="goal-meta" data-testid={`goal-split-${goal.id}`}>
         Automático: {money(goal.automaticMinor, goal.currency)} · Manual: {money(goal.manualNetMinor, goal.currency)}
       </p>
       {goal.deadline !== null && (
-        <p data-testid={`goal-deadline-${goal.id}`}>
-          Límite: {formatDate(goal.deadline)} · {deadlineText(goal)}
+        <p className="goal-meta goal-deadline" data-testid={`goal-deadline-${goal.id}`}>
+          Límite: {formatDate(goal.deadline)}
+          {overdue && (
+            <>
+              {' '}
+              <span className="badge over" data-testid={`goal-overdue-${goal.id}`}>
+                Vencida
+              </span>
+            </>
+          )}
+          {' · '}
+          <span className={overdue ? 'goal-overdue-days' : undefined}>{deadlineDays(goal)}</span>
+          {' · '}
+          {deadlinePace(goal)}
+          {overdue && (
+            <>
+              {' · '}
+              <button
+                type="button"
+                className="link"
+                onClick={() => {
+                  setFocusDeadline(true);
+                  onEdit();
+                }}
+                data-testid={`goal-reschedule-${goal.id}`}
+              >
+                Reprogramar plazo
+              </button>
+            </>
+          )}
         </p>
       )}
       <div className="transaction-form">
@@ -105,14 +199,22 @@ function GoalCard({ goal, isFirst, isLast, editing, onEdit, onCancelEdit, onChan
           <input
             type="text"
             inputMode="decimal"
-            placeholder="10000"
+            placeholder="10.000"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
+            aria-invalid={adjError !== null ? true : undefined}
+            aria-describedby={adjError !== null ? `goal-adj-error-${goal.id}` : undefined}
             data-testid={`goal-amount-${goal.id}`}
           />
         </label>
         <div className="actions">
-          <button type="button" className="primary" disabled={adjBusy} onClick={() => void adjust('aporte')} data-testid={`goal-aporte-${goal.id}`}>
+          <button
+            type="button"
+            className="primary"
+            disabled={adjBusy || goal.completed}
+            onClick={() => void adjust('aporte')}
+            data-testid={`goal-aporte-${goal.id}`}
+          >
             Aportar
           </button>
           <button type="button" className="warning" disabled={adjBusy} onClick={() => void adjust('retiro')} data-testid={`goal-retiro-${goal.id}`}>
@@ -120,7 +222,7 @@ function GoalCard({ goal, isFirst, isLast, editing, onEdit, onCancelEdit, onChan
           </button>
         </div>
         {adjError && (
-          <div className="error-box" role="alert">
+          <div className="error-box" role="alert" id={`goal-adj-error-${goal.id}`}>
             {adjError}
           </div>
         )}
@@ -146,30 +248,98 @@ function GoalCard({ goal, isFirst, isLast, editing, onEdit, onCancelEdit, onChan
         >
           Bajar
         </button>
-        <button type="button" className="link muted" onClick={onEdit} data-testid={`goal-edit-${goal.id}`}>
+        <button
+          type="button"
+          className="link muted"
+          onClick={() => {
+            setFocusDeadline(false);
+            onEdit();
+          }}
+          data-testid={`goal-edit-${goal.id}`}
+        >
           Editar
         </button>
+        <button
+          type="button"
+          className="link muted"
+          aria-expanded={movementsOpen}
+          onClick={() => void toggleMovements()}
+          data-testid={`goal-movements-${goal.id}`}
+        >
+          {movementsOpen ? 'Ocultar movimientos' : 'Ver movimientos'}
+        </button>
         {confirmingDelete ? (
-          <span className="confirm-prompt" role="alert">
+          <span
+            className="confirm-prompt"
+            role="alert"
+            onKeyDown={(e) => {
+              // Escape belongs to the open prompt: cancel instead of letting
+              // the key bubble to any outer surface.
+              if (e.key === 'Escape') {
+                e.stopPropagation();
+                cancelDelete();
+              }
+            }}
+          >
             <span className="confirm-question">¿Borrar la meta?</span>
-            <button type="button" className="danger" onClick={() => void confirmDelete()} data-testid={`goal-confirm-delete-${goal.id}`}>
+            <span className="confirm-note">Se borrarán también los aportes registrados.</span>
+            <button
+              type="button"
+              className="danger"
+              ref={confirmDeleteRef}
+              onClick={() => void confirmDelete()}
+              data-testid={`goal-confirm-delete-${goal.id}`}
+            >
               Borrar
             </button>
-            <button type="button" className="link muted" onClick={() => setConfirmingDelete(false)} data-testid={`goal-cancel-delete-${goal.id}`}>
+            <button type="button" className="link muted" onClick={cancelDelete} data-testid={`goal-cancel-delete-${goal.id}`}>
               Cancelar
             </button>
           </span>
         ) : (
-          <button type="button" className="danger" onClick={() => setConfirmingDelete(true)} data-testid={`goal-delete-${goal.id}`}>
+          <button
+            type="button"
+            className="danger"
+            ref={deleteTriggerRef}
+            onClick={() => setConfirmingDelete(true)}
+            data-testid={`goal-delete-${goal.id}`}
+          >
             Borrar
           </button>
         )}
       </div>
+      {moveError && (
+        <div className="error-box" role="alert" data-testid={`move-error-${goal.id}`}>
+          {moveError}
+        </div>
+      )}
+      {movementsOpen && (
+        <div className="goal-movements">
+          {movementsLoading ? (
+            <p className="empty">Cargando…</p>
+          ) : movementsError ? (
+            <div className="error-box" role="alert">
+              {movementsError}
+            </div>
+          ) : (movements ?? []).length === 0 ? (
+            <p className="empty">Sin movimientos manuales.</p>
+          ) : (
+            (movements ?? []).map((adj) => (
+              <p className="goal-movement" key={adj.id}>
+                <span className="goal-movement-date">{formatDate(adj.createdAt)}</span> ·{' '}
+                {adj.amountMinor > 0 ? 'Aporte' : 'Retiro'}{' '}
+                <span className="goal-movement-amount">{money(Math.abs(adj.amountMinor), goal.currency)}</span>
+              </p>
+            ))
+          )}
+        </div>
+      )}
       {deleteError && <div className="error-box" role="alert">{deleteError}</div>}
       {editing && (
         <GoalForm
           key={`edit-${goal.id}`}
           initial={goal}
+          focusDeadline={focusDeadline}
           onSaved={() => {
             onCancelEdit();
             onChanged();
@@ -188,7 +358,15 @@ export default function GoalsPage({ active = true }: { active?: boolean }): JSX.
   const [tick, setTick] = useState(0);
   const goals = useApi(() => api.listGoals(), [tick], active);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [moveError, setMoveError] = useState<string | null>(null);
+  // A reorder failure belongs to the card whose Subir/Bajar started it.
+  const [moveError, setMoveError] = useState<{ goalId: number; message: string } | null>(null);
+  // null = no explicit user choice yet: the disclosure defaults open only when
+  // the loaded list is empty, closed when there are goals to show first.
+  const [creating, setCreating] = useState<boolean | null>(null);
+
+  const loaded = goals.data !== null;
+  const isEmpty = loaded && (goals.data ?? []).length === 0;
+  const formOpen = creating ?? isEmpty;
 
   const reload = (): void => setTick((t) => t + 1);
 
@@ -201,34 +379,52 @@ export default function GoalsPage({ active = true }: { active?: boolean }): JSX.
     const tmp = ids[idx] as number;
     ids[idx] = ids[swap] as number;
     ids[swap] = tmp;
+    // A new move supersedes the previous failure notice.
+    setMoveError(null);
     try {
       await api.reorderGoals(ids);
       setMoveError(null);
       reload();
     } catch (err) {
-      setMoveError(errorText(err));
+      setMoveError({ goalId: id, message: errorText(err) });
     }
   }
 
   return (
     <>
-      <section className="card">
-        <h2>Nueva meta</h2>
-        <GoalForm key="create" onSaved={() => reload()} />
-      </section>
       <section>
-        <h2>Mis metas</h2>
+        <div className="goal-list-header">
+          <h2>Mis metas</h2>
+          <button
+            type="button"
+            className={formOpen ? 'link muted' : 'link'}
+            aria-expanded={formOpen}
+            aria-controls="goal-create-form"
+            data-testid="goal-create-toggle"
+            onClick={() => setCreating(!formOpen)}
+          >
+            {formOpen ? 'Cancelar' : '+ Nueva meta'}
+          </button>
+        </div>
+        {/* The funding engine, stated once: automatic surplus vs manual movements. */}
+        <p className="goal-explainer">Automático: el excedente mensual repartido por prioridad · Manual: tus aportes y retiros.</p>
+        {formOpen && (
+          <div className="card" id="goal-create-form">
+            <GoalForm
+              key="create"
+              onSaved={() => {
+                setCreating(false);
+                reload();
+              }}
+            />
+          </div>
+        )}
         {goals.error && (
           <div className="error-box" role="alert">
             {goals.error}{' '}
             <button type="button" className="link" data-testid="retry-goals" onClick={() => goals.reload()}>
               Reintentar
             </button>
-          </div>
-        )}
-        {moveError && (
-          <div className="error-box" role="alert" data-testid="move-error">
-            {moveError}
           </div>
         )}
         {goals.loading && goals.data === null ? (
@@ -247,6 +443,7 @@ export default function GoalsPage({ active = true }: { active?: boolean }): JSX.
               isFirst={i === 0}
               isLast={i === list.length - 1}
               editing={editingId === goal.id}
+              moveError={moveError?.goalId === goal.id ? moveError.message : null}
               onEdit={() => setEditingId(goal.id)}
               onCancelEdit={() => setEditingId(null)}
               onChanged={reload}

@@ -178,6 +178,16 @@ export class InMemoryGoalAdjustmentRepository implements GoalAdjustmentRepositor
     return [...this.rows.values()];
   }
 
+  /** Mirrors the SQLite adapter: newest first (created_at DESC, id DESC). */
+  async listByGoal(goalId: number): Promise<GoalAdjustment[]> {
+    return [...this.rows.values()]
+      .filter((adj) => adj.goalId === goalId)
+      .sort((a, b) => {
+        if (a.createdAt !== b.createdAt) return a.createdAt < b.createdAt ? 1 : -1;
+        return (b.id ?? 0) - (a.id ?? 0);
+      });
+  }
+
   async deleteByGoal(goalId: number): Promise<void> {
     for (const [id, adj] of this.rows) {
       if (adj.goalId === goalId) this.rows.delete(id);

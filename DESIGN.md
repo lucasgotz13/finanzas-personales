@@ -67,7 +67,7 @@ components:
     backgroundColor: "{colors.danger}"
     textColor: "#ffffff"
     rounded: "{rounded.md}"
-    padding: "0.35rem 0.8rem"
+    padding: "0.5rem 1rem"
   button-danger-hover:
     backgroundColor: "{colors.danger-hover}"
   button-link:
@@ -139,6 +139,7 @@ A warm neutral system with one saturated action accent and a semantic red/amber 
 - **Danger Red** (#b3261e): destructive intent — Borrar buttons, over-budget badge text, error boxes. Hover darkens to #8f1c16.
 - **Danger Tint** (#fdecea): ground for danger chips, error boxes, and stale cards (border #f5c6c0).
 - **Warning Amber** (#b45309): REFERENCIA ANTIGUA (aged data) chip text, on Amber Tint (#fff4e5).
+- **Solid Borrar/Retirar Fills** (`--danger-fill` #b3261e, `--warn-fill` #b45309): solid destructive-button backgrounds with white text in both themes — the Danger Red and Warning Amber above stay text/chip colors on tinted grounds.
 - **OK Gray-Green Tint** (#eef2ee): ground for the "ok" chip and success box; its text is ink, deliberately NOT the action green.
 
 ### Neutral
@@ -173,6 +174,7 @@ The theme follows the system on first visit (`prefers-color-scheme`) and the hea
 - **Action Link Light** (#58c46f): action link text and the :focus-visible outline in dark.
 - **Danger Light** (#e57373) on **Danger Night Tint** (#3a2320), border **#6e3b35**.
 - **Warning Light** (#e0a458) on **Warning Night Tint** (#3a2f1e).
+- **Solid Button Fills** (`--danger-fill` #b3261e, `--warn-fill` #b45309): unchanged after dark; white text stays AA (≥4.5:1).
 - **OK Night Tint** (#232b23); its text stays the night ink.
 - **Disabled Night** (#3a362e): disabled primary buttons.
 - **Night Whisper** (`0 1px 3px rgba(0, 0, 0, 0.45)`): the one shadow token after dark.
@@ -233,7 +235,7 @@ A two-radius form language plus the pill: cards and indicator cards are gently c
 ### Buttons
 - **Shape:** 8px radius; flat (no shadow, no border).
 - **Primary:** Action Green (#0e7a3d) with white text, 600, padding 0.5rem 1rem. Hover darkens to #0b6634. Disabled turns warm gray (#d9d5cc) with muted text — never a faded green. 44px min-height on mobile.
-- **Danger:** Danger Red (#b3261e), white text, compact padding (0.35rem 0.8rem); hover #8f1c16. One consistent danger style everywhere (row Borrar, category delete).
+- **Danger:** Danger Red (#b3261e) with white text, primary-height padding (0.5rem 1rem); hover #8f1c16. One consistent danger style everywhere (row Borrar, category delete). Inside inline confirm strips it takes the compact form (0.85rem text, 0.35rem 0.8rem padding) so the question never outweighs its answer.
 - **Link:** borderless, underlined text button at 0.85rem. Green (#0e7a3d) when it performs an action (Renombrar, Restaurar); muted (#595959 → ink on hover) when it navigates or cancels (Editar, Cancelar). Green on the first viewport is Guardar only.
 
 ### Chips
@@ -260,6 +262,9 @@ A two-radius form language plus the pill: cards and indicator cards are gently c
 
 ### The Money Card (signature)
 The first card on the Transacciones page. A muted 1rem/600 heading ("Total del mes"), then per-currency totals: 0.8rem muted currency label above a 1.5rem/700 tabular figure. The month total is the loudest number on the screen — the thesis made visible.
+
+### The Goal Card (signature)
+The Metas tab's card: the goal name (1rem/600) with a plain uppercase currency label (not a chip — state lives in chips), then the funded amount at the display step (1.5rem/700 → 1.4rem mobile, tabular) with `de $X (N%)` muted beside it. Progress is an ink-on-gray-green bar (8px pill, no hover lift) whose width saturates at 100% while the percent stays honest (over-funding reads 108%). The automatic/manual split and the deadline line sit at 0.8rem muted on tabular figures. An overdue goal carries an `over` VENCIDA chip on the deadline line, its day count in `--danger`, and a `Reprogramar plazo` action link that opens the edit form focused on the date. The page carries one explainer line for the model (automatic monthly surplus by priority vs manual aportes/retiros), and each card can disclose its manual movement history (`Ver movimientos`).
 
 ### The Inline Confirm Prompt (signature)
 Destructive confirmations happen in the row, never in a modal: a 600-weight question ("¿Borrar la transacción?") with a 0.75rem muted consequence note, a compact danger button, and a muted cancel link. Light tasks stay light.

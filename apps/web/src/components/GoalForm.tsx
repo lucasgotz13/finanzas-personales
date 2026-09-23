@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { api, translateActionError } from '../api';
 import { parseEsArAmount } from '../amount';
 import type { CreateGoalInput, GoalView, UpdateGoalInput } from '../types';
@@ -8,9 +8,14 @@ export interface GoalFormProps {
   initial?: GoalView;
   onSaved: (goal: GoalView) => void;
   onCancel?: () => void;
+  /** Reschedule flow: focus the deadline field when the form opens. */
+  focusDeadline?: boolean;
 }
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+/** Fields the submit-time validation can mark: exactly the inputs that failed. */
+type InvalidField = 'name' | 'target' | 'deadline';
 
 function isValidDate(value: string): boolean {
   if (!DATE_RE.test(value)) return false;
@@ -22,19 +27,28 @@ function isValidDate(value: string): boolean {
 /** Savings-goal create/edit form: name, target, currency and optional deadline.
  * The running total is never an input here — progress only moves through the
  * automatic surplus and the per-goal aportar/retirar buttons. */
-export default function GoalForm({ initial, onSaved, onCancel }: GoalFormProps): JSX.Element {
+export default function GoalForm({ initial, onSaved, onCancel, focusDeadline = false }: GoalFormProps): JSX.Element {
   const [name, setName] = useState(initial?.name ?? '');
   const [target, setTarget] = useState(initial ? String(initial.targetMinor / 100) : '');
   const [currency, setCurrency] = useState<'ARS' | 'USD'>(initial?.currency ?? 'ARS');
   const [deadline, setDeadline] = useState(initial?.deadline ?? '');
   const [errors, setErrors] = useState<string[]>([]);
+  const [invalidFields, setInvalidFields] = useState<InvalidField[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const nameRef = useRef<HTMLInputElement>(null);
+  const targetRef = useRef<HTMLInputElement>(null);
+  const deadlineRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (focusDeadline) deadlineRef.current?.focus();
+  }, [focusDeadline]);
 
   function resetForm(): void {
     setName('');
     setTarget('');
     setDeadline('');
     setErrors([]);
+    setInvalidFields([]);
   }
 
   function errorText(err: unknown): string {
@@ -44,15 +58,32 @@ export default function GoalForm({ initial, onSaved, onCancel }: GoalFormProps):
   async function handleSubmit(e: React.FormEvent): Promise<void> {
     e.preventDefault();
     const details: string[] = [];
-    if (name.trim() === '') details.push('El nombre es obligatorio.');
+    const invalid: InvalidField[] = [];
+    if (name.trim() === '') {
+      details.push('El nombre es obligatorio.');
+      invalid.push('name');
+    }
     const parsed = parseEsArAmount(target);
-    if (parsed === null || parsed <= 0) details.push('El objetivo debe ser un monto positivo.');
-    if (deadline !== '' && !isValidDate(deadline)) details.push('La fecha límite debe ser una fecha válida.');
-    if (details.length > 0) {
+    if (parsed === null || parsed <= 0) {
+      details.push('El objetivo debe ser un monto positivo.');
+      invalid.push('target');
+    }
+    if (deadline !== '' && !isValidDate(deadline)) {
+      details.push('La fecha límite debe ser una fecha válida.');
+      invalid.push('deadline');
+    }
+    if (invalid.length > 0) {
       setErrors(details);
+      setInvalidFields(invalid);
+      // Land on the first field that needs fixing.
+      const first = invalid[0];
+      if (first === 'name') nameRef.current?.focus();
+      else if (first === 'target') targetRef.current?.focus();
+      else deadlineRef.current?.focus();
       return;
     }
     setErrors([]);
+    setInvalidFields([]);
     setSubmitting(true);
     try {
       const targetMinor = Math.round((parsed as number) * 100);
@@ -79,6 +110,12 @@ export default function GoalForm({ initial, onSaved, onCancel }: GoalFormProps):
     }
   }
 
+  const nameInvalid = invalidFields.includes('name');
+  const targetInvalid = invalidFields.includes('target');
+  const deadlineInvalid = invalidFields.includes('deadline');
+  // Unique per instance: a create form and an edit form can coexist.
+  const errorsId = `goal-form-errors-${initial?.id ?? 'new'}`;
+
   function handleCancel(): void {
     onCancel?.();
     resetForm();
@@ -89,21 +126,27 @@ export default function GoalForm({ initial, onSaved, onCancel }: GoalFormProps):
       <label>
         Nombre
         <input
+          ref={nameRef}
           type="text"
           placeholder="Viaje a Bariloche"
           value={name}
           onChange={(e) => setName(e.target.value)}
+          aria-invalid={nameInvalid ? true : undefined}
+          aria-describedby={nameInvalid ? errorsId : undefined}
           data-testid="goal-name"
         />
       </label>
       <label>
         Objetivo ({currency})
         <input
+          ref={targetRef}
           type="text"
           inputMode="decimal"
-          placeholder="500000"
+          placeholder="500.000"
           value={target}
           onChange={(e) => setTarget(e.target.value)}
+          aria-invalid={targetInvalid ? true : undefined}
+          aria-describedby={targetInvalid ? errorsId : undefined}
           data-testid="goal-target"
         />
       </label>
@@ -116,7 +159,15 @@ export default function GoalForm({ initial, onSaved, onCancel }: GoalFormProps):
       </label>
       <label>
         Fecha límite (opcional)
-        <input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} data-testid="goal-deadline" />
+        <input
+          ref={deadlineRef}
+          type="date"
+          value={deadline}
+          onChange={(e) => setDeadline(e.target.value)}
+          aria-invalid={deadlineInvalid ? true : undefined}
+          aria-describedby={deadlineInvalid ? errorsId : undefined}
+          data-testid="goal-deadline"
+        />
       </label>
       <div className="actions">
         <button type="submit" className="primary" disabled={submitting} data-testid="goal-submit">
@@ -129,7 +180,7 @@ export default function GoalForm({ initial, onSaved, onCancel }: GoalFormProps):
         )}
       </div>
       {errors.length > 0 && (
-        <div className="error-box" role="alert">
+        <div className="error-box" role="alert" id={errorsId}>
           {errors.map((err) => (
             <div key={err}>{err}</div>
           ))}
