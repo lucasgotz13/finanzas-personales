@@ -101,7 +101,7 @@ export default function GoalForm({ initial, onSaved, onCancel }: GoalFormProps):
         <input
           type="text"
           inputMode="decimal"
-          placeholder="500000"
+          placeholder="500.000"
           value={target}
           onChange={(e) => setTarget(e.target.value)}
           data-testid="goal-target"

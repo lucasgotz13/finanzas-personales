@@ -77,6 +77,26 @@ describe('GoalsPage', () => {
     expect(await screen.findByTestId('goals-empty')).toHaveTextContent('Aún no hay metas');
   });
 
+  it('keeps the create form behind the disclosure when there are goals', async () => {
+    mockList();
+    const user = userEvent.setup();
+    render(<GoalsPage />);
+    await screen.findByTestId('goal-1');
+
+    // Goals exist: the list leads and the form stays closed behind the toggle.
+    expect(screen.queryByTestId('goal-name')).not.toBeInTheDocument();
+    const toggle = screen.getByTestId('goal-create-toggle');
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+
+    await user.click(toggle);
+    expect(await screen.findByTestId('goal-name')).toBeInTheDocument();
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+
+    await user.click(toggle);
+    expect(screen.queryByTestId('goal-name')).not.toBeInTheDocument();
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  });
+
   it('replaces the fetch error with the goals list after a successful retry', async () => {
     const listGoals = vi.spyOn(api, 'listGoals').mockRejectedValueOnce(new Error('metas caídas')).mockResolvedValue([goalA, goalB]);
     const user = userEvent.setup();

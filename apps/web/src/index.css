@@ -159,6 +159,7 @@ button.primary {
   border-radius: 8px;
   padding: 0.5rem 1rem;
   cursor: pointer;
+  font-size: 1rem;
   font-weight: 600;
 }
 
@@ -321,6 +322,49 @@ form.transaction-form .actions {
   align-items: center;
 }
 
+/* Goal list header: section title + create disclosure control on one row. */
+.goal-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.goal-list-header h2 {
+  margin: 0;
+}
+
+/* Goal card typography: the amount leads, metadata follows (Loudness Ladder). */
+.goal-card .indicators-header h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.goal-money {
+  margin: 0 0 0.25rem;
+}
+
+.goal-money-total {
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.goal-money-sub {
+  font-size: 0.85rem;
+  color: var(--muted-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.goal-meta {
+  margin: 0.25rem 0 0;
+  font-size: 0.8rem;
+  color: var(--muted-text);
+  font-variant-numeric: tabular-nums;
+}
+
 /* One consistent danger style everywhere (Borrar, category delete, goal
    retiro): same padding as primary so solid buttons share one height. */
 button.danger {
@@ -330,6 +374,8 @@ button.danger {
   border-radius: 8px;
   padding: 0.5rem 1rem;
   cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
 }
 
 button.danger:hover:not(:disabled) {
@@ -345,6 +391,7 @@ button.warning {
   border-radius: 8px;
   padding: 0.5rem 1rem;
   cursor: pointer;
+  font-size: 1rem;
   font-weight: 600;
 }
 
@@ -1187,6 +1234,10 @@ tr.asset-chart-row td {
   }
 
   .total .total-amount {
+    font-size: 1.4rem;
+  }
+
+  .goal-money-total {
     font-size: 1.4rem;
   }
 

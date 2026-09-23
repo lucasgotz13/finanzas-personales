@@ -85,17 +85,18 @@ function GoalCard({ goal, isFirst, isLast, editing, onEdit, onCancelEdit, onChan
           </span>
         )}
       </div>
-      <p className="money" data-testid={`goal-progress-${goal.id}`}>
-        {money(goal.totalMinor, goal.currency)} de {money(goal.targetMinor, goal.currency)} ({percent}%)
+      <p className="goal-money" data-testid={`goal-progress-${goal.id}`}>
+        <span className="goal-money-total">{money(goal.totalMinor, goal.currency)}</span>{' '}
+        <span className="goal-money-sub">de {money(goal.targetMinor, goal.currency)} ({percent}%)</span>
       </p>
       <div className="progress-bar" aria-hidden="true">
         <div className="progress-fill" style={{ width: `${percent}%` }} />
       </div>
-      <p data-testid={`goal-split-${goal.id}`}>
+      <p className="goal-meta" data-testid={`goal-split-${goal.id}`}>
         Automático: {money(goal.automaticMinor, goal.currency)} · Manual: {money(goal.manualNetMinor, goal.currency)}
       </p>
       {goal.deadline !== null && (
-        <p data-testid={`goal-deadline-${goal.id}`}>
+        <p className="goal-meta" data-testid={`goal-deadline-${goal.id}`}>
           Límite: {formatDate(goal.deadline)} · {deadlineText(goal)}
         </p>
       )}
@@ -105,7 +106,7 @@ function GoalCard({ goal, isFirst, isLast, editing, onEdit, onCancelEdit, onChan
           <input
             type="text"
             inputMode="decimal"
-            placeholder="10000"
+            placeholder="10.000"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             data-testid={`goal-amount-${goal.id}`}
@@ -189,6 +190,13 @@ export default function GoalsPage({ active = true }: { active?: boolean }): JSX.
   const goals = useApi(() => api.listGoals(), [tick], active);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [moveError, setMoveError] = useState<string | null>(null);
+  // null = no explicit user choice yet: the disclosure defaults open only when
+  // the loaded list is empty, closed when there are goals to show first.
+  const [creating, setCreating] = useState<boolean | null>(null);
+
+  const loaded = goals.data !== null;
+  const isEmpty = loaded && (goals.data ?? []).length === 0;
+  const formOpen = creating ?? isEmpty;
 
   const reload = (): void => setTick((t) => t + 1);
 
@@ -212,12 +220,31 @@ export default function GoalsPage({ active = true }: { active?: boolean }): JSX.
 
   return (
     <>
-      <section className="card">
-        <h2>Nueva meta</h2>
-        <GoalForm key="create" onSaved={() => reload()} />
-      </section>
       <section>
-        <h2>Mis metas</h2>
+        <div className="goal-list-header">
+          <h2>Mis metas</h2>
+          <button
+            type="button"
+            className={formOpen ? 'link muted' : 'link'}
+            aria-expanded={formOpen}
+            aria-controls="goal-create-form"
+            data-testid="goal-create-toggle"
+            onClick={() => setCreating(!formOpen)}
+          >
+            {formOpen ? 'Cancelar' : '+ Nueva meta'}
+          </button>
+        </div>
+        {formOpen && (
+          <div className="card" id="goal-create-form">
+            <GoalForm
+              key="create"
+              onSaved={() => {
+                setCreating(false);
+                reload();
+              }}
+            />
+          </div>
+        )}
         {goals.error && (
           <div className="error-box" role="alert">
             {goals.error}{' '}
