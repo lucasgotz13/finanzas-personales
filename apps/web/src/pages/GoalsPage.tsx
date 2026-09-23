@@ -3,7 +3,7 @@ import { api, translateActionError } from '../api';
 import { parseEsArAmount } from '../amount';
 import { formatDate } from '../dates';
 import { useApi } from '../hooks/useApi';
-import type { GoalView } from '../types';
+import type { GoalAdjustment, GoalView } from '../types';
 import GoalForm from '../components/GoalForm';
 
 function money(minor: number, currency: 'ARS' | 'USD'): string {
@@ -48,10 +48,38 @@ function GoalCard({ goal, isFirst, isLast, editing, onEdit, onCancelEdit, onChan
   const [deleteError, setDeleteError] = useState<string | null>(null);
   // Reschedule flow: open the edit form with the deadline field focused.
   const [focusDeadline, setFocusDeadline] = useState(false);
+  const [movementsOpen, setMovementsOpen] = useState(false);
+  const [movements, setMovements] = useState<GoalAdjustment[] | null>(null);
+  const [movementsLoading, setMovementsLoading] = useState(false);
+  const [movementsError, setMovementsError] = useState<string | null>(null);
 
   const overdue = goal.deadline !== null && (goal.daysRemaining as number) < 0;
 
-  const percent = Math.min(100, Math.round((goal.totalMinor / goal.targetMinor) * 100));
+  // The money sub shows the real funded percent (it can exceed 100); only the
+  // bar width saturates at 100.
+  const percent = Math.round((goal.totalMinor / goal.targetMinor) * 100);
+  const barPercent = Math.max(0, Math.min(100, percent));
+
+  async function loadMovements(): Promise<void> {
+    setMovementsLoading(true);
+    setMovementsError(null);
+    try {
+      setMovements(await api.listGoalAdjustments(goal.id));
+    } catch (err) {
+      setMovementsError(errorText(err));
+    } finally {
+      setMovementsLoading(false);
+    }
+  }
+
+  async function toggleMovements(): Promise<void> {
+    if (movementsOpen) {
+      setMovementsOpen(false);
+      return;
+    }
+    setMovementsOpen(true);
+    await loadMovements();
+  }
 
   async function adjust(kind: 'aporte' | 'retiro'): Promise<void> {
     const parsed = parseEsArAmount(amount);
@@ -65,6 +93,8 @@ function GoalCard({ goal, isFirst, isLast, editing, onEdit, onCancelEdit, onChan
       await api.addGoalAdjustment(goal.id, { kind, amountMinor: Math.round(parsed * 100) });
       setAmount('');
       onChanged();
+      // The open history is part of what the movement just changed.
+      if (movementsOpen) await loadMovements();
     } catch (err) {
       setAdjError(errorText(err));
     } finally {
@@ -99,7 +129,7 @@ function GoalCard({ goal, isFirst, isLast, editing, onEdit, onCancelEdit, onChan
         <span className="goal-money-sub">de {money(goal.targetMinor, goal.currency)} ({percent}%)</span>
       </p>
       <div className="progress-bar" aria-hidden="true">
-        <div className="progress-fill" style={{ width: `${percent}%` }} />
+        <div className="progress-fill" style={{ width: `${barPercent}%` }} />
       </div>
       <p className="goal-meta" data-testid={`goal-split-${goal.id}`}>
         Automático: {money(goal.automaticMinor, goal.currency)} · Manual: {money(goal.manualNetMinor, goal.currency)}
@@ -150,7 +180,13 @@ function GoalCard({ goal, isFirst, isLast, editing, onEdit, onCancelEdit, onChan
           />
         </label>
         <div className="actions">
-          <button type="button" className="primary" disabled={adjBusy} onClick={() => void adjust('aporte')} data-testid={`goal-aporte-${goal.id}`}>
+          <button
+            type="button"
+            className="primary"
+            disabled={adjBusy || goal.completed}
+            onClick={() => void adjust('aporte')}
+            data-testid={`goal-aporte-${goal.id}`}
+          >
             Aportar
           </button>
           <button type="button" className="warning" disabled={adjBusy} onClick={() => void adjust('retiro')} data-testid={`goal-retiro-${goal.id}`}>
@@ -195,6 +231,15 @@ function GoalCard({ goal, isFirst, isLast, editing, onEdit, onCancelEdit, onChan
         >
           Editar
         </button>
+        <button
+          type="button"
+          className="link muted"
+          aria-expanded={movementsOpen}
+          onClick={() => void toggleMovements()}
+          data-testid={`goal-movements-${goal.id}`}
+        >
+          {movementsOpen ? 'Ocultar movimientos' : 'Ver movimientos'}
+        </button>
         {confirmingDelete ? (
           <span className="confirm-prompt" role="alert">
             <span className="confirm-question">¿Borrar la meta?</span>
@@ -211,6 +256,27 @@ function GoalCard({ goal, isFirst, isLast, editing, onEdit, onCancelEdit, onChan
           </button>
         )}
       </div>
+      {movementsOpen && (
+        <div className="goal-movements">
+          {movementsLoading ? (
+            <p className="empty">Cargando…</p>
+          ) : movementsError ? (
+            <div className="error-box" role="alert">
+              {movementsError}
+            </div>
+          ) : (movements ?? []).length === 0 ? (
+            <p className="empty">Sin movimientos manuales.</p>
+          ) : (
+            (movements ?? []).map((adj) => (
+              <p className="goal-movement" key={adj.id}>
+                <span className="goal-movement-date">{formatDate(adj.createdAt)}</span> ·{' '}
+                {adj.amountMinor > 0 ? 'Aporte' : 'Retiro'}{' '}
+                <span className="goal-movement-amount">{money(Math.abs(adj.amountMinor), goal.currency)}</span>
+              </p>
+            ))
+          )}
+        </div>
+      )}
       {deleteError && <div className="error-box" role="alert">{deleteError}</div>}
       {editing && (
         <GoalForm
@@ -280,6 +346,8 @@ export default function GoalsPage({ active = true }: { active?: boolean }): JSX.
             {formOpen ? 'Cancelar' : '+ Nueva meta'}
           </button>
         </div>
+        {/* The funding engine, stated once: automatic surplus vs manual movements. */}
+        <p className="goal-explainer">Automático: el excedente mensual repartido por prioridad · Manual: tus aportes y retiros.</p>
         {formOpen && (
           <div className="card" id="goal-create-form">
             <GoalForm

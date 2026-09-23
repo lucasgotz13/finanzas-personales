@@ -51,6 +51,16 @@ const goalOverdue: GoalView = {
   requiredPaceMinor: 68000000,
 };
 
+const goalOverFunded: GoalView = {
+  ...goalA,
+  id: 4,
+  completed: true,
+  automaticMinor: 80000,
+  manualNetMinor: 28000,
+  totalMinor: 108000,
+  remainingMinor: 0,
+};
+
 function mockList(goals: GoalView[] = [goalA, goalB]): void {
   vi.spyOn(api, 'listGoals').mockResolvedValue(goals);
 }
@@ -255,5 +265,88 @@ describe('GoalsPage', () => {
     expect(deleteGoal).not.toHaveBeenCalled();
     await user.click(screen.getByTestId('goal-confirm-delete-1'));
     expect(deleteGoal).toHaveBeenCalledWith(1);
+  });
+
+  it('states the funding engine once under the list header', async () => {
+    mockList();
+    render(<GoalsPage />);
+    await screen.findByTestId('goal-1');
+    expect(
+      screen.getByText('Automático: el excedente mensual repartido por prioridad · Manual: tus aportes y retiros.'),
+    ).toBeInTheDocument();
+  });
+
+  it('disables Aportar on a completed goal', async () => {
+    mockList();
+    render(<GoalsPage />);
+    await screen.findByTestId('goal-2');
+    expect(screen.getByTestId('goal-aporte-2')).toBeDisabled();
+    expect(screen.getByTestId('goal-aporte-1')).toBeEnabled();
+  });
+
+  it('shows the real funded percent when the money exceeds the target and caps only the bar', async () => {
+    mockList([goalOverFunded]);
+    render(<GoalsPage />);
+    expect(await screen.findByTestId('goal-progress-4')).toHaveTextContent('de $ 1.000,00 (108%)');
+    expect(screen.getByTestId('goal-4').querySelector('.progress-fill')).toHaveStyle({ width: '100%' });
+  });
+
+  it('opens the movement history with newest-first aportes and retiros', async () => {
+    mockList([goalA]);
+    vi.spyOn(api, 'listGoalAdjustments').mockResolvedValue([
+      { id: 12, goalId: 1, amountMinor: 10000, createdAt: '2026-08-10T12:00:00.000Z' },
+      { id: 11, goalId: 1, amountMinor: -3000, createdAt: '2026-08-08T12:00:00.000Z' },
+    ]);
+    const user = userEvent.setup();
+    render(<GoalsPage />);
+    await screen.findByTestId('goal-1');
+
+    const toggle = screen.getByTestId('goal-movements-1');
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(toggle).toHaveTextContent('Ver movimientos');
+
+    await user.click(toggle);
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    expect(toggle).toHaveTextContent('Ocultar movimientos');
+
+    const rows = await waitFor(() => {
+      const found = screen.getByTestId('goal-1').querySelectorAll('.goal-movement');
+      expect(found).toHaveLength(2);
+      return found;
+    });
+    expect(rows[0]).toHaveTextContent('10/08/2026 · Aporte $ 100,00');
+    expect(rows[1]).toHaveTextContent('08/08/2026 · Retiro $ 30,00');
+  });
+
+  it('refetches the open movement history after a movement', async () => {
+    mockList([goalA]);
+    const listAdjustments = vi.spyOn(api, 'listGoalAdjustments').mockResolvedValue([]);
+    vi.spyOn(api, 'addGoalAdjustment').mockResolvedValue({
+      id: 13,
+      goalId: 1,
+      amountMinor: 50000,
+      createdAt: '2026-08-08T12:00:00.000Z',
+    });
+    const user = userEvent.setup();
+    render(<GoalsPage />);
+    await screen.findByTestId('goal-1');
+
+    await user.click(screen.getByTestId('goal-movements-1'));
+    expect(await screen.findByText('Sin movimientos manuales.')).toBeInTheDocument();
+
+    await user.type(screen.getByTestId('goal-amount-1'), '500');
+    await user.click(screen.getByTestId('goal-aporte-1'));
+    await waitFor(() => expect(listAdjustments).toHaveBeenCalledTimes(2));
+  });
+
+  it('shows the movement history error in an alert box', async () => {
+    mockList([goalA]);
+    vi.spyOn(api, 'listGoalAdjustments').mockRejectedValue(new Error('movimientos caídos'));
+    const user = userEvent.setup();
+    render(<GoalsPage />);
+    await screen.findByTestId('goal-1');
+
+    await user.click(screen.getByTestId('goal-movements-1'));
+    expect(await screen.findByRole('alert')).toHaveTextContent('movimientos caídos');
   });
 });

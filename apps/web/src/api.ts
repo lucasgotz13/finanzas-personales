@@ -357,6 +357,9 @@ export const api = {
   addGoalAdjustment(id: number, input: GoalAdjustmentInput): Promise<GoalAdjustment> {
     return request(`/goals/${id}/adjustments`, { method: 'POST', body: JSON.stringify(input) });
   },
+  listGoalAdjustments(id: number): Promise<GoalAdjustment[]> {
+    return request(`/goals/${id}/adjustments`);
+  },
   reorderGoals(ids: number[]): Promise<GoalView[]> {
     return request('/goals/order', { method: 'PUT', body: JSON.stringify({ ids }) });
   },

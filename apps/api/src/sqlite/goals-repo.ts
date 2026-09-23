@@ -99,6 +99,14 @@ export class SqliteGoalAdjustmentRepository implements GoalAdjustmentRepository 
     return result.rows.map((row) => toAdjustment(toObject(row, result.columns) as unknown as GoalAdjustmentRow));
   }
 
+  async listByGoal(goalId: number): Promise<GoalAdjustment[]> {
+    const result = await this.db.execute({
+      sql: 'SELECT * FROM goal_adjustments WHERE goal_id = ? ORDER BY created_at DESC, id DESC',
+      args: [goalId],
+    });
+    return result.rows.map((row) => toAdjustment(toObject(row, result.columns) as unknown as GoalAdjustmentRow));
+  }
+
   async deleteByGoal(goalId: number): Promise<void> {
     await this.db.execute({ sql: 'DELETE FROM goal_adjustments WHERE goal_id = ?', args: [goalId] });
   }

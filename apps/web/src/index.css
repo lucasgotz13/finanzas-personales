@@ -339,6 +339,13 @@ form.transaction-form .actions {
   margin: 0;
 }
 
+/* The funding engine, stated once under the header (automatic vs manual). */
+.goal-explainer {
+  color: var(--muted-text);
+  font-size: 0.8rem;
+  margin: 0 0 0.75rem;
+}
+
 /* Goal card typography: the amount leads, metadata follows (Loudness Ladder). */
 .goal-card .indicators-header h3 {
   font-size: 1rem;
@@ -387,6 +394,34 @@ form.transaction-form .actions {
 .goal-deadline .badge {
   display: inline-block;
   vertical-align: -1px;
+}
+
+/* Per-goal manual movement history (Ver movimientos): newest first, one row
+   per movement with the date muted and the amount on tabular figures. */
+.goal-movements {
+  font-size: 0.8rem;
+  margin-top: 0.5rem;
+}
+
+.goal-movement {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  margin: 0.15rem 0;
+  font-size: 0.8rem;
+}
+
+.goal-movement-date {
+  color: var(--muted-text);
+}
+
+.goal-movement-amount {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Row-action links stay whole words when the strip wraps on phones. */
+.goal-card .row-actions .link {
+  white-space: nowrap;
 }
 
 /* One consistent danger style everywhere (Borrar, category delete, goal

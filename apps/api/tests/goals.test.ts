@@ -103,6 +103,31 @@ describe('goal adjustments (aportes/retiros)', () => {
   });
 });
 
+describe('goal adjustment history', () => {
+  it('lists the movements newest first with their signs', async () => {
+    env = await createTestApp();
+    const app = env.app;
+    const id = await createGoal(app, { name: 'Viaje', targetMinor: 100000, currency: 'ARS' });
+    await request(app).post(`/api/v1/goals/${id}/adjustments`).send({ kind: 'aporte', amountMinor: 10000 });
+    env.clock.advance(1000);
+    await request(app).post(`/api/v1/goals/${id}/adjustments`).send({ kind: 'retiro', amountMinor: 3000 });
+
+    const res = await request(app).get(`/api/v1/goals/${id}/adjustments`);
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveLength(2);
+    expect(res.body.map((a: { amountMinor: number }) => a.amountMinor)).toEqual([-3000, 10000]);
+    expect(res.body[0]).toMatchObject({ goalId: id, amountMinor: -3000 });
+    expect(res.body[1]).toMatchObject({ goalId: id, amountMinor: 10000 });
+  });
+
+  it('returns 404 for an unknown goal and 422 for an invalid id', async () => {
+    env = await createTestApp();
+    const app = env.app;
+    expect((await request(app).get('/api/v1/goals/999/adjustments')).status).toBe(404);
+    expect((await request(app).get('/api/v1/goals/abc/adjustments')).status).toBe(422);
+  });
+});
+
 describe('goal automatic progress', () => {
   it('fills from the per-currency surplus since creation, ignoring older transactions', async () => {
     env = await createTestApp();

@@ -182,6 +182,24 @@ describe('GoalService manual adjustments', () => {
   });
 });
 
+describe('GoalService adjustment history', () => {
+  it('returns the stored movements newest first and rejects an unknown goal', async () => {
+    const env = build('2026-08-01T12:00:00.000Z');
+    const goal = await env.service.create({ name: 'Viaje', targetMinor: 100000, currency: 'ARS' });
+    const id = goal.id as number;
+    await env.service.addAdjustment(id, 'aporte', 10000);
+    env.clock.set(new Date('2026-08-02T12:00:00.000Z'));
+    await env.service.addAdjustment(id, 'retiro', 3000);
+
+    const stored = await env.adjustments.listByGoal(id);
+    const movements = await env.service.listAdjustments(id);
+    // The service returns the repository result untouched, newest first.
+    expect(movements).toEqual(stored);
+    expect(movements.map((m) => m.amountMinor)).toEqual([-3000, 10000]);
+    await expect(env.service.listAdjustments(999)).rejects.toThrow('Goal 999 not found');
+  });
+});
+
 describe('GoalService reorder', () => {
   it('moves the surplus stream to the newly first goal', async () => {
     const env = build('2026-08-01T12:00:00.000Z');

@@ -178,6 +178,13 @@ export class GoalService {
     return this.deps.adjustments.create(adjustment);
   }
 
+  /** Manual movements of one goal, newest first; unknown goals are a 404. */
+  async listAdjustments(goalId: number): Promise<GoalAdjustment[]> {
+    const goal = await this.deps.goals.findById(goalId);
+    if (!goal) throw new NotFoundError(`Goal ${goalId} not found`);
+    return this.deps.adjustments.listByGoal(goalId);
+  }
+
   /** All goals in priority order with derived progress (automatic + manual split). */
   async list(): Promise<GoalView[]> {
     const goals = orderGoals(await this.deps.goals.listAll());
