@@ -1,5 +1,5 @@
 import { arDateString } from '@finanzas/domain';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { api, categoryNameMap, translateApiMessage } from '../api';
 import { formatMonth } from '../dates';
 import { useApi } from '../hooks/useApi';
@@ -20,6 +20,7 @@ export default function TransactionsPage({ active = true }: { active?: boolean }
   const [editing, setEditing] = useState<ApiTransaction | null>(null);
   const [confirmingId, setConfirmingId] = useState<number | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const formCardRef = useRef<HTMLElement | null>(null);
 
   const categories = useApi(() => api.getCategoryTree(), [], active);
   const transactions = useApi(
@@ -74,6 +75,14 @@ export default function TransactionsPage({ active = true }: { active?: boolean }
     setEditing(tx);
     setConfirmingId(null);
     setDeleteError(null);
+    // Mobile UX: the form sits at the top of the page, so tapping Editar on a
+    // row further down scrolls it into view instead of asking for a manual
+    // swipe back up. Reduced motion gets an instant jump.
+    const card = formCardRef.current;
+    if (card) {
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      card.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+    }
   }
 
   function handleDelete(tx: ApiTransaction): void {
@@ -115,7 +124,7 @@ export default function TransactionsPage({ active = true }: { active?: boolean }
           </div>
         )}
       </section>
-      <section className="card">
+      <section className="card" ref={formCardRef} data-testid="transaction-form-card">
         <h2>{editing ? 'Editar transacción' : 'Registrar transacción'}</h2>
         <TransactionForm
           key={editing?.id ?? 'create'}

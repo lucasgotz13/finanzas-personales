@@ -123,6 +123,39 @@ describe('TransactionsPage', () => {
     expect(screen.queryByTestId('cancel')).not.toBeInTheDocument();
   });
 
+  it('scrolls the form into view when Editar is clicked (mobile UX)', async () => {
+    vi.spyOn(api, 'getCategoryTree').mockResolvedValue(categories);
+    vi.spyOn(api, 'listTransactions').mockResolvedValue(transactions);
+    const scrollSpy = vi.spyOn(Element.prototype, 'scrollIntoView');
+
+    const user = userEvent.setup();
+    render(<TransactionsPage />);
+    await within(await listTable()).findByText(/\$\s*150,00/);
+
+    await user.click(screen.getByRole('button', { name: 'Editar' }));
+
+    // The form card is the scroll target: editing a row further down must not
+    // require a manual scroll back to the top.
+    expect(scrollSpy).toHaveBeenCalledTimes(1);
+    expect(scrollSpy).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' });
+    expect(scrollSpy.mock.contexts[0]).toBe(screen.getByTestId('transaction-form-card'));
+  });
+
+  it('jumps instantly when the user prefers reduced motion', async () => {
+    vi.spyOn(api, 'getCategoryTree').mockResolvedValue(categories);
+    vi.spyOn(api, 'listTransactions').mockResolvedValue(transactions);
+    vi.spyOn(window, 'matchMedia').mockReturnValue({ matches: true } as MediaQueryList);
+    const scrollSpy = vi.spyOn(Element.prototype, 'scrollIntoView');
+
+    const user = userEvent.setup();
+    render(<TransactionsPage />);
+    await within(await listTable()).findByText(/\$\s*150,00/);
+
+    await user.click(screen.getByRole('button', { name: 'Editar' }));
+
+    expect(scrollSpy).toHaveBeenCalledWith({ behavior: 'auto', block: 'start' });
+  });
+
   it('deletes a row after inline confirmation', async () => {
     vi.spyOn(api, 'getCategoryTree').mockResolvedValue(categories);
     vi.spyOn(api, 'listTransactions').mockResolvedValue(transactions);
