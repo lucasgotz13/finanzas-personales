@@ -26,6 +26,13 @@ if (typeof globalThis.ResizeObserver === 'undefined') {
   (globalThis as { ResizeObserver: unknown }).ResizeObserver = ResizeObserverMock;
 }
 
+// jsdom has no layout and does not implement scrollIntoView; clicking Editar
+// on the transactions page would crash without it. The no-op keeps the call
+// observable via spyOn; actual scrolling behavior belongs to a real browser.
+if (typeof Element.prototype.scrollIntoView !== 'function') {
+  Element.prototype.scrollIntoView = () => {};
+}
+
 // jsdom has no matchMedia; the inline head theme script uses it in the
 // browser, but tests drive the theme through <html data-theme> directly.
 // The mock supports the standard surface so tests can flip the system
