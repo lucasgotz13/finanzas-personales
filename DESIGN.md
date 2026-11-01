@@ -286,3 +286,15 @@ Destructive confirmations happen in the row, never in a modal: a 600-weight ques
 - **Don't** let money lose its tabular alignment, and don't let supporting text outshout the number it supports.
 - **Don't** darken or elevate surfaces for depth — paper and card are the only two steps.
 - **Don't** drop the calm light theme for a dark or navy treatment; the world is paper, ink, and one green.
+
+## Clean refresh (supersedes earlier sections where they conflict)
+
+Same world (warm paper, ink, one green, dark mode), same layout and behavior; a quieter, more current finish.
+
+- **Type:** Geist Variable, self-hosted via `@fontsource-variable/geist` (tabular figures supported). The system stack stays as fallback. Headings are one scale: section titles 1rem/600 with tight tracking; the money figures carry the size (month total 2rem/650, goal amount 1.75rem/650, indicator value 1.5rem/600).
+- **Shape:** cards 16px, controls (fields, buttons, error/success boxes) 10px, chips stay pills.
+- **Depth:** still one shadow token, now two soft layers (`--shadow`), plus `--shadow-sm` for the active segmented tab only. Nothing lifts on hover.
+- **Navigation:** the section tabs and the page filters are a segmented control: a quiet `--surface-2` track with a raised white (`--tab-active-bg`) pill for the active item. Active is still ink, never green. The header is sticky and frosted over the paper, aligned to the 1040px content column; between 641px and 1040px the tabs drop to their own scrollable row.
+- **Fields:** one material for every input and select (40px, 1px `--hairline-strong` border, hover darkens, focus = green border + soft ring). Mobile keeps 16px text and 44px targets.
+- **Chips:** sentence case instead of uppercase (red = over/vencido, amber = referencia antigua, ink-on-gray-green = ok).
+- **Tables:** header labels are small muted sentence case, rows hover to a quiet fill, no rule under the last row.

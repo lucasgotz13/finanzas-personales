@@ -1,18 +1,25 @@
 :root {
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Geist Variable', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   color: var(--ink);
   background: var(--ground);
   color-scheme: light;
   /* La billetera tokens: warm paper ground, warm near-black ink, ONE action
      green reserved for actionable elements, semantic chips for state. */
   --ink: #1a1815;
-  --muted-text: #595959;
+  --muted-text: #5b5750;
   --ground: #f7f5f0;
   --card: #ffffff;
   --hairline: #e8e4dc;
-  --shadow: 0 1px 3px rgba(26, 24, 21, 0.06);
+  /* Field borders sit one step darker than layout hairlines so controls read as controls. */
+  --hairline-strong: #d6d1c5;
+  /* Quiet fill: segmented-control track, row hover, progress track. */
+  --surface-2: #efece4;
+  --tab-active-bg: #ffffff;
+  --shadow: 0 1px 2px rgba(26, 24, 21, 0.04), 0 6px 18px -10px rgba(26, 24, 21, 0.12);
+  --shadow-sm: 0 1px 2px rgba(26, 24, 21, 0.1);
   --action: #0e7a3d;
   --action-hover: #0b6634;
+  --action-ring: rgba(14, 122, 61, 0.2);
   /* Action green for text/focus; flips lighter in dark so links stay AA. */
   --action-link: #0e7a3d;
   --action-link-hover: #0b6634;
@@ -28,7 +35,10 @@
   /* OK chip: ink on a light gray-green tint — state, never the action green. */
   --ok: var(--ink);
   --ok-bg: #eef2ee;
-  --disabled-bg: #d9d5cc;
+  --disabled-bg: #dedad1;
+
+  --radius-card: 16px;
+  --radius-control: 10px;
 }
 
 /* La billetera de noche: the same warm world after dark — warm paper becomes
@@ -39,11 +49,16 @@ html[data-theme='dark'] {
   --ink: #f2ede2;
   --muted-text: #b3ac9d;
   --ground: #1a1815;
-  --card: #2e2b27;
-  --hairline: #3a352b;
-  --shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+  --card: #2a2723;
+  --hairline: #38342d;
+  --hairline-strong: #4a453b;
+  --surface-2: #322f2a;
+  --tab-active-bg: #433e36;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 6px 18px -10px rgba(0, 0, 0, 0.5);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
   --action: #0e7a3d;
   --action-hover: #0b6634;
+  --action-ring: rgba(88, 196, 111, 0.28);
   /* Filled buttons keep the saturated green; text/focus takes the lighter
      green so action text keeps AA contrast on the dark card. */
   --action-link: #58c46f;
@@ -54,14 +69,27 @@ html[data-theme='dark'] {
   --warn: #e0a458;
   --warn-bg: #3a2f1e;
   --ok: var(--ink);
-  --ok-bg: #232b23;
+  --ok-bg: #2b332b;
   --disabled-bg: #3a362e;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
 body {
   margin: 0;
   background: var(--ground);
   color: var(--ink);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--action-ring);
 }
 
 /* Keyboard focus indicator (WCAG 2.4.7): action-green outline on any focusable element */
@@ -70,20 +98,51 @@ body {
   outline-offset: 2px;
 }
 
-/* The header sits ON the ground: no navy block, ink title, underline tabs. */
+/* --- Headings: one quiet scale; the numbers are what should shout --- */
+main h2 {
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+  margin: 0 0 1rem;
+}
+
+main h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0 0 0.5rem;
+}
+
+main h4 {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted-text);
+  margin: 1.25rem 0 0.5rem;
+}
+
+/* --- App header: sticky, frosted over the paper, content aligned to main --- */
 header.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 1rem;
-  padding: 0.75rem 1.5rem;
-  background: transparent;
+  gap: 0.5rem 1rem;
+  padding: 0.7rem max(1rem, calc((100% - 1008px) / 2));
+  background: color-mix(in srgb, var(--ground) 85%, transparent);
+  -webkit-backdrop-filter: saturate(160%) blur(12px);
+  backdrop-filter: saturate(160%) blur(12px);
+  border-bottom: 1px solid color-mix(in srgb, var(--hairline) 70%, transparent);
   color: var(--ink);
 }
 
 header.app-header h1 {
-  font-size: 1.1rem;
+  font-size: 1.05rem;
+  font-weight: 650;
+  letter-spacing: -0.015em;
   margin: 0;
-  margin-right: 1rem;
   color: var(--ink);
 }
 
@@ -105,25 +164,34 @@ button.theme-toggle {
   background: transparent;
   color: var(--muted-text);
   cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
 }
 
 button.theme-toggle:hover {
   color: var(--ink);
+  background: var(--surface-2);
 }
 
+/* Segmented control: used by the section tabs and the page-level filters. */
 nav.tabs {
   display: flex;
-  gap: 0.25rem;
+  gap: 2px;
+  padding: 3px;
+  background: var(--surface-2);
+  border-radius: 12px;
 }
 
 nav.tabs button {
   border: none;
-  border-bottom: 2px solid transparent;
+  border-radius: 9px;
   background: transparent;
   color: var(--muted-text);
-  padding: 0.5rem 0.9rem;
+  padding: 0.4rem 0.8rem;
   cursor: pointer;
-  font-size: 0.95rem;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: background-color 0.15s, color 0.15s;
 }
 
 nav.tabs button:hover {
@@ -132,8 +200,8 @@ nav.tabs button:hover {
 
 nav.tabs button.active {
   color: var(--ink);
-  font-weight: 700;
-  border-bottom-color: var(--ink);
+  background: var(--tab-active-bg);
+  box-shadow: var(--shadow-sm);
 }
 
 /* Desktop header tabs swap with the bottom bar at the ≤640px breakpoint. */
@@ -141,8 +209,23 @@ nav.tabs.desktop-tabs {
   display: flex;
 }
 
+/* Between phone and desktop the tabs drop to their own row and scroll sideways
+   instead of squeezing the title. */
+@media (max-width: 1040px) and (min-width: 641px) {
+  nav.tabs.desktop-tabs {
+    order: 3;
+    flex: 1 0 100%;
+    overflow-x: auto;
+  }
+
+  nav.tabs.desktop-tabs button {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+}
+
 main {
-  max-width: 900px;
+  max-width: 1040px;
   margin: 1.5rem auto;
   padding: 0 1rem 1rem;
 }
@@ -150,21 +233,74 @@ main {
 .card {
   background: var(--card);
   border: 1px solid var(--hairline);
-  border-radius: 12px;
-  padding: 1rem;
+  border-radius: var(--radius-card);
+  padding: 1.25rem;
   margin-bottom: 1rem;
   box-shadow: var(--shadow);
 }
 
+/* --- Fields: one material for every input, select and textarea --- */
+input:not([type='checkbox']):not([type='radio']),
+select,
+textarea {
+  font: inherit;
+  font-size: 0.95rem;
+  padding: 0.5rem 0.75rem;
+  min-height: 2.5rem;
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--radius-control);
+  background: var(--card);
+  color: var(--ink);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--muted-text);
+  opacity: 0.7;
+}
+
+input:not([type='checkbox']):not([type='radio']):hover,
+select:hover,
+textarea:hover {
+  border-color: var(--muted-text);
+}
+
+input:not([type='checkbox']):not([type='radio']):focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid transparent;
+  border-color: var(--action-link);
+  box-shadow: 0 0 0 3px var(--action-ring);
+}
+
+input[type='checkbox'],
+input[type='radio'] {
+  accent-color: var(--action);
+}
+
+/* --- Buttons: shared shape, three fills --- */
+button.primary,
+button.danger,
+button.warning {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 2.5rem;
+  padding: 0.5rem 1.1rem;
+  border: none;
+  border-radius: var(--radius-control);
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  transition: background-color 0.15s;
+}
+
 button.primary {
   background: var(--action);
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 0.5rem 1rem;
-  cursor: pointer;
-  font-size: 1rem;
-  font-weight: 600;
 }
 
 button.primary:hover:not(:disabled) {
@@ -180,62 +316,121 @@ button.primary:disabled {
   cursor: default;
 }
 
+/* One consistent danger style everywhere (Borrar, category delete, goal
+   retiro): same height as primary so solid buttons line up. */
+button.danger {
+  background: var(--danger-fill);
+}
+
+button.danger:hover:not(:disabled) {
+  background: #8f1c16;
+}
+
+/* Amber sibling of danger (goal retiro): clearly distinct from the red Borrar. */
+button.warning {
+  background: var(--warn-fill);
+}
+
+button.warning:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--warn-fill) 85%, black);
+}
+
+/* Action links (Renombrar, Restaurar): a click performs something — action green. */
+button.link {
+  border: none;
+  background: none;
+  padding: 0.15rem 0;
+  color: var(--action-link);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: color 0.15s;
+}
+
+button.link:hover {
+  color: var(--action-link-hover);
+}
+
+/* Non-action text links (row Editar/Cancelar, form Cancelar): ink underline
+   without the action color — green on the first viewport is Guardar only. */
+button.link.muted {
+  color: var(--muted-text);
+}
+
+button.link.muted:hover {
+  color: var(--ink);
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
 .error-box {
   color: var(--danger);
   background: var(--danger-bg);
   border: 1px solid var(--error-border);
-  border-radius: 8px;
-  padding: 0.5rem;
-  font-size: 0.85rem;
+  border-radius: var(--radius-control);
+  padding: 0.65rem 0.85rem;
+  margin: 0.75rem 0;
+  font-size: 0.875rem;
+}
+
+.success-box {
+  background: var(--ok-bg);
+  color: var(--ok);
+  border-radius: var(--radius-control);
+  padding: 0.65rem 0.85rem;
+  font-size: 0.875rem;
+  margin-top: 0.75rem;
 }
 
 /* --- Login gate (WU2): centered card on the warm paper --- */
 main.login-gate {
   max-width: 420px;
-  margin: 3rem auto;
+  margin: 12vh auto 3rem;
   padding: 0 1rem;
 }
 
 .login-gate h1 {
-  font-size: 1.25rem;
+  font-size: 1.4rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
   margin: 0 0 0.25rem;
   color: var(--ink);
 }
 
 .login-gate .login-subtitle {
   color: var(--muted-text);
-  font-size: 0.85rem;
-  margin: 0 0 1rem;
+  font-size: 0.9rem;
+  margin: 0 0 1.25rem;
 }
 
 form.login-form {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.9rem;
 }
 
 form.login-form label {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.35rem;
   font-size: 0.8rem;
-  color: var(--ink);
-}
-
-form.login-form input[type='password'] {
-  padding: 0.45rem;
-  border: 1px solid var(--hairline);
-  border-radius: 8px;
-  font-size: 0.95rem;
-  background: var(--card);
-  color: var(--ink);
+  font-weight: 500;
+  color: var(--muted-text);
 }
 
 form.login-form .login-remember {
   flex-direction: row;
   align-items: center;
   gap: 0.5rem;
-  font-size: 0.85rem;
+  font-size: 0.875rem;
+  color: var(--ink);
   cursor: pointer;
 }
 
@@ -248,36 +443,20 @@ form.login-form button.primary {
   align-self: flex-start;
 }
 
-.success-box {
-  background: var(--ok-bg);
-  color: var(--ok);
-  border-radius: 8px;
-  padding: 0.5rem;
-  font-size: 0.85rem;
-  margin-top: 0.5rem;
-}
-
+/* --- Entry forms --- */
 form.transaction-form {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.9rem 0.75rem;
 }
 
 form.transaction-form label {
   display: flex;
   flex-direction: column;
   font-size: 0.8rem;
-  gap: 0.25rem;
-}
-
-form.transaction-form input,
-form.transaction-form select {
-  padding: 0.45rem;
-  border: 1px solid var(--hairline);
-  border-radius: 8px;
-  font-size: 0.95rem;
-  background: var(--card);
-  color: var(--ink);
+  font-weight: 500;
+  color: var(--muted-text);
+  gap: 0.35rem;
 }
 
 /* Live USD→ARS conversion preview under the amount (muted, tabular). */
@@ -290,13 +469,13 @@ form.transaction-form select {
 form.transaction-form .actions {
   grid-column: 1 / -1;
   display: flex;
-  gap: 0.5rem;
+  gap: 0.75rem;
   align-items: center;
+  margin-top: 0.25rem;
 }
 
 /* Goal card (div, not form, so the form-qualified rules above don't reach
-   it): breathing room between the amount field and the buttons, a larger
-   rounded input, and spaced actions. */
+   it): breathing room between the amount field and the buttons, spaced actions. */
 .goal-card .transaction-form {
   display: flex;
   flex-direction: column;
@@ -308,16 +487,9 @@ form.transaction-form .actions {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
-  font-size: 0.85rem;
-}
-
-.goal-card .transaction-form input {
-  padding: 0.6rem 0.75rem;
-  font-size: 1rem;
-  border: 1px solid var(--hairline);
-  border-radius: 10px;
-  background: var(--card);
-  color: var(--ink);
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--muted-text);
 }
 
 .goal-card .transaction-form .actions {
@@ -342,8 +514,9 @@ form.transaction-form .actions {
 /* The funding engine, stated once under the header (automatic vs manual). */
 .goal-explainer {
   color: var(--muted-text);
-  font-size: 0.8rem;
-  margin: 0 0 0.75rem;
+  font-size: 0.85rem;
+  margin: 0 0 1rem;
+  max-width: 62ch;
 }
 
 /* Goal card typography: the amount leads, metadata follows (Loudness Ladder). */
@@ -354,23 +527,24 @@ form.transaction-form .actions {
 }
 
 .goal-money {
-  margin: 0 0 0.25rem;
+  margin: 0 0 0.35rem;
 }
 
 .goal-money-total {
-  font-size: 1.5rem;
-  font-weight: 700;
+  font-size: 1.75rem;
+  font-weight: 650;
+  letter-spacing: -0.025em;
   font-variant-numeric: tabular-nums;
 }
 
 .goal-money-sub {
-  font-size: 0.85rem;
+  font-size: 0.875rem;
   color: var(--muted-text);
   font-variant-numeric: tabular-nums;
 }
 
 .goal-meta {
-  margin: 0.25rem 0 0;
+  margin: 0.35rem 0 0;
   font-size: 0.8rem;
   color: var(--muted-text);
   font-variant-numeric: tabular-nums;
@@ -380,7 +554,7 @@ form.transaction-form .actions {
 .goal-currency {
   font-size: 0.75rem;
   font-weight: 600;
-  text-transform: uppercase;
+  letter-spacing: 0.02em;
   color: var(--muted-text);
 }
 
@@ -424,40 +598,7 @@ form.transaction-form .actions {
   white-space: nowrap;
 }
 
-/* One consistent danger style everywhere (Borrar, category delete, goal
-   retiro): same padding as primary so solid buttons share one height. */
-button.danger {
-  background: var(--danger-fill);
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 0.5rem 1rem;
-  cursor: pointer;
-  font-size: 1rem;
-  font-weight: 600;
-}
-
-button.danger:hover:not(:disabled) {
-  background: #8f1c16;
-}
-
-/* Amber sibling of danger (goal retiro): clearly distinct from the red
-   Borrar, same padding as primary/danger so solid buttons share one height. */
-button.warning {
-  background: var(--warn-fill);
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 0.5rem 1rem;
-  cursor: pointer;
-  font-size: 1rem;
-  font-weight: 600;
-}
-
-button.warning:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--warn-fill) 85%, black);
-}
-
+/* --- Tables --- */
 table.data {
   width: 100%;
   border-collapse: collapse;
@@ -467,14 +608,24 @@ table.data {
 table.data th,
 table.data td {
   text-align: left;
-  padding: 0.55rem 0.6rem;
+  padding: 0.7rem 0.75rem;
   border-bottom: 1px solid var(--hairline);
 }
 
 table.data th {
   color: var(--muted-text);
-  font-size: 0.8rem;
-  font-weight: 600;
+  font-size: 0.78rem;
+  font-weight: 500;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
+table.data tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+table.data tbody tr:hover td {
+  background: color-mix(in srgb, var(--surface-2) 55%, var(--card));
 }
 
 .transaction-sort-controls {
@@ -540,13 +691,13 @@ button.sort-reset {
   color: var(--muted-text);
 }
 
-/* Semantic state chips: pill radius, 600, uppercase via CSS. */
+/* Semantic state chips: pill radius, 600, sentence case. */
 .badge {
+  display: inline-block;
   font-size: 0.75rem;
   border-radius: 999px;
-  padding: 0.1rem 0.5rem;
+  padding: 0.1rem 0.6rem;
   font-weight: 600;
-  text-transform: uppercase;
   white-space: nowrap;
 }
 
@@ -562,11 +713,11 @@ button.sort-reset {
 
 /* Savings-goal progress bar: neutral track with the shared ok accent fill. */
 .progress-bar {
-  background: var(--ok-bg);
+  background: var(--surface-2);
   border-radius: 999px;
   height: 0.5rem;
   overflow: hidden;
-  margin: 0.25rem 0 0.5rem;
+  margin: 0.5rem 0 0.6rem;
 }
 
 .progress-fill {
@@ -577,29 +728,33 @@ button.sort-reset {
 
 /* Month-total money card: per-currency totals, large tabular figures. */
 .money-card h2 {
-  font-size: 1rem;
-  margin: 0 0 0.5rem;
+  font-size: 0.875rem;
+  margin: 0 0 0.6rem;
   color: var(--muted-text);
-  font-weight: 600;
+  font-weight: 500;
+  letter-spacing: 0;
 }
 
 .totals {
   display: flex;
   flex-wrap: wrap;
-  gap: 1.5rem 2.5rem;
+  gap: 1.25rem 3rem;
 }
 
 .total .total-currency {
   display: block;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
   color: var(--muted-text);
 }
 
 .total .total-amount {
-  font-size: 1.5rem;
-  font-weight: 700;
+  font-size: 2rem;
+  font-weight: 650;
+  letter-spacing: -0.03em;
   font-variant-numeric: tabular-nums;
-  line-height: 1.2;
+  line-height: 1.15;
 }
 
 .total-empty {
@@ -608,13 +763,13 @@ button.sort-reset {
 
 .empty {
   color: var(--muted-text);
-  font-style: italic;
-  padding: 0.75rem 0;
+  padding: 1rem 0;
 }
 
 ul.tree {
   list-style: none;
-  padding-left: 0.5rem;
+  padding-left: 0;
+  margin: 0;
 }
 
 ul.tree .tree-row {
@@ -622,47 +777,23 @@ ul.tree .tree-row {
   align-items: center;
   flex-wrap: wrap;
   gap: 0.6rem;
-  padding: 0.25rem 0;
+  padding: 0.4rem 0.5rem;
+  border-radius: 8px;
 }
 
-/* Action links (Renombrar, Restaurar): a click performs something — action green. */
-button.link {
-  border: none;
-  background: none;
-  color: var(--action-link);
-  text-decoration: underline;
-  cursor: pointer;
-  font-size: 0.85rem;
-}
-
-button.link:hover {
-  color: var(--action-link-hover);
-}
-
-/* Non-action text links (row Editar/Cancelar, form Cancelar): ink underline
-   without the action color — green on the first viewport is Guardar only. */
-button.link.muted {
-  color: var(--muted-text);
-}
-
-button.link.muted:hover {
-  color: var(--ink);
-}
-
-button:disabled {
-  opacity: 0.45;
-  cursor: default;
+ul.tree .tree-row:hover {
+  background: var(--surface-2);
 }
 
 .row-actions {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.75rem;
   align-items: center;
 }
 
 /* Trade groups (trade-history): asset header + ledger table per ticker. */
 .trade-group {
-  margin-bottom: 1.25rem;
+  margin-bottom: 1.5rem;
 }
 
 .trade-group-header {
@@ -674,7 +805,7 @@ button:disabled {
 }
 
 .trade-group-ticker {
-  font-weight: 700;
+  font-weight: 650;
   font-variant-numeric: tabular-nums;
   color: var(--ink);
 }
@@ -690,15 +821,16 @@ button:disabled {
   align-items: center;
   flex-wrap: wrap;
   gap: 0.35rem 1.25rem;
-  font-size: 0.85rem;
+  font-size: 0.875rem;
 }
 
 /* Text left, action buttons packed together on the right (space-between would
    also stretch the gap between the two buttons). The danger button takes the
-   compact danger style from DESIGN.md (0.35rem 0.8rem) at the strip's own
-   0.85rem, so a confirm question never outweighs its own answer. */
+   compact danger style from DESIGN.md at the strip's own 0.85rem, so a
+   confirm question never outweighs its own answer. */
 .confirm-prompt button.danger {
   margin-left: auto;
+  min-height: 0;
   font-size: 0.85rem;
   padding: 0.35rem 0.8rem;
 }
@@ -713,8 +845,9 @@ button:disabled {
   font-size: 0.75rem;
 }
 
-tr.confirming-row td {
-  background: var(--card);
+table.data tr.confirming-row td,
+table.data tr.confirming-row:hover td {
+  background: var(--danger-bg);
 }
 
 .filters {
@@ -735,27 +868,24 @@ tr.confirming-row td {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  margin-bottom: 0.75rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 1px solid var(--hairline);
+  margin-bottom: 1rem;
 }
 
 .indicators-header h2 {
-  font-size: 1.05rem;
   margin: 0;
 }
 
 .indicators-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
   gap: 0.75rem;
 }
 
 .indicator-card {
   background: var(--card);
   border: 1px solid var(--hairline);
-  border-radius: 12px;
-  padding: 0.75rem 1rem;
+  border-radius: var(--radius-card);
+  padding: 0.9rem 1.1rem;
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
@@ -768,12 +898,14 @@ tr.confirming-row td {
 
 .indicator-label {
   font-size: 0.8rem;
+  font-weight: 500;
   color: var(--muted-text);
 }
 
 .indicator-value {
-  font-size: 1.35rem;
+  font-size: 1.5rem;
   font-weight: 600;
+  letter-spacing: -0.025em;
   color: var(--ink);
   font-variant-numeric: tabular-nums;
 }
@@ -781,6 +913,7 @@ tr.confirming-row td {
 .indicator-unit {
   font-size: 0.8rem;
   font-weight: 400;
+  letter-spacing: 0;
   color: var(--muted-text);
 }
 
@@ -792,8 +925,9 @@ tr.confirming-row td {
   vertical-align: middle;
   font-size: 0.75rem;
   font-weight: 600;
+  letter-spacing: 0;
   border-radius: 999px;
-  padding: 0.1rem 0.5rem;
+  padding: 0.1rem 0.55rem;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
@@ -822,11 +956,10 @@ tr.confirming-row td {
 .stale-badge,
 .aged-badge {
   align-self: flex-start;
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   border-radius: 999px;
-  padding: 0.1rem 0.5rem;
+  padding: 0.1rem 0.6rem;
   font-weight: 600;
-  text-transform: uppercase;
   white-space: nowrap;
 }
 
@@ -840,15 +973,12 @@ tr.confirming-row td {
   color: var(--warn);
 }
 
-/* Warm-card material for inline inputs (budget caps, category rename). */
+/* Compact material for inline inputs (budget caps, category rename). */
 table.data input,
 ul.tree .tree-row input {
-  padding: 0.4rem;
-  border: 1px solid var(--hairline);
-  border-radius: 8px;
+  padding: 0.3rem 0.6rem;
+  min-height: 2.25rem;
   font-size: 0.9rem;
-  background: var(--card);
-  color: var(--ink);
 }
 
 /* Hidden tabs stay mounted but invisible at EVERY viewport width (P1 #5) */
@@ -877,12 +1007,25 @@ ul.tree .tree-row input {
   background: var(--card);
   color: var(--ink);
   border-top: 1px solid var(--hairline);
-  border-radius: 16px 16px 0 0;
-  box-shadow: 0 -4px 16px rgba(26, 24, 21, 0.18);
-  padding: 0.5rem 0.5rem calc(0.75rem + env(safe-area-inset-bottom));
+  border-radius: 20px 20px 0 0;
+  box-shadow: 0 -8px 32px rgba(26, 24, 21, 0.18);
+  padding: 1.25rem 0.5rem calc(0.75rem + env(safe-area-inset-bottom));
   max-height: 80vh;
   overflow-y: auto;
   animation: mobile-nav-slide-up 0.22s ease-out;
+}
+
+/* Grab handle: the sheet's own cue that it dismisses downward. */
+.mobile-nav-sheet::before {
+  content: '';
+  position: absolute;
+  top: 0.5rem;
+  left: 50%;
+  width: 2.25rem;
+  height: 4px;
+  margin-left: -1.125rem;
+  border-radius: 999px;
+  background: var(--hairline-strong);
 }
 
 .mobile-nav-list {
@@ -896,9 +1039,10 @@ ul.tree .tree-row input {
   width: 100%;
   text-align: left;
   border: none;
-  border-radius: 10px;
+  border-radius: 12px;
   background: transparent;
   color: var(--ink);
+  font: inherit;
   font-size: 1rem;
   padding: 0.7rem 0.9rem;
   min-height: 44px;
@@ -906,14 +1050,14 @@ ul.tree .tree-row input {
 }
 
 .mobile-nav-list button:hover {
-  background: var(--ground);
+  background: var(--surface-2);
 }
 
-/* Active sheet item is a state, not an action: ink bold on the ground tint,
+/* Active sheet item is a state, not an action: ink bold on the quiet fill,
    matching the desktop tabs — never the action green. */
 .mobile-nav-list button.active {
-  font-weight: 700;
-  background: var(--ground);
+  font-weight: 650;
+  background: var(--surface-2);
 }
 
 @keyframes mobile-nav-slide-up {
@@ -938,6 +1082,10 @@ ul.tree .tree-row input {
   .mobile-nav-backdrop,
   .mobile-nav-sheet {
     animation: none;
+  }
+
+  * {
+    transition: none !important;
   }
 }
 
@@ -967,7 +1115,7 @@ ul.tree .tree-row input {
 .chart-controls {
   display: flex;
   gap: 0.75rem;
-  margin: 0.5rem 0;
+  margin: 0.75rem 0;
   flex-wrap: wrap;
 }
 
@@ -977,14 +1125,20 @@ ul.tree .tree-row input {
 }
 
 .chip {
-  border: 1px solid var(--hairline);
+  border: 1px solid var(--hairline-strong);
   background: var(--card);
   color: var(--ink);
-  font-size: 0.75rem;
+  font: inherit;
+  font-size: 0.78rem;
   font-weight: 600;
   border-radius: 999px;
-  padding: 0.2rem 0.7rem;
+  padding: 0.2rem 0.75rem;
   cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+.chip:hover {
+  background: var(--surface-2);
 }
 
 .chip.active {
@@ -1033,6 +1187,7 @@ ul.tree .tree-row input {
 .allocation-swatch {
   width: 0.75rem;
   height: 0.75rem;
+  border-radius: 3px;
   flex-shrink: 0;
 }
 
@@ -1072,8 +1227,8 @@ ul.tree .tree-row input {
 .chart-tooltip {
   background: var(--card);
   border: 1px solid var(--hairline);
-  border-radius: 8px;
-  padding: 0.4rem 0.6rem;
+  border-radius: var(--radius-control);
+  padding: 0.45rem 0.7rem;
   box-shadow: var(--shadow);
   font-size: 0.75rem;
   color: var(--muted-text);
@@ -1108,13 +1263,13 @@ tr.positions-row {
   cursor: pointer;
 }
 
-tr.positions-row:hover td {
+tr.asset-chart-row td {
+  border-bottom: 1px solid var(--hairline);
+  padding: 0.25rem 0.75rem 1rem;
   background: var(--ground);
 }
 
-tr.asset-chart-row td {
-  border-bottom: 1px solid var(--hairline);
-  padding: 0.25rem 0.6rem 1rem;
+table.data tr.asset-chart-row:hover td {
   background: var(--ground);
 }
 
@@ -1126,8 +1281,7 @@ tr.asset-chart-row td {
 @media (max-width: 640px) {
   /* One compact row: title on the left, theme toggle and Salir on the right. */
   header.app-header {
-    flex-direction: row;
-    align-items: center;
+    flex-wrap: nowrap;
     gap: 0.5rem;
     padding: 0.6rem 0.75rem;
   }
@@ -1153,12 +1307,11 @@ tr.asset-chart-row td {
     width: 100%;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
-    gap: 0.15rem;
   }
 
   nav.tabs button {
-    flex: 0 0 auto;
-    padding: 0.55rem 0.7rem;
+    flex: 1 0 auto;
+    padding: 0.55rem 0.9rem;
     font-size: 0.9rem;
     min-height: 44px;
     white-space: nowrap;
@@ -1171,18 +1324,20 @@ tr.asset-chart-row td {
     left: 0;
     right: 0;
     z-index: 20;
-    background: var(--card);
+    background: color-mix(in srgb, var(--card) 88%, transparent);
+    -webkit-backdrop-filter: saturate(160%) blur(12px);
+    backdrop-filter: saturate(160%) blur(12px);
     border-top: 1px solid var(--hairline);
-    box-shadow: 0 -1px 3px rgba(26, 24, 21, 0.06);
-    padding-bottom: env(safe-area-inset-bottom);
+    padding: 0.35rem 0.75rem calc(0.35rem + env(safe-area-inset-bottom));
   }
 
   .bottom-bar button {
     flex: 1;
     border: none;
-    border-top: 2px solid transparent;
+    border-radius: 12px;
     background: transparent;
     color: var(--ink);
+    font: inherit;
     font-size: 0.8rem;
     font-weight: 500;
     padding: 0.5rem 0.25rem;
@@ -1193,19 +1348,35 @@ tr.asset-chart-row td {
     text-overflow: ellipsis;
   }
 
-  /* Single menu button fills the bar: larger and semibold, thumb-reachable. */
+  /* Single menu button fills the bar: larger and semibold, thumb-reachable,
+     with a three-line mark so it reads as a menu at a glance. */
   .bottom-bar .mobile-menu-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
     font-size: 0.95rem;
     font-weight: 600;
+    background: var(--surface-2);
+  }
+
+  .bottom-bar .mobile-menu-button::before {
+    content: '';
+    width: 14px;
+    height: 10px;
+    background:
+      linear-gradient(currentColor, currentColor) 0 0 / 100% 2px no-repeat,
+      linear-gradient(currentColor, currentColor) 0 50% / 100% 2px no-repeat,
+      linear-gradient(currentColor, currentColor) 0 100% / 100% 2px no-repeat;
   }
 
   main {
     margin: 1rem auto;
-    padding: 0 0.75rem calc(3.5rem + env(safe-area-inset-bottom));
+    padding: 0 0.75rem calc(4.5rem + env(safe-area-inset-bottom));
   }
 
   .card {
-    padding: 0.75rem;
+    padding: 1rem;
   }
 
   /* Tables scroll horizontally inside their card instead of bursting it */
@@ -1260,14 +1431,13 @@ tr.asset-chart-row td {
     grid-template-columns: 1fr;
   }
 
-  form.transaction-form input,
-  form.transaction-form select,
+  input:not([type='checkbox']):not([type='radio']),
+  select,
+  textarea,
   table.data input,
-  ul.tree .tree-row input,
-  .filters input,
-  .filters select {
+  ul.tree .tree-row input {
     font-size: 16px;
-    padding: 0.55rem;
+    padding: 0.55rem 0.75rem;
     min-height: 44px;
   }
 
@@ -1278,13 +1448,7 @@ tr.asset-chart-row td {
 
   /* Login gate: full-width button, 16px input, 44px targets (WU2). */
   main.login-gate {
-    margin: 2rem auto;
-  }
-
-  form.login-form input[type='password'] {
-    font-size: 16px;
-    padding: 0.55rem;
-    min-height: 44px;
+    margin: 8vh auto 2rem;
   }
 
   form.login-form .login-remember {
@@ -1304,21 +1468,25 @@ tr.asset-chart-row td {
   }
 
   .indicator-value {
-    font-size: 1.2rem;
+    font-size: 1.3rem;
   }
 
   .total .total-amount {
-    font-size: 1.4rem;
+    font-size: 1.7rem;
   }
 
   .goal-money-total {
-    font-size: 1.4rem;
+    font-size: 1.5rem;
   }
 
   button.primary,
   button.danger,
   button.warning,
   button.link {
+    min-height: 44px;
+  }
+
+  .confirm-prompt button.danger {
     min-height: 44px;
   }
 
