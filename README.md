@@ -93,6 +93,7 @@ The app is three pieces: the React SPA (any static host), the Express API
 | `FINANZAS_DB` | Local SQLite file path (default `finanzas.db` at repo root) |
 | `TURSO_DATABASE_URL` + `TURSO_AUTH_TOKEN` | Turso remote; overrides `FINANZAS_DB` when both are set |
 | `FINANZAS_AUTH_PASSPHRASE` | Single-user auth passphrase (≥12 chars in production) |
+| `INDEC_API_TOKEN` | INDEC API-INDEC JWT for the IPC and economy indicators (optional: without it the IPC uses the keyless ArgentinaDatos fallback and the three INDEC economy cards report `failed` while cached values keep serving) |
 
 Deploy steps:
 
@@ -150,7 +151,7 @@ scripts/          migration runner CLI
 | `GET/PUT /budgets`, `GET /budgets/status?month=` | per-category caps + status |
 | `GET /summaries?period=&date=` | month/quarter/year summaries |
 | `POST /auth/login`, `POST /auth/logout`, `GET /auth/status` | single-user passphrase login (signed httpOnly cookie) |
-| `GET /indicators`, `POST /indicators/refresh?force=` | economic indicators (11 keys), TTL-gated refresh |
+| `GET /indicators`, `POST /indicators/refresh?force=` | economic indicators (15 keys, grouped by Mercado / Economía argentina), TTL-gated refresh |
 | `GET /portfolio`, `POST /portfolio/refresh?force=` | derived positions + portfolio valuation |
 | `GET/POST /portfolio/trades`, `PUT/DELETE /portfolio/trades/:id` | buy/sell trade ledger |
 | `GET /portfolio/history?range=&currency=`, `GET /portfolio/positions/:id/history` | portfolio/asset price history charts |

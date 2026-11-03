@@ -29,6 +29,9 @@ interface StubSet {
   rp: StubSource;
   ipc: StubSource;
   oil: StubSource;
+  canastas: StubSource;
+  salarios: StubSource;
+  emae: StubSource;
 }
 
 function makeSources(): StubSet {
@@ -49,17 +52,36 @@ function makeSources(): StubSet {
     ]),
     ipc: new StubSource('ipc', async () => [
       { key: 'ipc-mensual', value: -0.1, referenceDate: '2026-06' },
+      { key: 'ipc-interanual', value: 33.4, referenceDate: '2026-06' },
     ]),
     oil: new StubSource('oil', async () => [
       { key: 'brent', value: 67.45, referenceDate: '2026-08-09T20:58:00-03:00' },
       { key: 'wti', value: 63.2, referenceDate: '2026-08-09T20:58:00-03:00' },
+    ]),
+    canastas: new StubSource('indec-canastas', async () => [
+      { key: 'canasta-basica-total', value: 528318.67, referenceDate: '2026-09' },
+    ]),
+    salarios: new StubSource('indec-salarios', async () => [
+      { key: 'salarios-variacion', value: 35.61, referenceDate: '2026-08' },
+    ]),
+    emae: new StubSource('indec-emae', async () => [
+      { key: 'emae-variacion', value: -1.74, referenceDate: '2026-08' },
     ]),
   };
 }
 
 function makeEnv(sources: StubSet): Promise<TestEnv> {
   return createTestApp(T0, {
-    indicatorSources: [sources.fx, sources.bcra, sources.rp, sources.ipc, sources.oil],
+    indicatorSources: [
+      sources.fx,
+      sources.bcra,
+      sources.rp,
+      sources.ipc,
+      sources.oil,
+      sources.canastas,
+      sources.salarios,
+      sources.emae,
+    ],
   });
 }
 
@@ -67,7 +89,7 @@ let env: TestEnv | null = null;
 afterEach(() => env?.cleanup());
 
 describe('GET /api/v1/indicators (EI-1, EI-4, EI-5)', () => {
-  it('returns 11 fresh views after a successful refresh, without fetching', async () => {
+  it('returns 15 fresh views after a successful refresh, without fetching', async () => {
     const stubs = makeSources();
     env = await makeEnv(stubs);
     await request(env.app).post('/api/v1/indicators/refresh');
@@ -75,7 +97,7 @@ describe('GET /api/v1/indicators (EI-1, EI-4, EI-5)', () => {
     const res = await request(env.app).get('/api/v1/indicators');
 
     expect(res.status).toBe(200);
-    expect(res.body).toHaveLength(11);
+    expect(res.body).toHaveLength(15);
     for (const item of res.body) {
       expect(item.status).toBe('fresh');
       expect(item.stale).toBe(false);
@@ -109,7 +131,7 @@ describe('GET /api/v1/indicators (EI-1, EI-4, EI-5)', () => {
     const res = await request(env.app).get('/api/v1/indicators');
 
     expect(res.status).toBe(200);
-    expect(res.body).toHaveLength(11);
+    expect(res.body).toHaveLength(15);
     for (const item of res.body) {
       expect(item.status).toBe('absent');
       expect(item.value).toBeNull();
@@ -153,13 +175,16 @@ describe('POST /api/v1/indicators/refresh (EI-2, EI-3)', () => {
       'riesgo-pais',
       'ipc',
       'oil',
+      'indec-canastas',
+      'indec-salarios',
+      'indec-emae',
     ]);
     expect(first.body.results.every((r: { status: string }) => r.status === 'updated')).toBe(true);
 
     // EI-3: within TTL (same clock) a non-forced refresh skips all classes
     const second = await request(env.app).post('/api/v1/indicators/refresh');
     expect(second.body.results.every((r: { status: string }) => r.status === 'cached')).toBe(true);
-    expect(Object.values(stubs).reduce((n, s) => n + s.calls, 0)).toBe(5);
+    expect(Object.values(stubs).reduce((n, s) => n + s.calls, 0)).toBe(8);
   });
 
   it('force=true bypasses TTL and refetches every class', async () => {
@@ -170,7 +195,7 @@ describe('POST /api/v1/indicators/refresh (EI-2, EI-3)', () => {
     const res = await request(env.app).post('/api/v1/indicators/refresh?force=true');
 
     expect(res.body.results.every((r: { status: string }) => r.status === 'updated')).toBe(true);
-    expect(Object.values(stubs).reduce((n, s) => n + s.calls, 0)).toBe(10);
+    expect(Object.values(stubs).reduce((n, s) => n + s.calls, 0)).toBe(16);
   });
 
   it('isolates a failing source: failed class keeps its prior cache (EI-2)', async () => {
@@ -201,7 +226,7 @@ describe('POST /api/v1/indicators/refresh (EI-2, EI-3)', () => {
     const res = await request(env.app).post('/api/v1/indicators/refresh?force=true');
 
     expect(res.status).toBe(200);
-    expect(res.body.results).toHaveLength(5);
+    expect(res.body.results).toHaveLength(8);
     expect(res.body.results.every((r: { status: string }) => r.status === 'failed')).toBe(true);
     const get = await request(env.app).get('/api/v1/indicators');
     expect(get.body.find((i: { key: string }) => i.key === 'usd-blue').value).toBe(1350.5);
