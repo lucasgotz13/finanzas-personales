@@ -875,6 +875,19 @@ table.data tr.confirming-row:hover td {
   margin: 0;
 }
 
+.indicators-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.indicators-group-title {
+  margin: 0 0 0.6rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--muted-text);
+}
+
 .indicators-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));

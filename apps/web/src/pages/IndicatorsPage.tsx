@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { GROUP_ORDER, type IndicatorGroup } from '@finanzas/domain';
 import { api, translateApiMessage } from '../api';
 import IndicatorCard from '../components/IndicatorCard';
 import { useApi } from '../hooks/useApi';
@@ -6,6 +7,12 @@ import { useVisibleRefresh } from '../hooks/useVisibleRefresh';
 
 /** EI-6: TTL-respecting auto-refresh cadence while the tab is active. */
 const AUTO_REFRESH_MS = 5 * 60_000;
+
+/** Subsection titles inside the tab, in GROUP_ORDER order (EI-6). */
+const GROUP_LABELS: Record<IndicatorGroup, string> = {
+  mercado: 'Mercado',
+  economia: 'Economía argentina',
+};
 
 function message(err: unknown): string {
   return translateApiMessage(err instanceof Error ? err.message : 'No se pudo actualizar. Verifique su conexión e intente de nuevo.');
@@ -82,10 +89,26 @@ export default function IndicatorsPage({ active = true }: { active?: boolean }):
       ) : (indicators.data ?? []).length === 0 ? (
         <div className="empty">Aún no hay indicadores — presione Refrescar.</div>
       ) : (
-        <div className="indicators-grid" data-testid="indicators-grid">
-          {(indicators.data ?? []).map((indicator) => (
-            <IndicatorCard key={indicator.key} indicator={indicator} />
-          ))}
+        <div className="indicators-groups" data-testid="indicators-grid">
+          {GROUP_ORDER.map((group) => {
+            const items = (indicators.data ?? []).filter((indicator) => indicator.group === group);
+            if (items.length === 0) return null;
+            return (
+              <section
+                key={group}
+                className="indicators-group"
+                data-testid={`indicator-group-${group}`}
+                aria-label={GROUP_LABELS[group]}
+              >
+                <h3 className="indicators-group-title">{GROUP_LABELS[group]}</h3>
+                <div className="indicators-grid">
+                  {items.map((indicator) => (
+                    <IndicatorCard key={indicator.key} indicator={indicator} />
+                  ))}
+                </div>
+              </section>
+            );
+          })}
         </div>
       )}
     </section>

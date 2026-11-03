@@ -16,7 +16,7 @@ Personal finance tracker that integrates the owner's money with the real Argenti
 
 ## Positioning
 
-The Argentine economic context is the product: multi-currency expenses (ARS/USD) with honest FX-at-entry, ARS-denominated budgets that convert recorded rates, and live national indicators (dólar blue/oficial/tarjeta/MEP/CCL, IPC, riesgo país, reservas, BADLAR) in the same app where the money lives.
+The Argentine economic context is the product: multi-currency expenses (ARS/USD) with honest FX-at-entry, ARS-denominated budgets that convert recorded rates, and live national indicators (dólar blue/oficial/tarjeta/MEP/CCL, IPC mensual e interanual, riesgo país, reservas, BADLAR, Canasta Básica Total, salarios y EMAE) in the same app where the money lives.
 
 ## Operating Context
 
@@ -27,14 +27,14 @@ Single user on phone and desktop. Daily ritual: log in with the passphrase (or r
 - Multi-currency transactions (ARS/USD) with FX-at-entry; rate required for non-ARS (W1 rule enforced on create and edit)
 - Edit/delete transactions from the UI with inline confirm; category soft-delete with restore (deleted-categories section)
 - Hierarchical categories, monthly budgets per category + global cap (ARS, manual re-adjust), period summaries (month/quarter/year, per-currency, savings rate)
-- Indicators: 11 cards (5 USD quotes, riesgo país, IPC mensual, reservas, BADLAR, Brent, WTI) with per-class TTLs, stale/absent degradation, reference-age guard, and a day-over-day change badge (signed % vs the previous published reading; hidden for IPC mensual and first runs); sources dolarapi, BCRA v4, ArgentinaDatos (riesgo país + IPC), Yahoo v8 (Brent/WTI), all keyless
+- Indicators: 15 cards in two subsections — Mercado (5 USD quotes, riesgo país, reservas, BADLAR, Brent, WTI) and Economía argentina (IPC mensual, IPC interanual, Canasta Básica Total, salarios var. interanual, EMAE var. interanual) — with per-class TTLs, stale/absent degradation, reference-age guard, and a change badge (signed % vs the previous published reading; hidden for variation series and first runs); sources dolarapi, BCRA v4, INDEC API-INDEC (IPC + canastas + salarios + EMAE, Bearer token via `INDEC_API_TOKEN`), ArgentinaDatos (riesgo país, and keyless IPC fallback), Yahoo v8 (Brent/WTI)
 - Investments: buy/sell trade ledger with timeline validation (a sell can never exceed the running balance), positions derived from the ledger (moving-average cost, no manual position editing), realized P&L per ticker, and portfolio/asset price history charts (1m/3m/6m/1y, ARS/USD, CCL-converted with graceful degradation)
 - Single-user auth: passphrase login gate, signed httpOnly session cookie (30-day opt-in "Seguir conectado"), logout from the header; fail-closed in prod (missing or short passphrase refuses to start)
 - Dark mode: warm night palette ("La Billetera de noche"), header toggle, system-preference default with persisted choice, no-flash boot; DESIGN.md carries the night tokens
 - Transaction table: client-side sorting by ARS equivalent at the captured entry rate (asc/desc) with an accessible "Restablecer orden" reset to chronological order
 - es-AR amounts: dot = thousands, comma = decimal (parseEsArAmount); money via Intl es-AR
 - Tabs stay mounted (state preserved); responsive ≤640px; a11y: aria-labels, role=alert, :focus-visible, contrast AA (--muted-text #595959)
-- 625 tests green; backend API stays English, UI Spanish; auth: single-user passphrase gate (env-driven, httpOnly cookie session, fail-closed in production)
+- 689 tests green; backend API stays English, UI Spanish; auth: single-user passphrase gate (env-driven, httpOnly cookie session, fail-closed in production)
 
 ## Brand Commitments
 
