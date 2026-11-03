@@ -1,4 +1,4 @@
-import { CLASS_BY_KEY, KEYS, REFERENCE_MAX_AGE_MS, TTL_BY_CLASS, UNIT_BY_KEY } from './catalog';
+import { CLASS_BY_KEY, GROUP_BY_KEY, KEYS, REFERENCE_MAX_AGE_MS, TTL_BY_CLASS, UNIT_BY_KEY } from './catalog';
 import type { IndicatorCache, IndicatorSource } from './ports';
 import type {
   IndicatorClass,
@@ -16,15 +16,34 @@ export interface IndicatorServiceDeps {
   clock: { now(): Date };
 }
 
-const CLASSES: readonly IndicatorClass[] = ['fx', 'bcra', 'riesgo-pais', 'ipc', 'oil'];
+const CLASSES: readonly IndicatorClass[] = [
+  'fx',
+  'bcra',
+  'riesgo-pais',
+  'ipc',
+  'oil',
+  'indec-canastas',
+  'indec-salarios',
+  'indec-emae',
+];
 
 /**
- * Day-over-day change vs the previous published reading. `ipc-mensual` is
- * always null: its value is already a monthly variation percentage and a %
- * change of a % is a confusing second-order stat on the card.
+ * Keys whose value is already a percentage variation; a % change of a % is a
+ * confusing second-order stat, so their change badge is always hidden.
+ */
+const VARIATION_KEYS: ReadonlySet<IndicatorKey> = new Set([
+  'ipc-mensual',
+  'ipc-interanual',
+  'salarios-variacion',
+  'emae-variacion',
+]);
+
+/**
+ * Change vs the previous published reading (day-over-day for market quotes,
+ * month-over-month for monthly price series). Variation keys are always null.
  */
 function changePercentOf(key: IndicatorKey, value: number | null, prevValue: number | null): number | null {
-  if (key === 'ipc-mensual') return null;
+  if (VARIATION_KEYS.has(key)) return null;
   if (value === null || prevValue === null || prevValue <= 0) return null;
   return ((value - prevValue) / prevValue) * 100;
 }
@@ -49,7 +68,7 @@ function resolvePrevValue(sample: IndicatorSample, cached: IndicatorSnapshot | n
 export class IndicatorService {
   constructor(private deps: IndicatorServiceDeps) {}
 
-  /** Cache-first views for all 11 keys; absent/stale degrade, never fail (EI-1, EI-4). */
+  /** Cache-first views for all 15 keys; absent/stale degrade, never fail (EI-1, EI-4). */
   async getAll(): Promise<IndicatorView[]> {
     const views: IndicatorView[] = [];
     for (const key of KEYS) {
@@ -116,6 +135,7 @@ export class IndicatorService {
     if (!snapshot) {
       return {
         key,
+        group: GROUP_BY_KEY[key],
         value: null,
         unit: UNIT_BY_KEY[key],
         referenceDate: null,
@@ -136,6 +156,7 @@ export class IndicatorService {
       now - Date.parse(snapshot.referenceDate) > REFERENCE_MAX_AGE_MS[CLASS_BY_KEY[key]];
     return {
       key,
+      group: GROUP_BY_KEY[key],
       value: snapshot.value,
       unit: snapshot.unit,
       referenceDate: snapshot.referenceDate,

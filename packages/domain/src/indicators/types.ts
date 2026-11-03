@@ -1,5 +1,16 @@
 /** Indicator classes: one external fetch each (EI-2). */
-export type IndicatorClass = 'fx' | 'bcra' | 'ipc' | 'riesgo-pais' | 'oil';
+export type IndicatorClass =
+  | 'fx'
+  | 'bcra'
+  | 'ipc'
+  | 'riesgo-pais'
+  | 'oil'
+  | 'indec-canastas'
+  | 'indec-salarios'
+  | 'indec-emae';
+
+/** Display groups rendered as subsections inside the Indicadores tab (EI-6). */
+export type IndicatorGroup = 'mercado' | 'economia';
 
 export type IndicatorKey =
   | 'usd-blue'
@@ -8,11 +19,15 @@ export type IndicatorKey =
   | 'usd-mep'
   | 'usd-ccl'
   | 'riesgo-pais'
-  | 'ipc-mensual'
   | 'reservas'
   | 'badlar'
   | 'brent'
-  | 'wti';
+  | 'wti'
+  | 'ipc-mensual'
+  | 'ipc-interanual'
+  | 'canasta-basica-total'
+  | 'salarios-variacion'
+  | 'emae-variacion';
 
 export type IndicatorStatus = 'fresh' | 'stale' | 'absent';
 
@@ -32,6 +47,7 @@ export interface IndicatorSample {
 /** API view of one indicator: always present with value possibly null (EI-1, EI-4). */
 export interface IndicatorView {
   key: IndicatorKey;
+  group: IndicatorGroup;
   value: number | null;
   unit: string;
   referenceDate: string | null;
@@ -43,8 +59,9 @@ export interface IndicatorView {
   /**
    * Signed percent change vs the previous published reading:
    * `(value - prevValue) / prevValue * 100`. Null when value or prevValue is
-   * missing, when prevValue <= 0, and always for `ipc-mensual` (its value is
-   * already a monthly variation percentage).
+   * missing, when prevValue <= 0, and always for the variation keys
+   * `ipc-mensual`, `ipc-interanual`, `salarios-variacion` and
+   * `emae-variacion` (their value is already a percentage variation).
    */
   changePercent: number | null;
 }
