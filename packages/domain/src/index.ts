@@ -12,7 +12,7 @@ export type { PeriodType, ArDateParts } from './vo/period-key';
 
 export { arIsoString } from './vo/ar-tz';
 
-export { KEYS, UNIT_BY_KEY, CLASS_BY_KEY, TTL_BY_CLASS } from './indicators/catalog';
+export { KEYS, UNIT_BY_KEY, CLASS_BY_KEY, TTL_BY_CLASS, GROUP_BY_KEY, GROUP_ORDER } from './indicators/catalog';
 export { IndicatorService } from './indicators/service';
 export type { IndicatorServiceDeps } from './indicators/service';
 export type { IndicatorSource, IndicatorCache } from './indicators/ports';
@@ -60,6 +60,7 @@ export type {
 } from './priceCharts/types';
 export type {
   IndicatorClass,
+  IndicatorGroup,
   IndicatorKey,
   IndicatorStatus,
   IndicatorSample,

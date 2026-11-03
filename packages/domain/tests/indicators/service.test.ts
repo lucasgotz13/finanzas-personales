@@ -79,7 +79,16 @@ function harness(now = T0): Harness {
 /** Registers a stub source only for the classes given; missing classes have no source. */
 function withSources(h: Harness, impls: Partial<Record<IndicatorClass, () => Promise<IndicatorSample[]>>>): void {
   const list: IndicatorSource[] = [];
-  for (const cls of ['fx', 'bcra', 'riesgo-pais', 'ipc', 'oil'] as IndicatorClass[]) {
+  for (const cls of [
+    'fx',
+    'bcra',
+    'riesgo-pais',
+    'ipc',
+    'oil',
+    'indec-canastas',
+    'indec-salarios',
+    'indec-emae',
+  ] as IndicatorClass[]) {
     const impl = impls[cls];
     if (impl === undefined) continue;
     const stub = new StubSource(cls, impl);
@@ -103,14 +112,14 @@ const OIL_SAMPLES: IndicatorSample[] = [
 ];
 
 describe('IndicatorService.getAll (EI-1, EI-4, EI-5)', () => {
-  it('derives 11 fresh views from a populated cache without fetching', async () => {
+  it('derives 15 fresh views from a populated cache without fetching', async () => {
     const h = harness(T0);
     withSources(h, {});
     for (const key of KEYS) h.seed(key, key === 'ipc-mensual' ? -0.1 : 1, '2026-08', iso(0));
 
     const views = await h.service.getAll();
 
-    expect(views).toHaveLength(11);
+    expect(views).toHaveLength(15);
     for (const view of views) {
       expect(view.status).toBe('fresh');
       expect(view.stale).toBe(false);
@@ -126,7 +135,7 @@ describe('IndicatorService.getAll (EI-1, EI-4, EI-5)', () => {
     withSources(h, {});
     const views = await h.service.getAll();
 
-    expect(views).toHaveLength(11);
+    expect(views).toHaveLength(15);
     for (const view of views) {
       expect(view.status).toBe('absent');
       expect(view.stale).toBe(false);
@@ -188,7 +197,7 @@ describe('IndicatorService.getAll (EI-1, EI-4, EI-5)', () => {
 
     const views = await h.service.getAll();
 
-    expect(views).toHaveLength(11);
+    expect(views).toHaveLength(15);
     expect(views.every((v) => v.status === 'absent' && v.referenceAged === false)).toBe(true);
   });
 });
@@ -203,6 +212,9 @@ describe('IndicatorService.refresh (EI-2, EI-3)', () => {
       'riesgo-pais': () => Promise.reject(new Error('should not fetch')),
       ipc: () => Promise.reject(new Error('should not fetch')),
       oil: () => Promise.reject(new Error('should not fetch')),
+      'indec-canastas': () => Promise.reject(new Error('should not fetch')),
+      'indec-salarios': () => Promise.reject(new Error('should not fetch')),
+      'indec-emae': () => Promise.reject(new Error('should not fetch')),
     });
     for (const key of KEYS) {
       const shortLived = CLASS_BY_KEY[key] === 'fx' || CLASS_BY_KEY[key] === 'oil';
@@ -217,6 +229,9 @@ describe('IndicatorService.refresh (EI-2, EI-3)', () => {
       ['riesgo-pais', 'cached'],
       ['ipc', 'cached'],
       ['oil', 'cached'],
+      ['indec-canastas', 'cached'],
+      ['indec-salarios', 'cached'],
+      ['indec-emae', 'cached'],
     ]);
     for (const s of h.sources.values()) expect(s.calls).toBe(0);
   });
@@ -232,6 +247,9 @@ describe('IndicatorService.refresh (EI-2, EI-3)', () => {
       'riesgo-pais': async () => [{ key: 'riesgo-pais', value: 1200, referenceDate: '2026-08-09' }],
       ipc: async () => [{ key: 'ipc-mensual', value: 0.2, referenceDate: '2026-06' }],
       oil: async () => OIL_SAMPLES,
+      'indec-canastas': async () => [{ key: 'canasta-basica-total', value: 528318.67, referenceDate: '2026-09' }],
+      'indec-salarios': async () => [{ key: 'salarios-variacion', value: 35.61, referenceDate: '2026-08' }],
+      'indec-emae': async () => [{ key: 'emae-variacion', value: -1.74, referenceDate: '2026-08' }],
     });
     // everything 6 min old: fx (TTL 5 min) is past its TTL, the other classes are not
     for (const key of KEYS) h.seed(key, 1, '2026-08', iso(-TTL_BY_CLASS.fx - 60_000));
@@ -263,6 +281,9 @@ describe('IndicatorService.refresh (EI-2, EI-3)', () => {
       'riesgo-pais': async () => [{ key: 'riesgo-pais', value: 1200, referenceDate: '2026-08-09' }],
       ipc: async () => [{ key: 'ipc-mensual', value: -0.1, referenceDate: '2026-06' }],
       oil: async () => OIL_SAMPLES,
+      'indec-canastas': async () => [{ key: 'canasta-basica-total', value: 528318.67, referenceDate: '2026-09' }],
+      'indec-salarios': async () => [{ key: 'salarios-variacion', value: 35.61, referenceDate: '2026-08' }],
+      'indec-emae': async () => [{ key: 'emae-variacion', value: -1.74, referenceDate: '2026-08' }],
     });
     for (const key of KEYS) h.seed(key, 1, '2026-08', iso(0)); // all fresh
 
@@ -280,6 +301,9 @@ describe('IndicatorService.refresh (EI-2, EI-3)', () => {
       'riesgo-pais': async () => [{ key: 'riesgo-pais', value: 1200, referenceDate: '2026-08-09' }],
       ipc: async () => [{ key: 'ipc-mensual', value: 0.2, referenceDate: '2026-06' }],
       oil: async () => OIL_SAMPLES,
+      'indec-canastas': async () => [{ key: 'canasta-basica-total', value: 528318.67, referenceDate: '2026-09' }],
+      'indec-salarios': async () => [{ key: 'salarios-variacion', value: 35.61, referenceDate: '2026-08' }],
+      'indec-emae': async () => [{ key: 'emae-variacion', value: -1.74, referenceDate: '2026-08' }],
     });
     h.seed('reservas', 100, '2026-08-01', iso(-60_000));
 
@@ -289,7 +313,7 @@ describe('IndicatorService.refresh (EI-2, EI-3)', () => {
     expect(bcra?.status).toBe('failed');
     expect(bcra?.error).toBe('bcra down');
     expect(results.filter((r) => r.status === 'failed')).toHaveLength(1);
-    expect(results.filter((r) => r.status === 'updated')).toHaveLength(4);
+    expect(results.filter((r) => r.status === 'updated')).toHaveLength(7);
     // prior cache row untouched
     expect(h.cache.stored('reservas')?.value).toBe(100);
     expect(h.cache.stored('reservas')?.fetchedAt).toBe(iso(-60_000));
@@ -303,12 +327,15 @@ describe('IndicatorService.refresh (EI-2, EI-3)', () => {
       'riesgo-pais': async () => Promise.reject(new Error('rp down')),
       ipc: async () => Promise.reject(new Error('ipc down')),
       oil: async () => Promise.reject(new Error('oil down')),
+      'indec-canastas': async () => Promise.reject(new Error('canastas down')),
+      'indec-salarios': async () => Promise.reject(new Error('salarios down')),
+      'indec-emae': async () => Promise.reject(new Error('emae down')),
     });
     h.seed('usd-blue', 1350.5, '2026-08-09', iso(-60_000));
 
     const results = await h.service.refresh(false);
 
-    expect(results).toHaveLength(5);
+    expect(results).toHaveLength(8);
     expect(results.every((r) => r.status === 'failed')).toBe(true);
     const blue = (await h.service.getAll()).find((v) => v.key === 'usd-blue');
     expect(blue?.value).toBe(1350.5);
@@ -335,7 +362,15 @@ describe('IndicatorService.refresh (EI-2, EI-3)', () => {
     const results = await h.service.refresh(false);
 
     expect(results.find((r) => r.class === 'fx')?.status).toBe('updated');
-    for (const cls of ['bcra', 'riesgo-pais', 'ipc', 'oil'] as IndicatorClass[]) {
+    for (const cls of [
+      'bcra',
+      'riesgo-pais',
+      'ipc',
+      'oil',
+      'indec-canastas',
+      'indec-salarios',
+      'indec-emae',
+    ] as IndicatorClass[]) {
       expect(results.find((r) => r.class === cls)?.status).toBe('failed');
     }
   });
@@ -371,14 +406,19 @@ describe('IndicatorService changePercent derivation (indicator-day-change)', () 
     expect(views.find((v) => v.key === 'usd-mep')?.changePercent).toBeNull();
   });
 
-  it('always hides the change for ipc-mensual (its value is already a variation %)', async () => {
+  it('always hides the change for the variation keys (their value is already a variation %)', async () => {
     const h = harness(T0);
     withSources(h, {});
     h.seed('ipc-mensual', 2, '2026-06', iso(0), 1.5);
+    h.seed('ipc-interanual', 33.4, '2026-06', iso(0), 33.5);
+    h.seed('salarios-variacion', 35.61, '2026-08', iso(0), 36.18);
+    h.seed('emae-variacion', -1.74, '2026-08', iso(0), -1.47);
 
-    const ipc = (await h.service.getAll()).find((v) => v.key === 'ipc-mensual');
+    const views = await h.service.getAll();
 
-    expect(ipc?.changePercent).toBeNull();
+    for (const key of ['ipc-mensual', 'ipc-interanual', 'salarios-variacion', 'emae-variacion'] as const) {
+      expect(views.find((v) => v.key === key)?.changePercent).toBeNull();
+    }
   });
 });
 

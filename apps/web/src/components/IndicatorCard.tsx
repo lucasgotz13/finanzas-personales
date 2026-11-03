@@ -9,6 +9,10 @@ const LABEL_BY_KEY: Record<string, string> = {
   'usd-ccl': 'USD CCL',
   'riesgo-pais': 'Riesgo País',
   'ipc-mensual': 'IPC Mensual',
+  'ipc-interanual': 'IPC Interanual',
+  'canasta-basica-total': 'Canasta Básica Total',
+  'salarios-variacion': 'Salarios (var. interanual)',
+  'emae-variacion': 'EMAE (var. interanual)',
   reservas: 'Reservas',
   badlar: 'BADLAR',
   brent: 'Brent',
@@ -57,7 +61,7 @@ export default function IndicatorCard({ indicator }: { indicator: IndicatorView 
           Math.abs(indicator.changePercent) >= MIN_VISIBLE_CHANGE && (
             <span
               className={`change-badge ${indicator.changePercent < 0 ? 'down' : 'up'}`}
-              title="Cambio diario"
+              title="Cambio vs lectura anterior"
             >
               {formatChange(indicator.changePercent)}
             </span>

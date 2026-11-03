@@ -65,8 +65,11 @@ export interface PeriodSummary {
 
 export type IndicatorStatus = 'fresh' | 'stale' | 'absent';
 
+export type IndicatorGroup = 'mercado' | 'economia';
+
 export interface IndicatorView {
   key: string;
+  group: IndicatorGroup;
   value: number | null;
   unit: string;
   referenceDate: string | null;

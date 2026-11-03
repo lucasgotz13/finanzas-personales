@@ -8,21 +8,26 @@ import IndicatorsPage from '../IndicatorsPage';
 const FIVE_MINUTES = 5 * 60_000;
 
 function freshViews(overrides: Partial<IndicatorView>[] = []): IndicatorView[] {
-  const base: Array<[string, number, string, string]> = [
-    ['usd-blue', 1350.5, 'ARS/USD', 'USD Blue'],
-    ['usd-oficial', 1200, 'ARS/USD', 'USD Oficial'],
-    ['usd-tarjeta', 1560, 'ARS/USD', 'USD Tarjeta'],
-    ['usd-mep', 1330, 'ARS/USD', 'USD MEP'],
-    ['usd-ccl', 1345, 'ARS/USD', 'USD CCL'],
-    ['riesgo-pais', 1050, 'pb', 'Riesgo País'],
-    ['ipc-mensual', -0.1, '%', 'IPC Mensual'],
-    ['reservas', 28000, 'millones USD', 'Reservas'],
-    ['badlar', 38.5, '% TNA', 'BADLAR'],
-    ['brent', 67.45, 'USD/bbl', 'Brent'],
-    ['wti', 63.2, 'USD/bbl', 'WTI'],
+  const base: Array<[string, number, string, IndicatorView['group']]> = [
+    ['usd-blue', 1350.5, 'ARS/USD', 'mercado'],
+    ['usd-oficial', 1200, 'ARS/USD', 'mercado'],
+    ['usd-tarjeta', 1560, 'ARS/USD', 'mercado'],
+    ['usd-mep', 1330, 'ARS/USD', 'mercado'],
+    ['usd-ccl', 1345, 'ARS/USD', 'mercado'],
+    ['riesgo-pais', 1050, 'pb', 'mercado'],
+    ['ipc-mensual', -0.1, '%', 'economia'],
+    ['reservas', 28000, 'millones USD', 'mercado'],
+    ['badlar', 38.5, '% TNA', 'mercado'],
+    ['brent', 67.45, 'USD/bbl', 'mercado'],
+    ['wti', 63.2, 'USD/bbl', 'mercado'],
+    ['ipc-interanual', 33.4, '%', 'economia'],
+    ['canasta-basica-total', 528318.67, 'ARS', 'economia'],
+    ['salarios-variacion', 35.61, '%', 'economia'],
+    ['emae-variacion', -1.74, '%', 'economia'],
   ];
-  return base.map(([key, value, unit], i) => ({
+  return base.map(([key, value, unit, group], i) => ({
     key,
+    group,
     value,
     unit,
     referenceDate: '2026-08-09',
@@ -46,13 +51,13 @@ describe('IndicatorsPage (EI-6)', () => {
     delete (document as { hidden?: unknown }).hidden;
   });
 
-  it('renders 11 cards with label, value, unit and updatedAt, no badge', async () => {
+  it('renders 15 cards with label, value, unit and updatedAt, no badge', async () => {
     vi.spyOn(api, 'getIndicators').mockResolvedValue(freshViews());
 
     render(<IndicatorsPage />);
 
     expect(await screen.findByTestId('indicators-grid')).toBeInTheDocument();
-    expect(screen.getAllByTestId(/^indicator-/)).toHaveLength(11);
+    expect(screen.getAllByTestId(/^indicator-(?!group-)/)).toHaveLength(15);
     expect(screen.getByText('USD Blue')).toBeInTheDocument();
     expect(screen.getByText('1.350,5')).toBeInTheDocument();
     expect(screen.getAllByText('ARS/USD')).toHaveLength(5);
@@ -61,7 +66,28 @@ describe('IndicatorsPage (EI-6)', () => {
     expect(screen.getByText('Brent')).toBeInTheDocument();
     expect(screen.getByText('WTI')).toBeInTheDocument();
     expect(screen.getByText('67,45')).toBeInTheDocument();
+    // Economy cards carry their own Spanish labels and units.
+    expect(screen.getByText('Canasta Básica Total')).toBeInTheDocument();
+    expect(screen.getByText('528.318,67')).toBeInTheDocument();
+    expect(screen.getByText('ARS')).toBeInTheDocument();
+    expect(screen.getByText('IPC Interanual')).toBeInTheDocument();
     expect(screen.queryByText('Vencido')).not.toBeInTheDocument();
+  });
+
+  it('splits the cards into the Mercado and Economía argentina subsections (EI-6)', async () => {
+    vi.spyOn(api, 'getIndicators').mockResolvedValue(freshViews());
+
+    render(<IndicatorsPage />);
+    await screen.findByTestId('indicators-grid');
+
+    const market = screen.getByTestId('indicator-group-mercado');
+    const economy = screen.getByTestId('indicator-group-economia');
+    expect(market).toHaveTextContent('Mercado');
+    expect(economy).toHaveTextContent('Economía argentina');
+    expect(market.querySelectorAll('.indicator-card')).toHaveLength(10);
+    expect(economy.querySelectorAll('.indicator-card')).toHaveLength(5);
+    // Market renders before economy.
+    expect(market.compareDocumentPosition(economy) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it('renders the reference date on every card and no Referencia antigua when fresh (issue #29)', async () => {
@@ -70,7 +96,7 @@ describe('IndicatorsPage (EI-6)', () => {
     render(<IndicatorsPage />);
     await screen.findByTestId('indicators-grid');
 
-    expect(screen.getAllByText('ref ago 2026')).toHaveLength(11);
+    expect(screen.getAllByText('ref ago 2026')).toHaveLength(15);
     expect(screen.queryByText('Referencia antigua')).not.toBeInTheDocument();
   });
 
@@ -84,7 +110,7 @@ describe('IndicatorsPage (EI-6)', () => {
 
     expect(screen.getByTestId('indicator-ipc-mensual')).toHaveTextContent('Referencia antigua');
     expect(screen.queryByText('Vencido')).not.toBeInTheDocument();
-    expect(screen.getAllByText('ref ago 2026')).toHaveLength(11);
+    expect(screen.getAllByText('ref ago 2026')).toHaveLength(15);
   });
 
   it('shows a loading state before data arrives', () => {

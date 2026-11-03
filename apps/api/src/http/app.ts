@@ -23,6 +23,7 @@ import { ArgentinadatosSource } from '../sources/argentinadatos';
 import { ArgentinadatosCclSeriesSource } from '../sources/argentinadatos-ccl';
 import { BcraSource } from '../sources/bcra';
 import { DolarApiSource } from '../sources/dolar-api';
+import { IndecCanastasSource, IndecEmaeSource, IndecIpcSource, IndecSalariosSource } from '../sources/indec';
 import { YahooSource } from '../sources/yahoo';
 import { YahooOilSource } from '../sources/yahoo-oil';
 import { YahooSeriesSource } from '../sources/yahoo-series';
@@ -62,13 +63,19 @@ class CclAccessor implements PortfolioFxPort {
 
 function defaultIndicatorSources(): IndicatorSource[] {
   // One ArgentinaDatos client per class: the domain resolves sources by class
-  // (issue #33). The IPC class reuses the riesgo país adapter's API family.
+  // (issue #33). INDEC is authoritative for the IPC and the economy series;
+  // IndecIpcSource keeps the keyless argentinadatos monthly series as fallback
+  // (INDEC_API_TOKEN missing or INDEC down). The remaining ArgentinaDatos
+  // client serves riesgo país only.
   return [
     new DolarApiSource(),
     new BcraSource(),
-    new ArgentinadatosSource(undefined, undefined, 'ipc'),
+    new IndecIpcSource(),
     new ArgentinadatosSource(),
     new YahooOilSource(),
+    new IndecCanastasSource(),
+    new IndecSalariosSource(),
+    new IndecEmaeSource(),
   ];
 }
 

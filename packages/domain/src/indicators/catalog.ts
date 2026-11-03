@@ -1,6 +1,6 @@
-import type { IndicatorClass, IndicatorKey } from './types';
+import type { IndicatorClass, IndicatorGroup, IndicatorKey } from './types';
 
-/** All 11 indicator keys, in display order (EI-1). */
+/** All 15 indicator keys, in display order: market group first, economy group second (EI-1, EI-6). */
 export const KEYS: readonly IndicatorKey[] = [
   'usd-blue',
   'usd-oficial',
@@ -8,14 +8,40 @@ export const KEYS: readonly IndicatorKey[] = [
   'usd-mep',
   'usd-ccl',
   'riesgo-pais',
-  'ipc-mensual',
   'reservas',
   'badlar',
   'brent',
   'wti',
+  'ipc-mensual',
+  'ipc-interanual',
+  'canasta-basica-total',
+  'salarios-variacion',
+  'emae-variacion',
 ];
 
-/** Display unit per indicator (EI-1): FX ARS/USD, riesgo país pb, IPC %, reservas millones USD, BADLAR % TNA, oil USD/bbl. */
+/** Display group per indicator; the tab renders one subsection per group in GROUP_ORDER (EI-6). */
+export const GROUP_BY_KEY: Record<IndicatorKey, IndicatorGroup> = {
+  'usd-blue': 'mercado',
+  'usd-oficial': 'mercado',
+  'usd-tarjeta': 'mercado',
+  'usd-mep': 'mercado',
+  'usd-ccl': 'mercado',
+  'riesgo-pais': 'mercado',
+  reservas: 'mercado',
+  badlar: 'mercado',
+  brent: 'mercado',
+  wti: 'mercado',
+  'ipc-mensual': 'economia',
+  'ipc-interanual': 'economia',
+  'canasta-basica-total': 'economia',
+  'salarios-variacion': 'economia',
+  'emae-variacion': 'economia',
+};
+
+/** Subsection order inside the Indicadores tab (EI-6). */
+export const GROUP_ORDER: readonly IndicatorGroup[] = ['mercado', 'economia'];
+
+/** Display unit per indicator (EI-1): FX ARS/USD, riesgo país pb, IPC %, canasta ARS, reservas millones USD, BADLAR % TNA, oil USD/bbl. */
 export const UNIT_BY_KEY: Record<IndicatorKey, string> = {
   'usd-blue': 'ARS/USD',
   'usd-oficial': 'ARS/USD',
@@ -24,6 +50,10 @@ export const UNIT_BY_KEY: Record<IndicatorKey, string> = {
   'usd-ccl': 'ARS/USD',
   'riesgo-pais': 'pb',
   'ipc-mensual': '%',
+  'ipc-interanual': '%',
+  'canasta-basica-total': 'ARS',
+  'salarios-variacion': '%',
+  'emae-variacion': '%',
   reservas: 'millones USD',
   badlar: '% TNA',
   brent: 'USD/bbl',
@@ -39,26 +69,36 @@ export const CLASS_BY_KEY: Record<IndicatorKey, IndicatorClass> = {
   'usd-ccl': 'fx',
   'riesgo-pais': 'riesgo-pais',
   'ipc-mensual': 'ipc',
+  'ipc-interanual': 'ipc',
+  'canasta-basica-total': 'indec-canastas',
+  'salarios-variacion': 'indec-salarios',
+  'emae-variacion': 'indec-emae',
   reservas: 'bcra',
   badlar: 'bcra',
   brent: 'oil',
   wti: 'oil',
 };
 
-/** TTL per class in ms (EI-3): FX ≈ 5 min; oil ≈ 10 min (halves Yahoo calls behind the 5-min web poll); BCRA and riesgo país ≈ daily; IPC ≈ 12 h. */
+/** TTL per class in ms (EI-3): FX ≈ 5 min; oil ≈ 10 min (halves Yahoo calls behind the 5-min web poll); BCRA and riesgo país ≈ daily; IPC and the INDEC series ≈ 12 h. */
 export const TTL_BY_CLASS: Record<IndicatorClass, number> = {
   fx: 5 * 60_000,
   bcra: 24 * 60 * 60_000,
   'riesgo-pais': 24 * 60 * 60_000,
   ipc: 12 * 60 * 60_000,
   oil: 10 * 60_000,
+  'indec-canastas': 12 * 60 * 60_000,
+  'indec-salarios': 12 * 60 * 60_000,
+  'indec-emae': 12 * 60 * 60_000,
 };
 
-/** Max acceptable reference-date age per class in ms (issue #29): FX ≈ 2 days, oil ≈ 4 days (futures weekend gap + holidays), BCRA and riesgo país ≈ 7 days, IPC ≈ 90 days (INDEC monthly with ~6-week lag + margin). */
+/** Max acceptable reference-date age per class in ms (issue #29): FX ≈ 2 days, oil ≈ 4 days (futures weekend gap + holidays), BCRA and riesgo país ≈ 7 days, monthly INDEC series ≈ 90 days, wage/activity series ≈ 120 days (≈2-month publish lag + margin). */
 export const REFERENCE_MAX_AGE_MS: Record<IndicatorClass, number> = {
   fx: 2 * 24 * 60 * 60_000,
   bcra: 7 * 24 * 60 * 60_000,
   'riesgo-pais': 7 * 24 * 60 * 60_000,
   ipc: 90 * 24 * 60 * 60_000,
   oil: 4 * 24 * 60 * 60_000,
+  'indec-canastas': 90 * 24 * 60 * 60_000,
+  'indec-salarios': 120 * 24 * 60 * 60_000,
+  'indec-emae': 120 * 24 * 60 * 60_000,
 };

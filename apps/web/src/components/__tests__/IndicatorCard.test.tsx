@@ -5,6 +5,7 @@ import IndicatorCard from '../IndicatorCard';
 
 const indicator: IndicatorView = {
   key: 'usd-blue',
+  group: 'mercado',
   value: 1350.5,
   unit: 'ARS/USD',
   referenceDate: '2026-07-31',
@@ -41,58 +42,58 @@ describe('IndicatorCard', () => {
 
   it('renders a green signed badge with 2 decimals for a positive change', () => {
     render(<IndicatorCard indicator={{ ...indicator, changePercent: 1.2987 }} />);
-    const badge = screen.getByTitle('Cambio diario');
+    const badge = screen.getByTitle('Cambio vs lectura anterior');
     expect(badge).toHaveTextContent('+1,30%');
     expect(badge.className).toContain('up');
   });
 
   it('renders a red signed badge with 2 decimals for a negative change', () => {
     render(<IndicatorCard indicator={{ ...indicator, changePercent: -0.8 }} />);
-    const badge = screen.getByTitle('Cambio diario');
+    const badge = screen.getByTitle('Cambio vs lectura anterior');
     expect(badge).toHaveTextContent('-0,80%');
     expect(badge.className).toContain('down');
   });
 
   it('hides the badge when the change is exactly zero', () => {
     render(<IndicatorCard indicator={{ ...indicator, changePercent: 0 }} />);
-    expect(screen.queryByTitle('Cambio diario')).not.toBeInTheDocument();
+    expect(screen.queryByTitle('Cambio vs lectura anterior')).not.toBeInTheDocument();
   });
 
   it('hides the badge for negative zero (-0)', () => {
     render(<IndicatorCard indicator={{ ...indicator, changePercent: -0 }} />);
-    expect(screen.queryByTitle('Cambio diario')).not.toBeInTheDocument();
+    expect(screen.queryByTitle('Cambio vs lectura anterior')).not.toBeInTheDocument();
   });
 
   it('hides the badge when the change rounds to "0,00%" at 2 decimals (0,003%)', () => {
     render(<IndicatorCard indicator={{ ...indicator, changePercent: 0.003 }} />);
-    expect(screen.queryByTitle('Cambio diario')).not.toBeInTheDocument();
+    expect(screen.queryByTitle('Cambio vs lectura anterior')).not.toBeInTheDocument();
   });
 
   it('hides the badge for a tiny negative change that would read "-0,00%"', () => {
     render(<IndicatorCard indicator={{ ...indicator, changePercent: -0.004 }} />);
-    expect(screen.queryByTitle('Cambio diario')).not.toBeInTheDocument();
+    expect(screen.queryByTitle('Cambio vs lectura anterior')).not.toBeInTheDocument();
   });
 
   it('shows a tiny change that still rounds above zero (0,007% -> "+0,01%")', () => {
     render(<IndicatorCard indicator={{ ...indicator, changePercent: 0.007 }} />);
-    const badge = screen.getByTitle('Cambio diario');
+    const badge = screen.getByTitle('Cambio vs lectura anterior');
     expect(badge).toHaveTextContent('+0,01%');
     expect(badge.className).toContain('up');
   });
 
   it('hides the badge when changePercent is null', () => {
     render(<IndicatorCard indicator={{ ...indicator, changePercent: null }} />);
-    expect(screen.queryByTitle('Cambio diario')).not.toBeInTheDocument();
+    expect(screen.queryByTitle('Cambio vs lectura anterior')).not.toBeInTheDocument();
   });
 
   it('hides the badge when changePercent is undefined (old API without the field)', () => {
     const { changePercent: _omitted, ...withoutChange } = indicator;
     render(<IndicatorCard indicator={withoutChange as IndicatorView} />);
-    expect(screen.queryByTitle('Cambio diario')).not.toBeInTheDocument();
+    expect(screen.queryByTitle('Cambio vs lectura anterior')).not.toBeInTheDocument();
   });
 
   it('hides the badge when changePercent is NaN', () => {
     render(<IndicatorCard indicator={{ ...indicator, changePercent: NaN }} />);
-    expect(screen.queryByTitle('Cambio diario')).not.toBeInTheDocument();
+    expect(screen.queryByTitle('Cambio vs lectura anterior')).not.toBeInTheDocument();
   });
 });
