@@ -1,8 +1,19 @@
-import { resolve } from 'node:path';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import type { Clock } from '@finanzas/domain';
 import { DEFAULT_DB_PATH, MIGRATIONS_DIR, createDbClient, migrate } from '../../../scripts/migrate';
 import { validateProductionConfig } from './http/auth';
 import { buildApp } from './http/app';
+
+// Local dev convenience: load the repo-root .env when present. Host-provided
+// environment variables win (process.loadEnvFile never overrides them), and a
+// production host without a .env file simply keeps its own environment.
+const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
+try {
+  process.loadEnvFile(resolve(REPO_ROOT, '.env'));
+} catch {
+  // No .env file: rely on the host environment.
+}
 
 class SystemClock implements Clock {
   now(): Date {

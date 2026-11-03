@@ -130,7 +130,10 @@ charts.
 
 The web dev server proxies `/api` to the API on port 3000 (see
 `apps/web/vite.config.ts`). The API runs migrations on boot and is idempotent;
-point `FINANZAS_DB` somewhere else to use a different database file.
+point `FINANZAS_DB` somewhere else to use a different database file. For local
+development the API loads the repo-root `.env` at boot; variables already set
+in the shell or host environment win over the file, and a missing `.env` is
+fine.
 
 ## Layout
 
