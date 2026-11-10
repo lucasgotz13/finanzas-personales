@@ -29,6 +29,16 @@ describe('SummariesPage', () => {
     expect(screen.getByText('—')).toBeInTheDocument(); // USD savings rate undefined
   });
 
+  it('month select changes the reference date to that month', async () => {
+    const getSummary = vi.spyOn(api, 'getSummary').mockResolvedValue(summary);
+    const user = userEvent.setup();
+    render(<SummariesPage />);
+    const select = await screen.findByLabelText('Mes');
+    await user.selectOptions(select, '2026-01');
+    await waitFor(() => expect(getSummary).toHaveBeenLastCalledWith('month', '2026-01-31'));
+    expect(screen.getByLabelText('Fecha de referencia')).toHaveValue('2026-01-31');
+  });
+
   it('renders the empty state when the summary is null, loaded and error-free (P3 #11)', async () => {
     vi.spyOn(api, 'getSummary').mockResolvedValue(null as never);
     render(<SummariesPage />);
