@@ -105,6 +105,16 @@ Deploy steps:
    API URL — edit the `destination` to point at your own API.** In local
    development the Vite proxy (`apps/web/vite.config.ts`) does the same job.
 
+**API on Vercel (Functions):** create a separate Vercel project with Root
+Directory `apps/api`; `apps/api/vercel.json` installs from the repo root and
+runs `npm run build:vercel`, which bundles `src/vercel.ts` (domain included)
+into one Build Output API function that serves every path. Set the env vars
+above (`TURSO_DATABASE_URL` is required there; there is no local SQLite
+file). Unlike the long-running server, the function does **not** migrate on
+boot: run `npm run migrate` against Turso before deploying a new migration.
+Keep the function region next to the Turso database (default `iad1` =
+`aws-us-east-1`).
+
 Gotchas:
 
 - The API runs from source via `tsx`, which is a **runtime dependency** —

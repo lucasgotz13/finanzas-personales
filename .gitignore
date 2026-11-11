@@ -14,3 +14,6 @@ finanzas.db-shm
 
 # impeccable QA evidence (screenshots con datos demo)
 .impeccable/review/
+
+# Vercel build output / local link
+.vercel/
