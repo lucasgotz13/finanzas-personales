@@ -1,5 +1,5 @@
 {
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "https://finanzas-api-vmgd.onrender.com/api/$1" }
+    { "source": "/api/(.*)", "destination": "https://finanzas-personales-api-coral.vercel.app/api/$1" }
   ]
 }
