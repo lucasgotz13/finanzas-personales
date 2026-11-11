@@ -1,0 +1,5 @@
+{
+  "framework": null,
+  "installCommand": "cd ../.. && npm ci",
+  "buildCommand": "npm run build:vercel"
+}
