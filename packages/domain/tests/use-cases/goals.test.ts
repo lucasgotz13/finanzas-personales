@@ -275,6 +275,23 @@ describe('GoalService CRUD', () => {
     expect(view.automaticMinor).toBe(700);
   });
 
+  it('rejects a currency change once the goal has manual movements, but allows other edits', async () => {
+    const env = build('2026-08-01T12:00:00.000Z');
+    const goal = await env.service.create({ name: 'Laptop', targetMinor: 100000, currency: 'ARS' });
+    const id = goal.id as number;
+    await env.service.addAdjustment(id, 'aporte', 5000);
+
+    await expect(env.service.update(id, { currency: 'USD' })).rejects.toMatchObject({
+      code: 'VALIDATION_ERROR',
+      reason: 'GOAL_CURRENCY_LOCKED',
+    });
+    expect((await env.goals.findById(id))?.currency).toBe('ARS');
+
+    const renamed = await env.service.update(id, { name: 'Notebook', currency: 'ARS' });
+    expect(renamed.name).toBe('Notebook');
+    expect(renamed.currency).toBe('ARS');
+  });
+
   it('deletes the goal with its adjustments and keeps a dense priority rank', async () => {
     const env = build('2026-08-08T12:00:00.000Z');
     const a = await env.service.create({ name: 'A', targetMinor: 1000, currency: 'ARS' });

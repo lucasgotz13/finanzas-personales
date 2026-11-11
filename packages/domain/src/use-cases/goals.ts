@@ -115,6 +115,19 @@ export class GoalService {
   async update(id: number, patch: UpdateGoalInput): Promise<Goal> {
     const existing = await this.deps.goals.findById(id);
     if (!existing) throw new NotFoundError(`Goal ${id} not found`);
+    // Manual movements are stored in the goal's currency; switching it would
+    // silently reinterpret them (50.000 ARS would read as US$50.000).
+    if (patch.currency !== undefined && patch.currency !== existing.currency) {
+      const adjustments = await this.deps.adjustments.listByGoal(id);
+      if (adjustments.length > 0) {
+        throw new ValidationError(
+          'Cannot change the currency of a goal with manual movements',
+          [`goal ${id} has ${adjustments.length} manual movement(s) in ${existing.currency}`],
+          'GOAL_CURRENCY_LOCKED',
+          { currency: existing.currency },
+        );
+      }
+    }
     const goal = new Goal({
       id,
       name: patch.name ?? existing.name,
