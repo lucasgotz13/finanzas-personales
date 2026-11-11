@@ -71,6 +71,8 @@ const REASON_TEMPLATES: Partial<Record<ErrorReason, (meta: Record<string, unknow
   AUTH_LOCKED: (meta) =>
     typeof meta.seconds === 'number' ? `Demasiados intentos fallidos; espere ${meta.seconds} segundos.` : undefined,
   RATE_REQUIRED_FOR_CURRENCY: () => 'El tipo de cambio es obligatorio al cambiar a una moneda que no es ARS.',
+  GOAL_CURRENCY_LOCKED: () =>
+    'No se puede cambiar la moneda de una meta con aportes o retiros manuales.',
   CATEGORY_HAS_CHILDREN: () => 'No se puede borrar una categoría con subcategorías.',
   INVALID_NAME: () => 'Nombre inválido.',
   INVALID_PARENT_ID: () => 'Categoría padre inválida.',

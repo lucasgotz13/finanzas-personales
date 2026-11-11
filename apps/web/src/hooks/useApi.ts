@@ -25,19 +25,27 @@ export function useApi<T>(fetcher: () => Promise<T>, deps: unknown[], enabled = 
   const [tick, setTick] = useState(0);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const load = useCallback(() => {
+  const load = useCallback((isCurrent: () => boolean) => {
     setLoading(true);
     setError(null);
     fetcher()
-      .then((result) => setData(result))
-      .catch((err: unknown) => setError(translateApiMessage(err instanceof Error ? err.message : 'Error desconocido')))
-      .finally(() => setLoading(false));
+      .then((result) => { if (isCurrent()) setData(result); })
+      .catch((err: unknown) => {
+        if (isCurrent()) setError(translateApiMessage(err instanceof Error ? err.message : 'Error desconocido'));
+      })
+      .finally(() => { if (isCurrent()) setLoading(false); });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [...deps, tick]);
 
   useEffect(() => {
     if (!enabled) return;
-    load();
+    // A response for superseded deps (e.g. the previous month) must never
+    // overwrite the current one when it arrives late.
+    let current = true;
+    load(() => current);
+    return () => {
+      current = false;
+    };
   }, [load, enabled]);
 
   return { data, loading, error, reload: () => { if (enabled) setTick((t) => t + 1); } };
